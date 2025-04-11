@@ -31,7 +31,14 @@
 			}
 		},
 		{
-			"path" : "pages/user/downloads/downloads",
+			"path" : "pages/user/downloads",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/user/feedback",
 			"style" : 
 			{
 				"navigationBarTitleText" : ""
