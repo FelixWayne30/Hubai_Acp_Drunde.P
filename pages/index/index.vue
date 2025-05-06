@@ -67,7 +67,7 @@ export default {
         {
           id: "4",
           title: "四水同治",
-          image: "/static/icons/topic-city.png"
+          image: "/static/icons/topic-water.png"
         }
       ],
       carouselItems: [
