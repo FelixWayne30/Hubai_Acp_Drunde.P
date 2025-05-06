@@ -1,7 +1,7 @@
 <template>
 	<view class="container">
 		<!-- 图幅预览区域 -->
-		<view class="preview-container" @click="showFullscreen">
+		<view class="preview-container">
 			<image class="preview-image placeholder-image" :src="mapInfo.image"></image>
 			
 			<!-- 图幅标题 -->
@@ -20,15 +20,23 @@
 				<text class="count">收藏</text>
 			</view>
 					
-		<view class="action-btn" @click="showListsModal">
-		    <text class="iconfont">+</text>
-		    <text class="count">添加至</text>
+			<view class="action-btn" @click="showListsModal">
+				<text class="iconfont">+</text>
+				<text class="count">添加至</text>
+			</view>
 		</view>
+		
+		<!-- 图幅描述区域 -->
+		<view class="description-section">
+			<view class="section-title">图幅描述</view>
+			<view class="description-content">
+				{{mapInfo.description || '暂无描述'}}
+			</view>
 		</view>
 		
 		<!-- 评论区 -->
 		<view class="comment-section">
-		    <view class="section-title">评论区 ({{commentCount}}条评论)</view>
+			<view class="section-title">评论区 ({{commentCount}}条评论)</view>
 			
 			<!-- 评论列表 -->
 			<view class="comment-list">
@@ -58,20 +66,6 @@
 			<button class="send-btn primary-bg" @click="submitComment">发送</button>
 		</view>
 		
-		<!-- 全屏预览 -->
-		<view class="fullscreen-preview" v-if="showFullscreenPreview">
-			<image 
-				class="fullscreen-image placeholder-image" 
-				:src="mapInfo.image"
-				:style="{ transform: `scale(${fullscreenScale}) translate(${fullscreenTranslateX}px, ${fullscreenTranslateY}px)` }"
-				@touchstart="handleFullscreenTouchStart"
-				@touchmove="handleFullscreenTouchMove"
-				@touchend="handleFullscreenTouchEnd"
-			></image>
-			
-			<view class="close-btn" @click="hideFullscreen">×</view>
-		</view>
-		
 		<!-- Custom Lists Modal -->
 		<view class="lists-modal" v-if="showListsSelector">
 			<view class="modal-content">
@@ -97,6 +91,11 @@
 					<button class="modal-btn confirm-btn primary-bg" @click="addToSelectedLists">确定</button>
 				</view>
 			</view>
+		</view>
+		
+		<!-- 返回浏览按钮 -->
+		<view class="back-to-browse" @click="backToBrowse">
+			<text>返回浏览页</text>
 		</view>
 	</view>
 </template>
@@ -153,23 +152,20 @@
 				],
 				commentContent: '',
 				inputFocus: false,
-				// 全屏预览
-				showFullscreenPreview: false,
-				fullscreenScale: 1,
-				fullscreenTranslateX: 0,
-				fullscreenTranslateY: 0,
-				// 触摸事件相关变量
-				lastTouchDistance: 0,
-				lastTouchX: 0,
-				lastTouchY: 0,
 				// 自定义列表相关
 				showListsSelector: false,
 				customLists: [],
-				selectedLists: []
+				selectedLists: [],
+				// 来源页面
+				fromBrowse: false
 			}
 		},
 		onLoad(options) {
 			this.mapId = options.id || '';
+			// 检查是否从浏览页跳转过来
+			if (options.from === 'browse') {
+				this.fromBrowse = true;
+			}
 			this.getMapDetail();
 		},
 		onShareAppMessage() {
@@ -289,80 +285,6 @@
 				});
 			},
 			
-			// 显示全屏预览
-			showFullscreen() {
-				this.showFullscreenPreview = true;
-				this.fullscreenScale = 1;
-				this.fullscreenTranslateX = 0;
-				this.fullscreenTranslateY = 0;
-			},
-			
-			// 隐藏全屏预览
-			hideFullscreen() {
-				this.showFullscreenPreview = false;
-			},
-			
-			// 以下三个方法处理全屏模式下的缩放和平移
-			handleFullscreenTouchStart(e) {
-				const touches = e.touches;
-				
-				// 双指缩放
-				if (touches.length === 2) {
-					const touch1 = touches[0];
-					const touch2 = touches[1];
-					this.lastTouchDistance = Math.sqrt(
-						Math.pow(touch2.pageX - touch1.pageX, 2) +
-						Math.pow(touch2.pageY - touch1.pageY, 2)
-					);
-				} 
-				// 单指平移
-				else if (touches.length === 1) {
-					this.lastTouchX = touches[0].pageX;
-					this.lastTouchY = touches[0].pageY;
-				}
-			},
-			
-			handleFullscreenTouchMove(e) {
-				const touches = e.touches;
-				
-				// 双指缩放
-				if (touches.length === 2) {
-					const touch1 = touches[0];
-					const touch2 = touches[1];
-					const currentDistance = Math.sqrt(
-						Math.pow(touch2.pageX - touch1.pageX, 2) +
-						Math.pow(touch2.pageY - touch1.pageY, 2)
-					);
-					
-					if (this.lastTouchDistance > 0) {
-						// 计算新的缩放比例
-						let newScale = this.fullscreenScale * (currentDistance / this.lastTouchDistance);
-						
-						// 限制缩放范围 (1.0 到 5.0)
-						newScale = Math.max(1, Math.min(5, newScale));
-						this.fullscreenScale = newScale;
-					}
-					
-					this.lastTouchDistance = currentDistance;
-				} 
-				// 单指平移
-				else if (touches.length === 1 && this.fullscreenScale > 1) {
-					const currentX = touches[0].pageX;
-					const currentY = touches[0].pageY;
-					
-					// 计算新的平移位置
-					this.fullscreenTranslateX += (currentX - this.lastTouchX) / this.fullscreenScale;
-					this.fullscreenTranslateY += (currentY - this.lastTouchY) / this.fullscreenScale;
-					
-					this.lastTouchX = currentX;
-					this.lastTouchY = currentY;
-				}
-			},
-			
-			handleFullscreenTouchEnd() {
-				this.lastTouchDistance = 0;
-			},
-			
 			// 显示自定义列表选择器
 			showListsModal() {
 				// 获取用户的自定义列表
@@ -459,6 +381,17 @@
 				uni.navigateTo({
 					url: '/pages/user/custom-lists'
 				});
+			},
+			
+			// 返回浏览页
+			backToBrowse() {
+				if (this.fromBrowse) {
+					uni.navigateBack();
+				} else {
+					uni.navigateTo({
+						url: `/pages/map/browse?id=${this.mapId}`
+					});
+				}
 			}
 		}
 	}
@@ -473,12 +406,14 @@
 	.preview-container {
 		position: relative;
 		width: 100%;
-		height: 500rpx;
+		height: 450rpx;
+		margin-bottom: 20rpx;
 	}
 	
 	.preview-image {
 		width: 100%;
 		height: 100%;
+		object-fit: cover;
 	}
 	
 	.map-title {
@@ -524,11 +459,11 @@
 		margin-top: 10rpx;
 	}
 	
-	/* 评论区 */
-	.comment-section {
+	/* 描述区域 */
+	.description-section {
 		background-color: #FFFFFF;
 		padding: 20rpx;
-		margin-top: 20rpx;
+		margin-bottom: 20rpx;
 	}
 	
 	.section-title {
@@ -536,6 +471,19 @@
 		font-weight: bold;
 		margin-bottom: 20rpx;
 		color: #333333;
+	}
+	
+	.description-content {
+		font-size: 28rpx;
+		color: #666666;
+		line-height: 1.6;
+	}
+	
+	/* 评论区 */
+	.comment-section {
+		background-color: #FFFFFF;
+		padding: 20rpx;
+		margin-bottom: 20rpx;
 	}
 	
 	.comment-list {
@@ -603,40 +551,6 @@
 		color: #FFFFFF;
 		margin-left: 20rpx;
 		border-radius: 40rpx;
-	}
-	
-	/* 全屏预览 */
-	.fullscreen-preview {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100vw;
-		height: 100vh;
-		background-color: #000000;
-		z-index: 999;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	
-	.fullscreen-image {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-	}
-	
-	.close-btn {
-		position: absolute;
-		top: 40rpx;
-		right: 40rpx;
-		width: 80rpx;
-		height: 80rpx;
-		line-height: 80rpx;
-		text-align: center;
-		font-size: 60rpx;
-		color: #FFFFFF;
-		background-color: rgba(0, 0, 0, 0.5);
-		border-radius: 50%;
 	}
 	
 	/* Custom Lists Modal */
@@ -723,5 +637,19 @@
 	
 	.confirm-btn {
 		color: #FFFFFF;
+	}
+	
+	/* 返回浏览按钮 */
+	.back-to-browse {
+		position: fixed;
+		right: 30rpx;
+		bottom: 130rpx;
+		padding: 15rpx 30rpx;
+		background-color: rgba(46, 139, 87, 0.8);
+		color: #FFFFFF;
+		border-radius: 50rpx;
+		font-size: 28rpx;
+		z-index: 99;
+		box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.2);
 	}
 </style>
