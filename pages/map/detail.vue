@@ -19,16 +19,16 @@
 				<text class="iconfont" :class="{'active': isCollected}">★</text>
 				<text class="count">收藏</text>
 			</view>
-			
-			<view class="action-btn" @click="focusCommentInput">
-				<text class="iconfont">✎</text>
-				<text class="count">{{commentCount}}</text>
-			</view>
+					
+		<view class="action-btn" @click="showListsModal">
+		    <text class="iconfont">+</text>
+		    <text class="count">添加至</text>
+		</view>
 		</view>
 		
 		<!-- 评论区 -->
 		<view class="comment-section">
-			<view class="section-title">评论区</view>
+		    <view class="section-title">评论区 ({{commentCount}}条评论)</view>
 			
 			<!-- 评论列表 -->
 			<view class="comment-list">
@@ -70,6 +70,33 @@
 			></image>
 			
 			<view class="close-btn" @click="hideFullscreen">×</view>
+		</view>
+		
+		<!-- Custom Lists Modal -->
+		<view class="lists-modal" v-if="showListsSelector">
+			<view class="modal-content">
+				<view class="modal-title">添加到自定义列表</view>
+				<view class="lists-container">
+					<view v-if="customLists.length === 0" class="empty-lists">
+						<text>暂无自定义列表</text>
+						<button class="create-list-btn primary-bg" @click="navigateToCreateList">创建列表</button>
+					</view>
+					<view v-else class="lists-scroll">
+						<view 
+							class="list-item"
+							v-for="(item, index) in customLists"
+							:key="item.id"
+						>
+							<checkbox :checked="isMapInList(item.id)" @click="toggleListSelection(item.id)"></checkbox>
+							<text class="list-name">{{item.name}}</text>
+						</view>
+					</view>
+				</view>
+				<view class="modal-btns">
+					<button class="modal-btn cancel-btn" @click="hideListsModal">取消</button>
+					<button class="modal-btn confirm-btn primary-bg" @click="addToSelectedLists">确定</button>
+				</view>
+			</view>
 		</view>
 	</view>
 </template>
@@ -134,7 +161,11 @@
 				// 触摸事件相关变量
 				lastTouchDistance: 0,
 				lastTouchX: 0,
-				lastTouchY: 0
+				lastTouchY: 0,
+				// 自定义列表相关
+				showListsSelector: false,
+				customLists: [],
+				selectedLists: []
 			}
 		},
 		onLoad(options) {
@@ -330,6 +361,104 @@
 			
 			handleFullscreenTouchEnd() {
 				this.lastTouchDistance = 0;
+			},
+			
+			// 显示自定义列表选择器
+			showListsModal() {
+				// 获取用户的自定义列表
+				this.fetchCustomLists();
+				this.showListsSelector = true;
+			},
+			
+			// 隐藏自定义列表选择器
+			hideListsModal() {
+				this.showListsSelector = false;
+			},
+			
+			// 获取用户的自定义列表
+			fetchCustomLists() {
+				// 模拟API调用
+				// uni.request({
+				//   url: '/api/user/lists',
+				//   success: (res) => {
+				//     this.customLists = res.data.lists;
+				//   }
+				// });
+				
+				// 模拟数据
+				this.customLists = [
+					{ id: '1', name: '长江流域图集' },
+					{ id: '2', name: '矿产资源专题' },
+					{ id: '3', name: '教学资料' }
+				];
+				
+				// 重置选择状态
+				this.selectedLists = [];
+			},
+			
+			// 检查地图是否已在列表中
+			isMapInList(listId) {
+				return this.selectedLists.includes(listId);
+			},
+			
+			// 切换列表选择状态
+			toggleListSelection(listId) {
+				const index = this.selectedLists.indexOf(listId);
+				if (index > -1) {
+					this.selectedLists.splice(index, 1);
+				} else {
+					this.selectedLists.push(listId);
+				}
+			},
+			
+			// 添加到已选择的列表
+			addToSelectedLists() {
+				if (this.selectedLists.length === 0) {
+					uni.showToast({
+						title: '请选择至少一个列表',
+						icon: 'none'
+					});
+					return;
+				}
+				
+				// 模拟API调用
+				uni.showLoading({ title: '添加中...' });
+				
+				// 模拟请求
+				// uni.request({
+				//   url: '/api/user/lists/add-map',
+				//   method: 'POST',
+				//   data: {
+				//     mapId: this.mapId,
+				//     listIds: this.selectedLists
+				//   },
+				//   success: () => {
+				//     uni.hideLoading();
+				//     uni.showToast({
+				//       title: '添加成功',
+				//       icon: 'success'
+				//     });
+				//     this.hideListsModal();
+				//   }
+				// });
+				
+				// 模拟成功
+				setTimeout(() => {
+					uni.hideLoading();
+					uni.showToast({
+						title: '添加成功',
+						icon: 'success'
+					});
+					this.hideListsModal();
+				}, 1000);
+			},
+			
+			// 跳转到创建列表页面
+			navigateToCreateList() {
+				this.hideListsModal();
+				uni.navigateTo({
+					url: '/pages/user/custom-lists'
+				});
 			}
 		}
 	}
@@ -508,5 +637,91 @@
 		color: #FFFFFF;
 		background-color: rgba(0, 0, 0, 0.5);
 		border-radius: 50%;
+	}
+	
+	/* Custom Lists Modal */
+	.lists-modal {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 999;
+	}
+	
+	.modal-content {
+		width: 80%;
+		background-color: #FFFFFF;
+		border-radius: 15rpx;
+		padding: 40rpx 30rpx;
+	}
+	
+	.modal-title {
+		font-size: 36rpx;
+		font-weight: bold;
+		color: #333333;
+		text-align: center;
+		margin-bottom: 40rpx;
+	}
+	
+	.lists-container {
+		max-height: 60vh;
+		overflow-y: auto;
+		margin: 20rpx 0;
+	}
+	
+	.empty-lists {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 40rpx 0;
+	}
+	
+	.create-list-btn {
+		margin-top: 20rpx;
+		color: #FFFFFF;
+		font-size: 28rpx;
+		padding: 10rpx 30rpx;
+		border-radius: 30rpx;
+	}
+	
+	.list-item {
+		display: flex;
+		align-items: center;
+		padding: 20rpx 0;
+		border-bottom: 1px solid #EEEEEE;
+	}
+	
+	.list-name {
+		margin-left: 20rpx;
+		font-size: 30rpx;
+	}
+	
+	.modal-btns {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 40rpx;
+	}
+	
+	.modal-btn {
+		width: 45%;
+		height: 80rpx;
+		line-height: 80rpx;
+		text-align: center;
+		border-radius: 8rpx;
+		font-size: 30rpx;
+	}
+	
+	.cancel-btn {
+		background-color: #F5F5F5;
+		color: #666666;
+	}
+	
+	.confirm-btn {
+		color: #FFFFFF;
 	}
 </style>

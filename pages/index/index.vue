@@ -22,10 +22,24 @@
       </view>
     </view>
     
-    <!-- 地图展示区 -->
-    <view class="map-showcase">
-      <image class="map-preview" src="/static/maps/hubei-season-map.png" mode="widthFix"></image>
-      <view class="map-caption">湖北省季平均日照时数</view>
+    <!-- 轮播图区域 -->
+    <view class="swiper-container">
+      <swiper 
+        class="swiper" 
+        circular 
+        autoplay 
+        interval="5000" 
+        duration="500" 
+        indicator-dots 
+        indicator-active-color="#2E8B57"
+      >
+        <swiper-item v-for="(item, index) in carouselItems" :key="index" @click="navigateToMap(item.id)">
+          <view class="swiper-item">
+            <image class="swiper-image" :src="item.image" mode="aspectFill"></image>
+            <view class="swiper-title">{{item.title}}</view>
+          </view>
+        </swiper-item>
+      </swiper>
     </view>
   </view>
 </template>
@@ -55,6 +69,28 @@ export default {
           title: "城市新篇",
           image: "/static/icons/topic-city.png"
         }
+      ],
+      carouselItems: [
+        {
+          id: "map1",
+          title: "湖北省地质图",
+          image: "/static/maps/hubei-season-map.png"
+        },
+        {
+          id: "map2",
+          title: "湖北省矿产分布图",
+          image: "/static/maps/hubei-mineral-map.png"
+        },
+        {
+          id: "map3",
+          title: "湖北省水域分布图",
+          image: "/static/maps/hubei-water-map.png"
+        },
+        {
+          id: "map4",
+          title: "湖北省生态功能区划图",
+          image: "/static/maps/hubei-ecology-map.png"
+        }
       ]
     }
   },
@@ -62,6 +98,11 @@ export default {
     navigateToTopic(topicId) {
       uni.navigateTo({
         url: '/pages/map/browse?topic_id=' + topicId
+      });
+    },
+    navigateToMap(mapId) {
+      uni.navigateTo({
+        url: '/pages/map/detail?id=' + mapId
       });
     }
   }
@@ -167,27 +208,40 @@ export default {
   padding: 15rpx 0 20rpx;
 }
 
-/* Map showcase styling */
-.map-showcase {
-  position: relative;
+/* Carousel/Swiper styling */
+.swiper-container {
   width: 90%;
+  height: 400rpx;
   margin: 30rpx auto;
-  background-color: rgba(255, 255, 255, 0.9);
   border-radius: 15rpx;
-  padding: 20rpx;
+  overflow: hidden;
   box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.1);
-  z-index: 1;
 }
 
-.map-preview {
+.swiper {
   width: 100%;
-  border-radius: 10rpx;
+  height: 100%;
 }
 
-.map-caption {
-  text-align: center;
+.swiper-item {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-image {
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 20rpx;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  color: #FFFFFF;
   font-size: 28rpx;
-  color: #666;
-  padding: 15rpx 0;
 }
 </style>
