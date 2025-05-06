@@ -1,7 +1,13 @@
 <template>
 	<view class="container">
-		<!-- 背景图层 -->
-		<image class="background-image" src="/static/background/center-bg.png" mode="aspectFill"></image>
+		<!-- Base solid color background -->
+		<view class="background-solid"></view>
+		
+		<!-- Top decorative background with gradient fade -->
+		<view class="background-image-container">
+			<image class="background-image-top" src="/static/background/hubei-landscape.png" mode="aspectFill"></image>
+			<view class="gradient-overlay"></view>
+		</view>
 		
 		<!-- 用户信息区域 -->
 		<view class="user-info-section">
@@ -219,20 +225,50 @@
 		padding-bottom: 30rpx;
 	}
 	
-	.background-image {
+	/* Base solid background color - light cream color */
+	.background-solid {
 		position: absolute;
 		top: 0;
 		left: 0;
 		width: 100%;
 		height: 100%;
+		background-color: #F9F7F2; /* Light cream background color */
+		z-index: -2;
+	}
+
+	/* Top background image container */
+	.background-image-container {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 45%; /* Controls how much of the screen the image covers */
 		z-index: -1;
-		opacity: 0.7;
+		overflow: hidden;
+	}
+
+	/* The actual background image */
+	.background-image-top {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	/* Gradient overlay for smooth transition */
+	.gradient-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		height: 40%; /* Height of the gradient fade */
+		background: linear-gradient(to bottom, rgba(249, 247, 242, 0) 0%, rgba(249, 247, 242, 1) 100%);
+		z-index: 1;
 	}
 	
 	/* 用户信息区域 */
 	.user-info-section {
 		padding: 50rpx 30rpx;
-		background: linear-gradient(to bottom, rgba(46, 139, 87, 0.7), rgba(60, 179, 113, 0.5));
+		background: linear-gradient(to bottom, rgba(46, 139, 87, 0.6), rgba(60, 179, 113, 0.5));
 		display: flex;
 		flex-direction: column;
 		align-items: center;
