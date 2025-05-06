@@ -9,6 +9,20 @@
       <view class="gradient-overlay"></view>
     </view>
     
+    <!-- Search Bar -->
+    <view class="search-container">
+      <view class="search-box">
+        <input 
+          class="search-input" 
+          placeholder="搜索" 
+          confirm-type="search"
+          @confirm="performSearch"
+          v-model="searchQuery"
+        />
+        <text v-if="searchQuery" class="clear-icon" @click="clearSearch">×</text>
+      </view>
+    </view>
+    
     <!-- 四大图组区域 -->
     <view class="topic-grid">
       <view 
@@ -48,6 +62,7 @@
 export default {
   data() {
     return {
+      searchQuery: '',
       topicList: [
         {
           id: "1",
@@ -90,15 +105,33 @@ export default {
     }
   },
   methods: {
-   navigateToTopic(topicId) {
-     uni.navigateTo({
-       url: '/pages/map/topic-intro?topic_id=' + topicId
-     });
-   },
+    navigateToTopic(topicId) {
+      uni.navigateTo({
+        url: '/pages/map/topic-intro?topic_id=' + topicId
+      });
+    },
     navigateToMap(mapId) {
       uni.navigateTo({
         url: '/pages/map/detail?id=' + mapId
       });
+    },
+    // Search related methods
+    performSearch() {
+      if (!this.searchQuery.trim()) {
+        uni.showToast({
+          title: '请输入搜索内容',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // Navigate to search results page with query
+      uni.navigateTo({
+        url: `/pages/map/search?query=${encodeURIComponent(this.searchQuery)}`
+      });
+    },
+    clearSearch() {
+      this.searchQuery = '';
     }
   }
 }
@@ -152,6 +185,45 @@ export default {
   z-index: 1;
 }
 
+/* Search Bar Styling */
+.search-container {
+  position: relative;
+  padding: 30rpx 20rpx;
+  z-index: 2;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.search-box {
+  height: 80rpx;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.search-icon {
+  font-size: 36rpx;
+  margin-right: 20rpx;
+  color: #666;
+}
+
+.search-input {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.clear-icon {
+  font-size: 36rpx;
+  color: #999;
+  padding: 0 10rpx;
+}
+
 /* Topic grid styling */
 .topic-grid {
   position: relative;
@@ -159,7 +231,7 @@ export default {
   flex-wrap: wrap;
   justify-content: center;
   padding: 40rpx 20rpx;
-  margin-top: 150rpx;
+  margin-top: 20rpx; /* Reduced from 150rpx to account for search bar */
   z-index: 1;
 }
 
@@ -206,8 +278,8 @@ export default {
 /* Carousel/Swiper styling */
 .swiper-container {
   width: 90%;
-  height: 400rpx;
-  margin: 30rpx auto;
+  height: 350rpx; /* Slightly reduced from 400rpx to fit better with search bar */
+  margin: 20rpx auto;
   border-radius: 15rpx;
   overflow: hidden;
   box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.1);
