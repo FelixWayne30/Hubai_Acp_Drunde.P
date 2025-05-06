@@ -335,5 +335,90 @@
 		font-size: 28rpx;
 	}
 	
-	/* 下载申请表单弹窗样式保持不变 */
+	.download-modal {
+	  position: fixed;
+	  top: 0;
+	  left: 0;
+	  right: 0;
+	  bottom: 0;
+	  background-color: rgba(0, 0, 0, 0.5);
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  z-index: 999;
+	}
+	
+	.modal-content {
+	  width: 80%;
+	  background-color: #FFFFFF;
+	  border-radius: 15rpx;
+	  padding: 40rpx 30rpx;
+	}
+	
+	.modal-title {
+	  font-size: 36rpx;
+	  font-weight: bold;
+	  color: #333333;
+	  text-align: center;
+	  margin-bottom: 40rpx;
+	}
+	
+	.form-item {
+	  margin-bottom: 30rpx;
+	}
+	
+	.form-label {
+	  font-size: 30rpx;
+	  color: #666666;
+	  margin-bottom: 15rpx;
+	}
+	
+	.form-input {
+	  width: 100%;
+	  height: 80rpx;
+	  border: 1px solid #EEEEEE;
+	  border-radius: 8rpx;
+	  padding: 0 20rpx;
+	  font-size: 28rpx;
+	}
+	
+	.form-textarea {
+	  width: 100%;
+	  height: 200rpx;
+	  border: 1px solid #EEEEEE;
+	  border-radius: 8rpx;
+	  padding: 20rpx;
+	  font-size: 28rpx;
+	}
+	
+	.word-count {
+	  text-align: right;
+	  font-size: 24rpx;
+	  color: #999999;
+	  margin-top: 10rpx;
+	}
+	
+	.modal-btns {
+	  display: flex;
+	  justify-content: space-between;
+	  margin-top: 40rpx;
+	}
+	
+	.modal-btn {
+	  width: 45%;
+	  height: 80rpx;
+	  line-height: 80rpx;
+	  text-align: center;
+	  border-radius: 8rpx;
+	  font-size: 30rpx;
+	}
+	
+	.cancel-btn {
+	  background-color: #F5F5F5;
+	  color: #666666;
+	}
+	
+	.confirm-btn {
+	  color: #FFFFFF;
+	}
 </style>
