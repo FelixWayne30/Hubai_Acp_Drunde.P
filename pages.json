@@ -31,17 +31,21 @@
 			}
 		},
 		{
-			"path" : "pages/user/downloads",
-			"style" : 
-			{
-				"navigationBarTitleText" : ""
+			"path": "pages/user/downloads",
+			"style": {
+				"navigationBarTitleText": "下载记录"
 			}
 		},
 		{
-			"path" : "pages/user/feedback",
-			"style" : 
-			{
-				"navigationBarTitleText" : ""
+			"path": "pages/user/custom-lists",
+			"style": {
+				"navigationBarTitleText": "自定义列表"
+			}
+		},
+		{
+			"path": "pages/user/list-detail",
+			"style": {
+				"navigationBarTitleText": "列表详情"
 			}
 		}
 	],

@@ -1,13 +1,24 @@
 <script>
 	export default {
 		onLaunch: function() {
-			console.log('App Launch')
+			console.log('App Launch');
+			
+			// 添加路由拦截器用于调试
+			uni.addInterceptor('navigateTo', {
+				invoke(e) {
+					console.log('navigateTo:', e.url);
+					return e;
+				},
+				fail(err) {
+					console.error('路由跳转失败:', err);
+				}
+			});
 		},
 		onShow: function() {
-			console.log('App Show')
+			console.log('App Show');
 		},
 		onHide: function() {
-			console.log('App Hide')
+			console.log('App Hide');
 		}
 	}
 </script>

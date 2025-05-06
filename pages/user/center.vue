@@ -1,10 +1,13 @@
 <template>
 	<view class="container">
+		<!-- 背景图层 -->
+		<image class="background-image" src="/static/background/center-bg.png" mode="aspectFill"></image>
+		
 		<!-- 用户信息区域 -->
 		<view class="user-info-section">
 			<view class="avatar-container" @click="uploadAvatar">
 				<image
-					class="avatar placeholder-image"
+					class="avatar"
 					:src="userInfo.avatar || '/static/avatar-placeholder.png'"
 				></image>
 				<view class="edit-icon">+</view>
@@ -22,13 +25,13 @@
 				<view class="function-arrow">></view>
 			</view>
 			
-			<view class="function-card" @click="navigateToDownloads">
-				<view class="function-title">下载记录</view>
+			<view class="function-card" @click="navigateToCustomLists">
+				<view class="function-title">自定义列表</view>
 				<view class="function-arrow">></view>
 			</view>
 			
-			<view class="function-card" @click="navigateToFeedback">
-				<view class="function-title">意见反馈</view>
+			<view class="function-card" @click="navigateToDownloads">
+				<view class="function-title">下载记录</view>
 				<view class="function-arrow">></view>
 			</view>
 			
@@ -102,19 +105,6 @@
 					success: (res) => {
 						const tempFilePath = res.tempFilePaths[0];
 						
-						// 模拟上传头像
-						// uni.uploadFile({
-						//   url: '/api/user/avatar',
-						//   filePath: tempFilePath,
-						//   name: 'avatar',
-						//   success: (uploadRes) => {
-						//     const data = JSON.parse(uploadRes.data);
-						//     this.userInfo.avatar = data.avatar;
-						//     // 更新本地存储
-						//     uni.setStorageSync('userInfo', JSON.stringify(this.userInfo));
-						//   }
-						// });
-						
 						// 模拟成功
 						this.userInfo.avatar = tempFilePath;
 						// 更新本地存储
@@ -147,21 +137,6 @@
 					});
 					return;
 				}
-				
-				// 模拟API调用
-				// uni.request({
-				//   url: '/api/user/nickname',
-				//   method: 'POST',
-				//   data: {
-				//     nickname: this.newNickname
-				//   },
-				//   success: () => {
-				//     this.userInfo.nickName = this.newNickname;
-				//     // 更新本地存储
-				//     uni.setStorageSync('userInfo', JSON.stringify(this.userInfo));
-				//     this.showEditModal = false;
-				//   }
-				// });
 				
 				// 模拟成功
 				this.userInfo.nickName = this.newNickname;
@@ -202,20 +177,18 @@
 			navigateToCollection() {
 				if (!this.checkLogin()) return;
 				
-				console.log('正在导航到收藏页面');
-				// 确保路径正确，并且使用通用的导航API
-				setTimeout(() => {
-					uni.navigateTo({
-						url: '/pages/user/collection',
-						fail: (err) => {
-							console.error('导航失败:', err);
-							// 尝试备用导航方法
-							wx.navigateTo({
-								url: '/pages/user/collection'
-							});
-						}
-					});
-				}, 100); // 添加延迟以确保UI已更新
+				uni.navigateTo({
+					url: '/pages/user/collection'
+				});
+			},
+			
+			// 导航到自定义列表页面
+			navigateToCustomLists() {
+				if (!this.checkLogin()) return;
+				
+				uni.navigateTo({
+					url: '/pages/user/custom-lists'
+				});
 			},
 			
 			// 导航到下载记录
@@ -224,13 +197,6 @@
 				
 				uni.navigateTo({
 					url: '/pages/user/downloads'
-				});
-			},
-			
-			// 导航到反馈页面
-			navigateToFeedback() {
-				uni.navigateTo({
-					url: '/pages/user/feedback'
 				});
 			},
 			
@@ -248,13 +214,25 @@
 
 <style>
 	.container {
+		position: relative;
+		min-height: 100vh;
 		padding-bottom: 30rpx;
+	}
+	
+	.background-image {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: -1;
+		opacity: 0.7;
 	}
 	
 	/* 用户信息区域 */
 	.user-info-section {
 		padding: 50rpx 30rpx;
-		background: linear-gradient(to bottom, #2E8B57, #3CB371);
+		background: linear-gradient(to bottom, rgba(46, 139, 87, 0.7), rgba(60, 179, 113, 0.5));
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -267,6 +245,7 @@
 		border-radius: 50%;
 		overflow: hidden;
 		margin-bottom: 20rpx;
+		border: 4rpx solid #FFFFFF;
 	}
 	
 	.avatar {
@@ -294,6 +273,7 @@
 		color: #FFFFFF;
 		display: flex;
 		align-items: center;
+		text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 	}
 	
 	.edit-name {
@@ -311,8 +291,8 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 30rpx 20rpx;
-		background-color: #FFFFFF;
-		border-radius: 10rpx;
+		background-color: rgba(255, 255, 255, 0.9);
+		border-radius: 15rpx;
 		margin-bottom: 20rpx;
 		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
 	}
