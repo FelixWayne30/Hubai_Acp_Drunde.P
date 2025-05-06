@@ -136,13 +136,38 @@
 			}
 		},
 		onLoad(options) {
-			this.topicId = options.topic_id || '';
-			this.getMaps();
-			
-			// 初始化WMTS配置
-			if (this.currentMap && this.currentMap.wmtsUrl) {
-				this.wmtsUrl = this.currentMap.wmtsUrl;
-			}
+		  this.topicId = options.topic_id || '';
+		  this.mapId = options.id || ''; // 添加mapId的获取
+		  this.getMaps();
+		  
+		  // 初始化WMTS配置
+		  if (this.currentMap && this.currentMap.wmtsUrl) {
+		    this.wmtsUrl = this.currentMap.wmtsUrl;
+		  }
+		  
+		  // 添加自定义返回按钮处理
+		  const pages = getCurrentPages();
+		  if (pages.length > 1) {
+		    // 获取上一个页面的路径
+		    const prevPage = pages[pages.length - 2];
+		    this.fromPage = prevPage.route;
+		    
+		    // 如果上一页不是专题介绍页，则修改为正确路径
+		    if (!this.fromPage.includes('topic-intro')) {
+		      this.fromPage = 'pages/map/topic-intro';
+		    }
+		  }
+		},
+		
+		// 添加自定义返回方法
+		goBack() {
+		  if (this.fromPage && this.fromPage.includes('topic-intro')) {
+		    uni.navigateTo({
+		      url: `/${this.fromPage}?topic_id=${this.topicId}`
+		    });
+		  } else {
+		    uni.navigateBack();
+		  }
 		},
 		methods: {
 			// 获取当前专题的所有图幅

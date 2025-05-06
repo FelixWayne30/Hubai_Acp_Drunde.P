@@ -95,11 +95,11 @@ export default {
     }
   },
   methods: {
-    navigateToTopic(topicId) {
-      uni.navigateTo({
-        url: '/pages/map/browse?topic_id=' + topicId
-      });
-    },
+   navigateToTopic(topicId) {
+     uni.navigateTo({
+       url: '/pages/map/topic-intro?topic_id=' + topicId
+     });
+   },
     navigateToMap(mapId) {
       uni.navigateTo({
         url: '/pages/map/detail?id=' + mapId

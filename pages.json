@@ -7,6 +7,12 @@
 			}
 		},
 		{
+			"path": "pages/map/topic-intro",
+			"style": {
+				"navigationBarTitleText": "专题介绍"
+			}
+		},
+		{
 			"path": "pages/map/browse",
 			"style": {
 				"navigationBarTitleText": "图幅浏览"
