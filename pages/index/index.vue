@@ -66,30 +66,25 @@ export default {
         },
         {
           id: "4",
-          title: "城市新篇",
+          title: "四水同治",
           image: "/static/icons/topic-city.png"
         }
       ],
       carouselItems: [
         {
           id: "map1",
-          title: "湖北省地质图",
-          image: "/static/maps/hubei-season-map.png"
+          title: "江河湖库",
+          image: "/static/maps/map-demo1.png"
         },
         {
           id: "map2",
-          title: "湖北省矿产分布图",
-          image: "/static/maps/hubei-mineral-map.png"
+          title: "水资源概况",
+          image: "/static/maps/map-demo2.png"
         },
         {
           id: "map3",
-          title: "湖北省水域分布图",
-          image: "/static/maps/hubei-water-map.png"
-        },
-        {
-          id: "map4",
-          title: "湖北省生态功能区划图",
-          image: "/static/maps/hubei-ecology-map.png"
+          title: "地表水",
+          image: "/static/maps/map-demo3.png"
         }
       ]
     }
