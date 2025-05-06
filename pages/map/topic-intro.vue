@@ -155,19 +155,19 @@ export default {
           {
             id: 'map4-1',
             title: '江河湖库概况',
-            thumbnail: '/static/maps/water-system.png',
+            thumbnail: '/static/maps/map-demo1.png',
             description: '详细展示湖北省境内的江河湖库水系分布情况，包括长江、汉江等主要河流流域范围，以及洪湖、梁子湖等重要湖泊水域面积与分布。图中标注了各流域之间的水系联系，主要水利枢纽工程位置，以及湖北省水资源总量与结构等关键数据。'
           },
           {
             id: 'map4-2',
             title: '水资源概况',
-            thumbnail: '/static/maps/water-resources.png',
+            thumbnail: '/static/maps/map-demo2.png',
             description: '展示湖北省水资源的分布特征与变化趋势，包括年均降水量分布、地表水资源量、地下水资源量以及可利用水资源总量等。图中以图表形式展示了近十年湖北省水资源变化情况，水资源开发利用现状以及各行业用水结构与效率分析。'
           },
           {
             id: 'map4-3',
             title: '地表水',
-            thumbnail: '/static/maps/surface-water.png',
+            thumbnail: '/static/maps/map-demo3.png',
             description: '详细呈现湖北省地表水空间分布与丰枯变化特征，通过等值线与色带结合的方式表达各区域地表水资源丰富程度。图中标注了主要河流的流量监测站点与历史数据，重点水源地分布，以及地表水水质分区与保护区域划分，为水资源合理配置与利用提供参考。'
           }
         ]

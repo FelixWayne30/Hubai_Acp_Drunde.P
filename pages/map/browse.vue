@@ -254,7 +254,6 @@
 			
 			// 提交下载申请
 			submitDownloadRequest() {
-				// 表单验证和提交代码...
 			}
 		}
 	}
