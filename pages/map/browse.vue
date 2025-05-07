@@ -17,22 +17,34 @@ export default {
     this.topicId = options.topic_id || '';
     this.mapId = options.id || '';
     
-    // Use your server's IP address instead of localhost for mini-program access
     this.webViewUrl = `http://localhost:2080/static/map-viewer.html?topic_id=${this.topicId}&map_id=${this.mapId}`;
-    console.log('Loading web-view URL:', this.webViewUrl);
+    console.log('加载web-view URL:', this.webViewUrl);
   },
   methods: {
     handleMessage(event) {
-      const data = event.detail;
+      console.log('收到web-view消息:', event);
       
-      switch (data.action) {
-        case 'viewDetail':
-          uni.navigateTo({
-            url: `/pages/map/detail?id=${data.mapId}&from=browse`
-          });
-          break;
+      try {
+        // 获取消息数据
+        const data = event.detail && event.detail.data;
+        console.log('解析后的消息数据:', data);
+        
+        if (data && data.action === 'viewDetail') {
+          console.log('准备跳转到详情页:', data.mapId);
           
-        case 'downloadRequest':
+          // 设置延迟确保消息处理完成
+          setTimeout(() => {
+            uni.navigateTo({
+              url: `/pages/map/detail?id=${data.mapId}&from=browse`,
+              success: () => {
+                console.log('跳转成功');
+              },
+              fail: (err) => {
+                console.error('跳转失败:', err);
+              }
+            });
+          }, 100);
+        } else if (data && data.action === 'downloadRequest') {
           uni.showLoading({
             title: '提交中...'
           });
@@ -43,8 +55,10 @@ export default {
               title: '申请已提交',
               icon: 'success'
             });
-          }, 1500);
-          break;
+          }, 1000);
+        }
+      } catch (e) {
+        console.error('处理消息时出错:', e);
       }
     }
   }

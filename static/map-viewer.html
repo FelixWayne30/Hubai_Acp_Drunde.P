@@ -469,9 +469,17 @@
       }
     }
     
-    // View map details
-    function viewMapDetail() {
-      // Send message to mini program
+    // View map details - 修复的函数
+  function viewMapDetail() {
+    try {
+      console.log("Navigating to detail page:", maps[currentIndex].id);
+      // Direct navigation method - this will close the web-view
+      wx.miniProgram.navigateTo({
+        url: `/pages/map/detail?id=${maps[currentIndex].id}&from=browse`
+      });
+    } catch (e) {
+      console.error("Navigation failed:", e);
+      // Fallback to message passing
       try {
         wx.miniProgram.postMessage({
           data: {
@@ -479,12 +487,12 @@
             mapId: maps[currentIndex].id
           }
         });
-      } catch (e) {
-        console.error("Error sending message to mini program:", e);
-        // Fallback for testing in browser
-        window.location.href = `detail.html?id=${maps[currentIndex].id}`;
+      } catch (error) {
+        console.error("Fallback also failed:", error);
+        alert("无法打开详情页，请返回小程序后重试");
       }
     }
+  }
     
     // Show download modal
     function showDownloadModal() {
@@ -527,7 +535,7 @@
           }
         });
       } catch (e) {
-        console.error("Error sending message to mini program:", e);
+        console.error("向小程序发送消息失败:", e);
         alert('申请已提交，我们会尽快处理！');
       }
       
