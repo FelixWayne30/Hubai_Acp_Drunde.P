@@ -25,7 +25,7 @@ export default {
       console.log('收到web-view消息:', event);
       
       try {
-        // 获取消息数据
+        // 获取消息数据。
         const data = event.detail && event.detail.data;
         console.log('解析后的消息数据:', data);
         
