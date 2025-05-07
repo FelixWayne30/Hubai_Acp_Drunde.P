@@ -2,47 +2,39 @@
 	<view class="container">
 		<!-- 图幅展示区域 -->
 		<view class="map-container">
-			<!-- WMTS地图层 -->
-			<web-view v-if="useWmts" :src="wmtsUrl" class="wmts-view"></web-view>
-			
-			<!-- 静态图片层 -->
-			<image
-				v-else
-				class="map-image placeholder-image"
-				:src="currentMap.image"
-				:style="{ transform: `scale(${scale}) translate(${translateX}px, ${translateY}px)` }"
-				@touchstart="handleTouchStart"
-				@touchmove="handleTouchMove"
-				@touchend="handleTouchEnd"
-			></image>
-			
-			<!-- 操作按钮组 -->
-			<view class="map-controls">
-				<!-- 恢复按钮 -->
-				<view class="control-btn reset-btn" @click="resetMapView">
-					<text class="iconfont">↺</text>
-				</view>
+			<!-- 使用原生地图组件 -->
+			<map 
+				id="mapView"
+				class="map-view"
+				:latitude="centerLatitude"
+				:longitude="centerLongitude"
+				:scale="mapScale"
+				:markers="markers"
+				:polyline="polyline"
+				:polygons="polygons"
+				:show-location="true"
+				:enable-zoom="true"
+				:enable-scroll="true"
+				@regionchange="onRegionChange"
+				@updated="onMapUpdated"
+			>
+				<!-- 叠加一个图层，显示GeoServer生成的地图图片 -->
+				<cover-image 
+					v-if="coverImageUrl" 
+					class="map-overlay" 
+					:src="coverImageUrl"
+				></cover-image>
 				
-				<!-- 放大按钮 -->
-				<view class="control-btn" @click="zoomIn">
-					<text class="iconfont">+</text>
-				</view>
+				<!-- 重置按钮 -->
+				<cover-view class="control-btn reset-btn" @tap="resetMapView">
+					<cover-view class="reset-icon">↺</cover-view>
+				</cover-view>
 				
-				<!-- 缩小按钮 -->
-				<view class="control-btn" @click="zoomOut">
-					<text class="iconfont">-</text>
-				</view>
-				
-				<!-- 图层切换按钮 -->
-				<view class="control-btn layer-toggle" @click="toggleMapLayer">
-					<text>{{useWmts ? '静态图' : 'WMTS'}}</text>
-				</view>
-			</view>
-			
-			<!-- 查看详情按钮 -->
-			<view class="detail-btn" @click="viewMapDetail">
-				<text>查看详情</text>
-			</view>
+				<!-- 查看详情按钮 -->
+				<cover-view class="detail-btn" @tap="viewMapDetail">
+					<cover-view class="detail-text">查看详情</cover-view>
+				</cover-view>
+			</map>
 		</view>
 		
 		<!-- 工具栏 -->
@@ -50,7 +42,7 @@
 			<button 
 				class="tool-btn" 
 				:disabled="currentIndex <= 0"
-				@click="prevMap"
+				@tap="prevMap"
 			>上一张</button>
 			
 			<view class="map-title">
@@ -60,7 +52,7 @@
 			<button 
 				class="tool-btn" 
 				:disabled="currentIndex >= maps.length - 1"
-				@click="nextMap"
+				@tap="nextMap"
 			>下一张</button>
 		</view>
 		
@@ -68,7 +60,7 @@
 		<view class="download-bar">
 			<button 
 				class="download-btn primary-bg"
-				@click="showDownloadForm"
+				@tap="showDownloadForm"
 			>申请下载此图</button>
 		</view>
 		
@@ -96,8 +88,8 @@
 					<view class="word-count">{{downloadReason.length}}/50</view>
 				</view>
 				<view class="modal-btns">
-					<button class="modal-btn cancel-btn" @click="hideDownloadForm">取消</button>
-					<button class="modal-btn confirm-btn primary-bg" @click="submitDownloadRequest">提交</button>
+					<button class="modal-btn cancel-btn" @tap="hideDownloadForm">取消</button>
+					<button class="modal-btn confirm-btn primary-bg" @tap="submitDownloadRequest">提交</button>
 				</view>
 			</view>
 		</view>
@@ -109,43 +101,59 @@
 		data() {
 			return {
 				topicId: '',
-				topicTitle: '地质资源',
 				currentIndex: 0,
+				// 地图控制参数
+				centerLatitude: 30.5928, // 湖北省中心点纬度（大约）
+				centerLongitude: 114.3055, // 湖北省中心点经度（大约）
+				mapScale: 5, // 地图缩放级别，值越大越详细
+				initialScale: 5, // 保存初始缩放级别
+				// 地图元素
+				markers: [],
+				polyline: [],
+				polygons: [],
 				// 图幅数据（示例数据）
 				maps: [
 					{
 						id: '1',
 						title: '湖北省地质图',
-						image: '/static/maps/hubei-geology.png',
-						wmtsUrl: 'https://map.service.com/wmts/geology'
+						layerName: 'hubei:1-1春夏秋冬0331',
+						// 定义每个地图的边界范围，实际应从GeoServer获取
+						bounds: {
+							north: 33.2698, // 北纬
+							south: 29.0500, // 南纬
+							east: 116.1221, // 东经
+							west: 108.3838 // 西经
+						}
 					},
 					{
 						id: '2',
 						title: '湖北省矿产分布图',
-						image: '/static/maps/hubei-mineral-map.png',
-						wmtsUrl: 'https://map.service.com/wmts/mineral'
+						layerName: 'hubei:矿产分布图',
+						bounds: {
+							north: 33.2698,
+							south: 29.0500,
+							east: 116.1221,
+							west: 108.3838
+						}
 					},
 					{
 						id: '3',
 						title: '湖北省地貌类型图',
-						image: '/static/maps/hubei-terrain.png',
-						wmtsUrl: 'https://map.service.com/wmts/terrain'
+						layerName: 'hubei:地貌类型图',
+						bounds: {
+							north: 33.2698,
+							south: 29.0500,
+							east: 116.1221,
+							west: 108.3838
+						}
 					}
 				],
-				// WMTS配置
-				useWmts: false,
-				wmtsUrl: '',
-				// 图片缩放和平移状态
-				scale: 1,
-				minScale: 0.5,
-				maxScale: 3,
-				scaleStep: 0.2,
-				translateX: 0,
-				translateY: 0,
-				// 触摸事件相关变量
-				lastTouchDistance: 0,
-				lastTouchX: 0,
-				lastTouchY: 0,
+				// GeoServer配置
+				geoserverUrl: 'http://192.168.50.133:8080/geoserver/hubei/wms',
+				// 覆盖图片URL
+				coverImageUrl: '',
+				// 地图状态
+				isMapLoaded: false,
 				// 下载申请表单
 				showModal: false,
 				downloadReason: '',
@@ -159,74 +167,115 @@
 		},
 		onLoad(options) {
 			this.topicId = options.topic_id || '';
-			this.mapId = options.id || ''; // 添加mapId的获取
+			this.mapId = options.id || '';
 			
 			// 如果指定了特定mapId，则定位到该图幅
 			if (this.mapId) {
 				const index = this.maps.findIndex(map => map.id === this.mapId);
 				if (index !== -1) {
 					this.currentIndex = index;
+					// 设置地图初始中心点和边界范围
+					this.setMapBounds();
 				}
 			}
 			
 			this.getMaps();
-			
-			// 初始化WMTS配置
-			if (this.currentMap && this.currentMap.wmtsUrl) {
-				this.wmtsUrl = this.currentMap.wmtsUrl;
-			}
-			
-			// 添加自定义返回按钮处理
-			const pages = getCurrentPages();
-			if (pages.length > 1) {
-				// 获取上一个页面的路径
-				const prevPage = pages[pages.length - 2];
-				this.fromPage = prevPage.route;
-				
-				// 如果上一页不是专题介绍页，则修改为正确路径
-				if (!this.fromPage.includes('topic-intro')) {
-					this.fromPage = 'pages/map/topic-intro';
-				}
-			}
+			this.updateCoverImage();
+		},
+		onReady() {
+			// 地图组件准备就绪后的处理
+			this.isMapLoaded = true;
+			// 创建地图上下文
+			this.mapContext = uni.createMapContext('mapView', this);
+			// 设置初始边界
+			this.setMapBounds();
 		},
 		methods: {
 			// 获取当前专题的所有图幅
 			getMaps() {
 				console.log('获取图幅列表，专题ID:', this.topicId);
 				// API调用代码...
-				// uni.request({
-				//   url: `/api/topics/${this.topicId}/maps`,
-				//   success: (res) => {
-				//     this.maps = res.data.maps;
-				//     if (this.mapId) {
-				//       const index = this.maps.findIndex(map => map.id === this.mapId);
-				//       if (index !== -1) {
-				//         this.currentIndex = index;
-				//       }
-				//     }
-				//     if (this.useWmts && this.currentMap && this.currentMap.wmtsUrl) {
-				//       this.wmtsUrl = this.currentMap.wmtsUrl;
-				//     }
-				//   }
-				// });
+				// 这里添加实际API调用逻辑
 			},
 			
-			// 切换地图图层显示模式
-			toggleMapLayer() {
-				this.useWmts = !this.useWmts;
-				if (this.useWmts && this.currentMap.wmtsUrl) {
-					this.wmtsUrl = this.currentMap.wmtsUrl;
+			// 根据当前选中的地图设置地图视图范围
+			setMapBounds() {
+				if (!this.currentMap || !this.currentMap.bounds) return;
+				
+				const bounds = this.currentMap.bounds;
+				// 计算中心点
+				this.centerLatitude = (bounds.north + bounds.south) / 2;
+				this.centerLongitude = (bounds.east + bounds.west) / 2;
+				
+				// 根据边界计算合适的缩放级别
+				// 这是一个简单的算法，实际可能需要调整
+				const latDiff = bounds.north - bounds.south;
+				const lngDiff = bounds.east - bounds.west;
+				const maxDiff = Math.max(latDiff, lngDiff);
+				
+				// 缩放级别反比于边界大小
+				this.mapScale = Math.max(5, Math.min(18, Math.round(14 - Math.log2(maxDiff * 10))));
+				this.initialScale = this.mapScale;
+				
+				// 如果地图已加载，调用地图方法进行缩放
+				if (this.isMapLoaded && this.mapContext) {
+					this.mapContext.includePoints({
+						points: [
+							{ latitude: bounds.north, longitude: bounds.west },
+							{ latitude: bounds.north, longitude: bounds.east },
+							{ latitude: bounds.south, longitude: bounds.west },
+							{ latitude: bounds.south, longitude: bounds.east }
+						],
+						padding: [50, 50, 50, 50]
+					});
 				}
+			},
+			
+			// 更新覆盖图片URL
+			updateCoverImage() {
+				if (!this.currentMap || !this.currentMap.layerName) {
+					this.coverImageUrl = '';
+					return;
+				}
+				
+				// 构建WMS请求URL，获取当前图层的图像
+				// 注意：由于不能动态调整覆盖图片大小，这种方式可能会有显示问题
+				// 实际应用中可能需要更复杂的方案
+				const width = 1000; // 足够大的宽度以保持清晰度
+				const height = 800; // 足够大的高度以保持清晰度
+				
+				if (this.currentMap && this.currentMap.bounds) {
+					const bounds = this.currentMap.bounds;
+					const bbox = `${bounds.west},${bounds.south},${bounds.east},${bounds.north}`;
+					
+					this.coverImageUrl = `${this.geoserverUrl}?service=WMS&version=1.1.0&request=GetMap&layers=${this.currentMap.layerName}&bbox=${bbox}&width=${width}&height=${height}&srs=EPSG:4326&styles=&format=image/png&transparent=false`;
+				}
+			},
+			
+			// 地图区域变化事件
+			onRegionChange(e) {
+				console.log('地图区域变化:', e);
+			},
+			
+			// 地图更新事件
+			onMapUpdated(e) {
+				console.log('地图已更新:', e);
+			},
+			
+			// 重置地图视图
+			resetMapView() {
+				if (!this.mapContext) return;
+				
+				// 重置到初始状态
+				this.setMapBounds();
 			},
 			
 			// 上一张图
 			prevMap() {
 				if (this.currentIndex > 0) {
 					this.currentIndex--;
-					this.resetMapView();
-					if (this.useWmts && this.currentMap.wmtsUrl) {
-						this.wmtsUrl = this.currentMap.wmtsUrl;
-					}
+					this.setMapBounds();
+					this.updateCoverImage();
 				}
 			},
 			
@@ -234,30 +283,8 @@
 			nextMap() {
 				if (this.currentIndex < this.maps.length - 1) {
 					this.currentIndex++;
-					this.resetMapView();
-					if (this.useWmts && this.currentMap.wmtsUrl) {
-						this.wmtsUrl = this.currentMap.wmtsUrl;
-					}
-				}
-			},
-			
-			// 重置图片视图
-			resetMapView() {
-				this.scale = 1;
-				this.translateX = 0;
-				this.translateY = 0;
-			},
-			
-			// 缩放控制
-			zoomIn() {
-				if (this.scale < this.maxScale) {
-					this.scale = Math.min(this.maxScale, this.scale + this.scaleStep);
-				}
-			},
-			
-			zoomOut() {
-				if (this.scale > this.minScale) {
-					this.scale = Math.max(this.minScale, this.scale - this.scaleStep);
+					this.setMapBounds();
+					this.updateCoverImage();
 				}
 			},
 			
@@ -266,76 +293,6 @@
 				uni.navigateTo({
 					url: `/pages/map/detail?id=${this.currentMap.id}`
 				});
-			},
-			
-			// 处理触摸开始事件
-			handleTouchStart(e) {
-				const touches = e.touches;
-				
-				// 双指缩放
-				if (touches.length === 2) {
-					const touch1 = touches[0];
-					const touch2 = touches[1];
-					this.lastTouchDistance = Math.sqrt(
-						Math.pow(touch2.pageX - touch1.pageX, 2) +
-						Math.pow(touch2.pageY - touch1.pageY, 2)
-					);
-				} 
-				// 单指平移
-				else if (touches.length === 1) {
-					this.lastTouchX = touches[0].pageX;
-					this.lastTouchY = touches[0].pageY;
-				}
-			},
-			
-			// 处理触摸移动事件
-			handleTouchMove(e) {
-				const touches = e.touches;
-				
-				// 双指缩放
-				if (touches.length === 2) {
-					const touch1 = touches[0];
-					const touch2 = touches[1];
-					const currentDistance = Math.sqrt(
-						Math.pow(touch2.pageX - touch1.pageX, 2) +
-						Math.pow(touch2.pageY - touch1.pageY, 2)
-					);
-					
-					if (this.lastTouchDistance > 0) {
-						// 计算新的缩放比例
-						let newScale = this.scale * (currentDistance / this.lastTouchDistance);
-						
-						// 限制缩放范围
-						newScale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
-						this.scale = newScale;
-					}
-					
-					this.lastTouchDistance = currentDistance;
-				} 
-				// 单指平移 - 仅在图片放大状态下允许平移
-				else if (touches.length === 1 && this.scale > 1) {
-					const currentX = touches[0].pageX;
-					const currentY = touches[0].pageY;
-					
-					// 计算新的平移位置
-					const deltaX = (currentX - this.lastTouchX) / this.scale;
-					const deltaY = (currentY - this.lastTouchY) / this.scale;
-					
-					// 限制平移范围 - 根据缩放比例计算最大平移距离
-					const maxTranslateX = 100 * (this.scale - 1); // 这个值可以根据实际情况调整
-					const maxTranslateY = 100 * (this.scale - 1);
-					
-					this.translateX = Math.max(-maxTranslateX, Math.min(maxTranslateX, this.translateX + deltaX));
-					this.translateY = Math.max(-maxTranslateY, Math.min(maxTranslateY, this.translateY + deltaY));
-					
-					this.lastTouchX = currentX;
-					this.lastTouchY = currentY;
-				}
-			},
-			
-			// 处理触摸结束事件
-			handleTouchEnd() {
-				this.lastTouchDistance = 0;
 			},
 			
 			// 显示下载申请表单
@@ -376,32 +333,6 @@
 				});
 				
 				// 模拟API调用
-				// uni.request({
-				//   url: '/api/maps/download-request',
-				//   method: 'POST',
-				//   data: {
-				//     mapId: this.currentMap.id,
-				//     email: this.userEmail,
-				//     reason: this.downloadReason
-				//   },
-				//   success: () => {
-				//     uni.hideLoading();
-				//     uni.showToast({
-				//       title: '申请已提交',
-				//       icon: 'success'
-				//     });
-				//     this.hideDownloadForm();
-				//   },
-				//   fail: () => {
-				//     uni.hideLoading();
-				//     uni.showToast({
-				//       title: '提交失败，请重试',
-				//       icon: 'none'
-				//     });
-				//   }
-				// });
-				
-				// 模拟API响应
 				setTimeout(() => {
 					uni.hideLoading();
 					uni.showToast({
@@ -429,53 +360,44 @@
 		flex: 1;
 		background-color: #F8F8F8;
 		overflow: hidden;
-		display: flex;
-		justify-content: center;
-		align-items: center;
 	}
 	
-	.map-image {
-		max-width: 100%;
-		max-height: 100%;
-		width: auto;
-		height: auto;
-		transition: transform 0.05s ease;
-		transform-origin: center;
-	}
-	
-	.wmts-view {
+	.map-view {
 		width: 100%;
 		height: 100%;
 	}
 	
-	/* 控制按钮组 */
-	.map-controls {
+	/* 地图覆盖层图像 */
+	.map-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0.7; /* 设置透明度便于看到底图 */
+		pointer-events: none; /* 确保覆盖层不阻挡交互 */
+	}
+	
+	/* 控制按钮 */
+	.control-btn {
 		position: absolute;
 		top: 20rpx;
 		right: 20rpx;
-		display: flex;
-		flex-direction: column;
-		gap: 15rpx;
-		z-index: 10;
-	}
-	
-	.control-btn {
 		width: 80rpx;
 		height: 80rpx;
 		border-radius: 50%;
 		background-color: rgba(46, 139, 87, 0.8);
-		color: #FFFFFF;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 40rpx;
+		z-index: 10;
 	}
 	
-	.layer-toggle {
-		font-size: 24rpx;
-		width: auto;
-		padding: 0 15rpx;
-		border-radius: 30rpx;
+	.reset-icon {
+		color: white;
+		font-size: 40rpx;
+		text-align: center;
+		line-height: 80rpx;
 	}
 	
 	.detail-btn {
@@ -484,11 +406,15 @@
 		right: 30rpx;
 		padding: 15rpx 30rpx;
 		background-color: rgba(46, 139, 87, 0.9);
-		color: #FFFFFF;
 		border-radius: 30rpx;
-		font-size: 28rpx;
 		z-index: 10;
 		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.2);
+	}
+	
+	.detail-text {
+		color: white;
+		font-size: 28rpx;
+		text-align: center;
 	}
 	
 	/* 工具栏 */
