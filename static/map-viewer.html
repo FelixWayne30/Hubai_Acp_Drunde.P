@@ -1,133 +1,558 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>湖北地图查看器</title>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        #map {
-            width: 100%;
-            height: 100%;
-            background: #f8f8f8;
-        }
-        /* 不需要重置按钮，因为在小程序端已有 */
-    </style>
-   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
-   <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>湖北省地图浏览</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 
+        Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+    }
+    #map {
+      height: calc(100% - 130px);
+      width: 100%;
+      background-color: #f3f3f3;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background-color: #FFFFFF;
+      border-top: 1px solid #EEEEEE;
+      height: 45px;
+    }
+    .tool-btn {
+      width: 80px;
+      height: 35px;
+      line-height: 35px;
+      font-size: 14px;
+      border-radius: 5px;
+      color: #2E8B57;
+      border: 1px solid #2E8B57;
+      background-color: #FFFFFF;
+      text-align: center;
+      cursor: pointer;
+    }
+    .tool-btn:disabled {
+      color: #CCCCCC;
+      border-color: #EEEEEE;
+      background-color: #F8F8F8;
+      cursor: not-allowed;
+    }
+    .map-title {
+      flex: 1;
+      text-align: center;
+      font-size: 15px;
+      font-weight: bold;
+      color: #333333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 10px;
+    }
+    .download-bar {
+      padding: 10px 15px;
+      background-color: #FFFFFF;
+      border-top: 1px solid #EEEEEE;
+      display: flex;
+      justify-content: center;
+      height: 40px;
+    }
+    .download-btn {
+      width: 100%;
+      height: 40px;
+      line-height: 40px;
+      font-size: 15px;
+      color: #FFFFFF;
+      background-color: #2E8B57;
+      border-radius: 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .detail-btn {
+      position: absolute;
+      bottom: 160px;
+      right: 15px;
+      padding: 8px 15px;
+      background-color: rgba(46, 139, 87, 0.9);
+      border-radius: 15px;
+      z-index: 1000;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+    }
+    .detail-text {
+      color: white;
+      font-size: 14px;
+      text-align: center;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal-content {
+      width: 80%;
+      background-color: #FFFFFF;
+      border-radius: 15px;
+      padding: 20px 15px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333333;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .form-item {
+      margin-bottom: 15px;
+    }
+    .form-label {
+      font-size: 15px;
+      color: #666666;
+      margin-bottom: 8px;
+    }
+    .form-input {
+      width: 100%;
+      height: 40px;
+      border: 1px solid #EEEEEE;
+      border-radius: 4px;
+      padding: 0 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-textarea {
+      width: 100%;
+      height: 100px;
+      border: 1px solid #EEEEEE;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .word-count {
+      text-align: right;
+      font-size: 12px;
+      color: #999999;
+      margin-top: 5px;
+    }
+    .modal-btns {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    .modal-btn {
+      width: 45%;
+      height: 40px;
+      line-height: 40px;
+      text-align: center;
+      border-radius: 4px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .cancel-btn {
+      background-color: #F5F5F5;
+      color: #666666;
+    }
+    .confirm-btn {
+      background-color: #2E8B57;
+      color: #FFFFFF;
+    }
+    .loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .loading-text {
+      font-size: 16px;
+      color: #2E8B57;
+      background-color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+  </style>
 </head>
 <body>
-    <div id="map"></div>
-
-    <script>
-        // 获取URL参数
-        const urlParams = new URLSearchParams(window.location.search);
-        const layerName = urlParams.get('layer') || 'hubei:1-1春夏秋冬0331';
-        const serverUrl = urlParams.get('server') || 'http://192.168.50.133:8080/geoserver/hubei/wms';
-        
-        // 创建WMS图层
-        const wmsLayer = new ol.layer.Image({
-            source: new ol.source.ImageWMS({
-                url: serverUrl,
-                params: {
-                    'LAYERS': layerName,
-                    'FORMAT': 'image/png',
-                    'VERSION': '1.1.0'
-                },
-                ratio: 1,
-                serverType: 'geoserver'
-            })
-        });
-
-        // 创建地图视图
-        const view = new ol.View({
-            center: [0, 0],
-            zoom: 2,
-            projection: 'EPSG:4326'
-        });
-
-        // 创建地图
-        const map = new ol.Map({
-            target: 'map',
-            layers: [wmsLayer],
-            view: view
-        });
-
-        // 初始化时自动缩放到图层范围
-        function fitToLayer() {
-            fetch(serverUrl + '?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetCapabilities')
-                .then(response => response.text())
-                .then(text => {
-                    const parser = new ol.format.WMSCapabilities();
-                    const capabilities = parser.read(text);
-                    
-                    // 尝试查找图层边界
-                    const layers = capabilities.Capability.Layer.Layer;
-                    let targetLayer;
-                    
-                    for (let layer of layers) {
-                        if (layer.Name === layerName) {
-                            targetLayer = layer;
-                            break;
-                        }
-                    }
-                    
-                    if (targetLayer && targetLayer.BoundingBox) {
-                        const bbox = targetLayer.BoundingBox[0].extent;
-                        const extent = [bbox[0], bbox[1], bbox[2], bbox[3]];
-                        view.fit(extent, { padding: [20, 20, 20, 20], maxZoom: 19 });
-                    } else {
-                        // 如果没有找到边界，使用湖北省的大致范围
-                        view.fit([108.3838, 29.0500, 116.1221, 33.2698], { padding: [20, 20, 20, 20] });
-                    }
-                    
-                    // 通知小程序地图已加载完成
-                    notifyAppMapReady();
-                })
-                .catch(error => {
-                    console.error('获取图层信息出错:', error);
-                    // 使用湖北省的大致范围作为后备
-                    view.fit([108.3838, 29.0500, 116.1221, 33.2698], { padding: [20, 20, 20, 20] });
-                    notifyAppMapReady();
-                });
+  <div id="map"></div>
+  
+  <!-- Loading indicator -->
+  <div class="loading" id="loadingIndicator">
+    <div class="loading-text">地图加载中...</div>
+  </div>
+  
+  <!-- Detail button -->
+  <div class="detail-btn" id="detailBtn">
+    <div class="detail-text">查看详情</div>
+  </div>
+  
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="tool-btn" id="prevBtn" disabled>上一张</button>
+    <div class="map-title" id="mapTitle">地图图幅</div>
+    <button class="tool-btn" id="nextBtn">下一张</button>
+  </div>
+  
+  <!-- Download bar -->
+  <div class="download-bar">
+    <div class="download-btn" id="downloadBtn">申请下载此图</div>
+  </div>
+  
+  <!-- Download modal -->
+  <div class="modal" id="downloadModal">
+    <div class="modal-content">
+      <div class="modal-title">下载申请</div>
+      <div class="form-item">
+        <div class="form-label">邮箱地址</div>
+        <input 
+          class="form-input" 
+          id="emailInput"
+          placeholder="请输入您的邮箱地址"
+          type="text"
+        />
+      </div>
+      <div class="form-item">
+        <div class="form-label">申请理由</div>
+        <textarea 
+          class="form-textarea" 
+          id="reasonInput"
+          placeholder="请输入申请理由（50字以内）"
+          maxlength="50"
+        ></textarea>
+        <div class="word-count"><span id="wordCount">0</span>/50</div>
+      </div>
+      <div class="modal-btns">
+        <div class="modal-btn cancel-btn" id="cancelBtn">取消</div>
+        <div class="modal-btn confirm-btn" id="submitBtn">提交</div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Maps data
+    const maps = [
+      {
+        id: '1',
+        title: '湖北省地质图',
+        layerName: 'hubei:1-1春夏秋冬0331',
+        bounds: [
+          [29.0500, 108.3838], // Southwest
+          [33.2698, 116.1221]  // Northeast
+        ]
+      },
+      {
+        id: '2',
+        title: '湖北省矿产分布图',
+        layerName: 'hubei:矿产分布图',
+        bounds: [
+          [29.0500, 108.3838],
+          [33.2698, 116.1221]
+        ]
+      },
+      {
+        id: '3',
+        title: '湖北省地貌类型图',
+        layerName: 'hubei:地貌类型图',
+        bounds: [
+          [29.0500, 108.3838],
+          [33.2698, 116.1221]
+        ]
+      }
+    ];
+    
+    // GeoServer configuration
+    const geoserverUrl = 'http://192.168.50.133:8080/geoserver/hubei/wms';
+    
+    // Current state
+    let currentIndex = 0;
+    let map;
+    let wmsLayer;
+    
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const topicId = urlParams.get('topic_id') || '';
+    const mapId = urlParams.get('map_id') || '';
+    
+    // Initialize map
+    function initMap() {
+      // Show loading indicator
+      document.getElementById('loadingIndicator').style.display = 'flex';
+      
+      // Set initial map if specific ID provided
+      if (mapId) {
+        const index = maps.findIndex(item => item.id === mapId);
+        if (index !== -1) {
+          currentIndex = index;
         }
-        
-        // 通知小程序地图已准备好
-        function notifyAppMapReady() {
-            if (window.uni) {
-                window.uni.postMessage({
-                    data: {
-                        action: 'mapReady',
-                        layerName: layerName
-                    }
-                });
+      }
+      
+      // Try to get WMS capabilities to determine projection
+      fetch(geoserverUrl + '?SERVICE=WMS&REQUEST=GetCapabilities')
+        .then(response => response.text())
+        .then(text => {
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(text, "text/xml");
+          
+          // Find the layer's CRS
+          let crs = "EPSG:4326"; // Default fallback
+          
+          try {
+            // Try to find the specific layer's CRS
+            const layers = xmlDoc.getElementsByTagName("Layer");
+            for (let i = 0; i < layers.length; i++) {
+              const nameElements = layers[i].getElementsByTagName("Name");
+              if (nameElements.length > 0 && nameElements[0].textContent === maps[currentIndex].layerName) {
+                const crsElements = layers[i].getElementsByTagName("CRS");
+                if (crsElements.length > 0) {
+                  crs = crsElements[0].textContent;
+                  break;
+                }
+                
+                // Check for older SRS tag
+                const srsElements = layers[i].getElementsByTagName("SRS");
+                if (srsElements.length > 0) {
+                  crs = srsElements[0].textContent;
+                  break;
+                }
+              }
             }
-        }
-        
-        // 监听来自小程序的消息
-        window.addEventListener('message', function(e) {
-            let message;
+          } catch (e) {
+            console.error("Error parsing layer CRS:", e);
+          }
+          
+          console.log("Using CRS:", crs);
+          
+          // Create map with appropriate CRS
+          let mapCRS;
+          if (crs === "EPSG:4326") {
+            mapCRS = L.CRS.EPSG4326;
+          } else if (crs === "EPSG:3857") {
+            mapCRS = L.CRS.EPSG3857;
+          } else if (crs.startsWith("EPSG:")) {
+            // For other EPSG codes, try to create a custom CRS
             try {
-                message = e.data;
-            } catch (error) {
-                console.error('解析消息失败:', error);
-                return;
+              // You'd need the proper projection definition here
+              const epsgCode = crs.split(":")[1];
+              const projDef = proj4.defs[crs] || proj4.defs["EPSG:"+epsgCode];
+              if (projDef) {
+                mapCRS = new L.Proj.CRS(crs, projDef, {
+                  resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5]
+                });
+              } else {
+                console.warn("Projection definition not found for", crs, "using EPSG:4326");
+                mapCRS = L.CRS.EPSG4326;
+              }
+            } catch (e) {
+              console.error("Error creating custom CRS:", e);
+              mapCRS = L.CRS.EPSG4326;
             }
-            
-            // 如果是重置命令
-            if (message === 'reset' || (message.data && message.data === 'reset')) {
-                fitToLayer();
-            }
+          } else {
+            console.warn("Unsupported CRS:", crs, "using EPSG:4326");
+            mapCRS = L.CRS.EPSG4326;
+          }
+          
+          // Initialize the map with the determined CRS
+          map = L.map('map', {
+            crs: mapCRS,
+            attributionControl: false,
+            zoomControl: true
+          });
+          
+          // Load the WMS layer
+          loadCurrentMap();
+          
+          // Update UI
+          updateUI();
+          
+          // Fix for mobile - invalidate size after a short delay
+          setTimeout(function() {
+            map.invalidateSize();
+            document.getElementById('loadingIndicator').style.display = 'none';
+          }, 500);
+        })
+        .catch(error => {
+          console.error("Error fetching WMS capabilities:", error);
+          
+          // Fallback to EPSG:4326
+          map = L.map('map', {
+            crs: L.CRS.EPSG4326,
+            attributionControl: false,
+            zoomControl: true
+          });
+          
+          loadCurrentMap();
+          updateUI();
+          
+          setTimeout(function() {
+            map.invalidateSize();
+            document.getElementById('loadingIndicator').style.display = 'none';
+          }, 500);
         });
-        
-        // 页面加载完成后适应图层范围
-        window.onload = fitToLayer;
-    </script>
+    }
+    
+    // Load current map WMS layer
+    function loadCurrentMap() {
+      const currentMap = maps[currentIndex];
+      
+      // Update title
+      document.getElementById('mapTitle').textContent = currentMap.title;
+      
+      // Remove existing WMS layer if any
+      if (wmsLayer && map.hasLayer(wmsLayer)) {
+        map.removeLayer(wmsLayer);
+      }
+      
+      // Add new WMS layer
+      wmsLayer = L.tileLayer.wms(geoserverUrl, {
+        layers: currentMap.layerName,
+        format: 'image/png',
+        transparent: true,
+        version: '1.1.0',
+        tiled: true,
+        crs: map.options.crs // Use the map's CRS for the WMS request
+      }).addTo(map);
+      
+      // Set map view to the bounds of current map
+      try {
+        map.fitBounds(currentMap.bounds);
+      } catch (e) {
+        console.error("Error fitting to bounds:", e);
+        map.setView([31.1000, 112.2500], 7);
+      }
+    }
+    
+    // Update UI based on current state
+    function updateUI() {
+      // Update buttons
+      document.getElementById('prevBtn').disabled = (currentIndex <= 0);
+      document.getElementById('nextBtn').disabled = (currentIndex >= maps.length - 1);
+    }
+    
+    // Navigate to previous map
+    function prevMap() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        loadCurrentMap();
+        updateUI();
+      }
+    }
+    
+    // Navigate to next map
+    function nextMap() {
+      if (currentIndex < maps.length - 1) {
+        currentIndex++;
+        loadCurrentMap();
+        updateUI();
+      }
+    }
+    
+    // View map details
+    function viewMapDetail() {
+      // Send message to mini program
+      try {
+        wx.miniProgram.postMessage({
+          data: {
+            action: 'viewDetail',
+            mapId: maps[currentIndex].id
+          }
+        });
+      } catch (e) {
+        console.error("Error sending message to mini program:", e);
+        // Fallback for testing in browser
+        window.location.href = `detail.html?id=${maps[currentIndex].id}`;
+      }
+    }
+    
+    // Show download modal
+    function showDownloadModal() {
+      document.getElementById('downloadModal').style.display = 'flex';
+      document.getElementById('emailInput').value = '';
+      document.getElementById('reasonInput').value = '';
+      document.getElementById('wordCount').textContent = '0';
+    }
+    
+    // Hide download modal
+    function hideDownloadModal() {
+      document.getElementById('downloadModal').style.display = 'none';
+    }
+    
+    // Submit download request
+    function submitDownloadRequest() {
+      const email = document.getElementById('emailInput').value.trim();
+      const reason = document.getElementById('reasonInput').value.trim();
+      
+      // Validate email
+      if (!email || !/^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/.test(email)) {
+        alert('请输入有效的邮箱地址');
+        return;
+      }
+      
+      // Validate reason
+      if (!reason) {
+        alert('请输入申请理由');
+        return;
+      }
+      
+      // Send message to mini program
+      try {
+        wx.miniProgram.postMessage({
+          data: {
+            action: 'downloadRequest',
+            email: email,
+            reason: reason,
+            mapId: maps[currentIndex].id
+          }
+        });
+      } catch (e) {
+        console.error("Error sending message to mini program:", e);
+        alert('申请已提交，我们会尽快处理！');
+      }
+      
+      // Hide modal
+      hideDownloadModal();
+    }
+    
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize map
+      initMap();
+      
+      // Button event listeners
+      document.getElementById('detailBtn').addEventListener('click', viewMapDetail);
+      document.getElementById('prevBtn').addEventListener('click', prevMap);
+      document.getElementById('nextBtn').addEventListener('click', nextMap);
+      document.getElementById('downloadBtn').addEventListener('click', showDownloadModal);
+      document.getElementById('cancelBtn').addEventListener('click', hideDownloadModal);
+      document.getElementById('submitBtn').addEventListener('click', submitDownloadRequest);
+      
+      // Word count for textarea
+      document.getElementById('reasonInput').addEventListener('input', function() {
+        document.getElementById('wordCount').textContent = this.value.length;
+      });
+    });
+  </script>
 </body>
 </html>
