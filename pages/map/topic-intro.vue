@@ -26,6 +26,10 @@
           ></image>
           <view class="map-description">
             <text>{{item.description}}</text>
+            <view class="action-buttons">
+              <button class="detail-btn primary-bg" @click="navigateToDetail(item.id)">查看详情</button>
+              <button class="browse-btn" @click="navigateToMap(item.id)">浏览地图</button>
+            </view>
           </view>
         </view>
       </view>
@@ -183,6 +187,13 @@ export default {
       uni.navigateTo({
         url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}`
       });
+    },
+    
+    // 导航到地图详情页
+    navigateToDetail(mapId) {
+      uni.navigateTo({
+        url: `/pages/map/detail?id=${mapId}`
+      });
     }
   }
 }
@@ -310,6 +321,32 @@ export default {
   word-wrap: break-word;
 }
 
+/* 按钮样式 */
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20rpx;
+}
+
+.detail-btn, .browse-btn {
+  width: 48%;
+  height: 70rpx;
+  line-height: 70rpx;
+  text-align: center;
+  border-radius: 35rpx;
+  font-size: 28rpx;
+}
+
+.detail-btn {
+  color: #FFFFFF;
+}
+
+.browse-btn {
+  background-color: #FFFFFF;
+  color: #2E8B57;
+  border: 1px solid #2E8B57;
+}
+
 /* 针对不同设备的响应式设计 */
 @media screen and (min-width: 768px) {
   .map-content {
@@ -329,6 +366,16 @@ export default {
   .map-description {
     width: calc(60% - 20rpx); /* 计算正确的宽度，考虑到margin */
     flex-grow: 1;
+  }
+  
+  .action-buttons {
+    margin-top: 20rpx;
+    justify-content: flex-start;
+  }
+  
+  .detail-btn, .browse-btn {
+    width: 180rpx;
+    margin-right: 20rpx;
   }
 }
 </style>

@@ -79,22 +79,6 @@
       text-align: center;
       cursor: pointer;
     }
-    .detail-btn {
-      position: absolute;
-      bottom: 160px;
-      right: 15px;
-      padding: 8px 15px;
-      background-color: rgba(46, 139, 87, 0.9);
-      border-radius: 15px;
-      z-index: 1000;
-      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
-      cursor: pointer;
-    }
-    .detail-text {
-      color: white;
-      font-size: 14px;
-      text-align: center;
-    }
     .modal {
       display: none;
       position: fixed;
@@ -202,11 +186,6 @@
   <!-- Loading indicator -->
   <div class="loading" id="loadingIndicator">
     <div class="loading-text">地图加载中...</div>
-  </div>
-  
-  <!-- Detail button -->
-  <div class="detail-btn" id="detailBtn">
-    <div class="detail-text">查看详情</div>
   </div>
   
   <!-- Toolbar -->
@@ -469,31 +448,6 @@
       }
     }
     
-    // View map details - 修复的函数
-  function viewMapDetail() {
-    try {
-      console.log("Navigating to detail page:", maps[currentIndex].id);
-      // Direct navigation method - this will close the web-view
-      wx.miniProgram.navigateTo({
-        url: `/pages/map/detail?id=${maps[currentIndex].id}&from=browse`
-      });
-    } catch (e) {
-      console.error("Navigation failed:", e);
-      // Fallback to message passing
-      try {
-        wx.miniProgram.postMessage({
-          data: {
-            action: 'viewDetail',
-            mapId: maps[currentIndex].id
-          }
-        });
-      } catch (error) {
-        console.error("Fallback also failed:", error);
-        alert("无法打开详情页，请返回小程序后重试");
-      }
-    }
-  }
-    
     // Show download modal
     function showDownloadModal() {
       document.getElementById('downloadModal').style.display = 'flex';
@@ -549,7 +503,6 @@
       initMap();
       
       // Button event listeners
-      document.getElementById('detailBtn').addEventListener('click', viewMapDetail);
       document.getElementById('prevBtn').addEventListener('click', prevMap);
       document.getElementById('nextBtn').addEventListener('click', nextMap);
       document.getElementById('downloadBtn').addEventListener('click', showDownloadModal);

@@ -93,9 +93,9 @@
 			</view>
 		</view>
 		
-		<!-- 返回浏览按钮 -->
+		<!-- 进入浏览按钮 -->
 		<view class="back-to-browse" @click="backToBrowse">
-			<text>返回浏览页</text>
+			<text>进入浏览页</text>
 		</view>
 	</view>
 </template>
