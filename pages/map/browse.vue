@@ -17,7 +17,7 @@ export default {
     this.topicId = options.topic_id || '';
     this.mapId = options.id || '';
     
-    this.webViewUrl = `http://localhost:2080/static/map-viewer.html?topic_id=${this.topicId}&map_id=${this.mapId}`;
+    this.webViewUrl = `http://localhost:2180/static/map-viewer.html?topic_id=${this.topicId}&map_id=${this.mapId}`;
     console.log('加载web-view URL:', this.webViewUrl);
   },
   methods: {
