@@ -208,42 +208,43 @@ export default {
 }
 
 /* 基础纯色背景 - 淡米色 */
+/* Base solid background color - modified to match other pages */
 .background-solid {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: #F9F7F2; /* 淡米色背景 */
+  background-color: #E8F4F0; /* Updated to light mint green */
   z-index: -2;
 }
 
-/* 顶部背景图容器 */
+/* Background image container - repositioned to bottom */
 .background-image-container {
   position: absolute;
-  top: 0;
+  bottom: 0; /* Changed from top to bottom */
   left: 0;
   width: 100%;
-  height: 35%; /* 控制图片覆盖屏幕的比例 */
+  height: 45%;
   z-index: -1;
   overflow: hidden;
 }
 
-/* 实际背景图 */
+/* The actual background image */
 .background-image-top {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* 渐变覆盖层用于平滑过渡 */
+/* Gradient overlay - direction reversed */
 .gradient-overlay {
   position: absolute;
-  bottom: 0;
+  top: 0; /* Changed from bottom to top */
   left: 0;
   width: 100%;
-  height: 40%; /* 渐变过渡的高度 */
-  background: linear-gradient(to bottom, rgba(249, 247, 242, 0) 0%, rgba(249, 247, 242, 1) 100%);
+  height: 60%; /* Increased fade height */
+  background: linear-gradient(to top, transparent 0%, #E8F4F0 100%);
   z-index: 1;
 }
 
@@ -266,7 +267,7 @@ export default {
 
 /* 地图列表 */
 .maps-list {
-  height: calc(100vh - 120rpx); /* 调整高度，因为移除了标题区域 */
+  height: calc(100vh - 120rpx); 
   padding: 160rpx 30rpx 30rpx 30rpx; /* 增加顶部内边距，补偿移除的标题区域 */
   position: relative;
   z-index: 1;

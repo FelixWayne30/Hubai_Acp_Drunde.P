@@ -160,34 +160,45 @@ export default {
 }
 
 /* Top background image container */
-.background-image-container {
+/* Base solid background color */
+.background-solid {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 45%; /* Controls how much of the screen the image covers */
+  height: 100%;
+  background-color: #E8F4F0;
+  z-index: -2;
+}
+
+/* Background image container - now at bottom */
+.background-image-container {
+  position: absolute;
+  bottom: 0; /* Changed from top to bottom */
+  left: 0;
+  width: 100%;
+  height: 45%;
   z-index: -1;
   overflow: hidden;
 }
 
-/* The actual background image */
+/* Background image */
 .background-image-top {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Gradient overlay for smooth transition */
+/* Gradient overlay - now fades upward */
 .gradient-overlay {
   position: absolute;
-  bottom: 0;
+  top: 0; /* Changed from bottom to top */
   left: 0;
   width: 100%;
-  height: 40%; /* Height of the gradient fade */
-  background: linear-gradient(to bottom, rgba(249, 247, 242, 0) 0%, rgba(249, 247, 242, 1) 100%);
+  height: 60%; /* Increased fade height */
+  background: linear-gradient(to top, transparent 0%, #E8F4F0 100%);
   z-index: 1;
 }
-
 /* Search Bar Styling */
 .search-container {
   position: relative;

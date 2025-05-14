@@ -226,52 +226,53 @@
 	}
 	
 	/* Base solid background color - light cream color */
+	/* Base solid background color */
 	.background-solid {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: #F9F7F2; /* Light cream background color */
-		z-index: -2;
+	  position: absolute;
+	  top: 0;
+	  left: 0;
+	  width: 100%;
+	  height: 100%;
+	  background-color: #E8F4F0;
+	  z-index: -2;
 	}
-
-	/* Top background image container */
+	
+	/* Background image container - now at bottom */
 	.background-image-container {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 45%; /* Controls how much of the screen the image covers */
-		z-index: -1;
-		overflow: hidden;
+	  position: absolute;
+	  bottom: 0; /* Changed from top to bottom */
+	  left: 0;
+	  width: 100%;
+	  height: 45%;
+	  z-index: -1;
+	  overflow: hidden;
 	}
-
-	/* The actual background image */
+	
+	/* Background image */
 	.background-image-top {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
+	  width: 100%;
+	  height: 100%;
+	  object-fit: cover;
 	}
-
-	/* Gradient overlay for smooth transition */
+	
+	/* Gradient overlay - now fades upward */
 	.gradient-overlay {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		width: 100%;
-		height: 40%; /* Height of the gradient fade */
-		background: linear-gradient(to bottom, rgba(249, 247, 242, 0) 0%, rgba(249, 247, 242, 1) 100%);
-		z-index: 1;
+	  position: absolute;
+	  top: 0; /* Changed from bottom to top */
+	  left: 0;
+	  width: 100%;
+	  height: 60%; /* Increased fade height */
+	  background: linear-gradient(to top, transparent 0%, #E8F4F0 100%);
+	  z-index: 1;
 	}
 	
 	/* 用户信息区域 */
 	.user-info-section {
-		padding: 50rpx 30rpx;
-		background: linear-gradient(to bottom, rgba(46, 139, 87, 0.6), rgba(60, 179, 113, 0.5));
-		display: flex;
-		flex-direction: column;
-		align-items: center;
+	  padding: 50rpx 30rpx;
+	  /* Removed the background gradient */
+	  display: flex;
+	  flex-direction: column;
+	  align-items: center;
 	}
 	
 	.avatar-container {
@@ -305,11 +306,11 @@
 	}
 	
 	.user-name {
-		font-size: 32rpx;
-		color: #FFFFFF;
-		display: flex;
-		align-items: center;
-		text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+	  font-size: 32rpx;
+	  color: #333333; 
+	  display: flex;
+	  align-items: center;
+	  text-shadow: none; /* Removed text shadow */
 	}
 	
 	.edit-name {
