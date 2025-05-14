@@ -23,20 +23,7 @@
       </view>
     </view>
     
-    <!-- 四大图组区域 -->
-    <view class="topic-grid">
-      <view 
-        class="topic-item" 
-        v-for="(item, index) in topicList" 
-        :key="index" 
-        @click="navigateToTopic(item.id)"
-      >
-        <image class="topic-image" :src="item.image"></image>
-        <view class="topic-title">{{item.title}}</view>
-      </view>
-    </view>
-    
-    <!-- 轮播图区域 -->
+    <!-- 轮播图区域 - MOVED UP -->
     <view class="swiper-container">
       <swiper 
         class="swiper" 
@@ -55,6 +42,22 @@
         </swiper-item>
       </swiper>
     </view>
+    
+    <!-- 四大图组区域 - MOVED DOWN -->
+    <scroll-view class="topic-scroll" scroll-y>
+      <view class="section-header">专题分类</view>
+      <view class="topic-grid">
+        <view 
+          class="topic-item" 
+          v-for="(item, index) in topicList" 
+          :key="index" 
+          @click="navigateToTopic(item.id)"
+        >
+          <image class="topic-image" :src="item.image"></image>
+          <view class="topic-title">{{item.title}}</view>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 </template>
 
@@ -224,15 +227,66 @@ export default {
   padding: 0 10rpx;
 }
 
-/* Topic grid styling */
-.topic-grid {
+/* Carousel/Swiper styling - NOW POSITIONED BEFORE TOPIC GRID */
+.swiper-container {
+  width: 90%;
+  height: 350rpx;
+  margin: 10rpx auto 30rpx;
+  border-radius: 15rpx;
+  overflow: hidden;
+  box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.1);
+}
+
+.swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-item {
   position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-image {
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 20rpx;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  color: #FFFFFF;
+  font-size: 28rpx;
+}
+
+/* Section header for topic grid */
+.section-header {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  padding: 0 30rpx 10rpx;
+  margin-bottom: 10rpx;
+}
+
+/* Scrollable container for topic grid */
+.topic-scroll {
+  height: calc(100vh - 530rpx);
+  position: relative;
+  z-index: 1;
+  padding: 0 20rpx 30rpx;
+}
+
+/* Topic grid styling - NOW POSITIONED AFTER CAROUSEL */
+.topic-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  padding: 40rpx 20rpx;
-  margin-top: 20rpx; /* Reduced from 150rpx to account for search bar */
-  z-index: 1;
+  padding: 10rpx 0;
 }
 
 .topic-item {
@@ -273,42 +327,5 @@ export default {
   font-weight: bold;
   color: #333;
   padding: 15rpx 0 20rpx;
-}
-
-/* Carousel/Swiper styling */
-.swiper-container {
-  width: 90%;
-  height: 350rpx; /* Slightly reduced from 400rpx to fit better with search bar */
-  margin: 20rpx auto;
-  border-radius: 15rpx;
-  overflow: hidden;
-  box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.1);
-}
-
-.swiper {
-  width: 100%;
-  height: 100%;
-}
-
-.swiper-item {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.swiper-image {
-  width: 100%;
-  height: 100%;
-}
-
-.swiper-title {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 20rpx;
-  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-  color: #FFFFFF;
-  font-size: 28rpx;
 }
 </style>
