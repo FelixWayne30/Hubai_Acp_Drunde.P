@@ -233,13 +233,13 @@
   <script>
     // Maps data
     const maps = [
-      {
+    {
         id: '1',
         title: '湖北省地质图',
-        layerName: 'hubei:1-1春夏秋冬0331-2',
+        layerName: 'hubei:8efb06e1-c097-4884-abcc-5384dea12a41', // 使用已知可用的图层ID
         bounds: [
-          [29.0500, 108.3838], // Southwest
-          [33.2698, 116.1221]  // Northeast
+          [0, 0], // 调整为图片坐标系的边界
+          [0.7241712262632765, 1.0]
         ]
       },
       {
@@ -264,6 +264,7 @@
     
     // GeoServer configuration
     const geoserverUrl = 'http://192.168.50.133:8080/geoserver/hubei/wms';
+	
     
     // Current state
     let currentIndex = 0;
@@ -354,11 +355,11 @@
           }
           
           // Initialize the map with the determined CRS
-          map = L.map('map', {
-            crs: mapCRS,
-            attributionControl: false,
-            zoomControl: true
-          });
+         map = L.map('map', {
+           crs: L.CRS.Simple, // 使用简单坐标系，适合图片叠加
+           attributionControl: false,
+           zoomControl: true
+         });
           
           // Load the WMS layer
           loadCurrentMap();
@@ -404,16 +405,25 @@
         map.removeLayer(wmsLayer);
       }
       
-      // Add new WMS layer
-      wmsLayer = L.tileLayer.wms(geoserverUrl, {
-        layers: currentMap.layerName,
-        format: 'image/png',
-        transparent: true,
-        version: '1.1.0',
-        tiled: true,
-        crs: map.options.crs // Use the map's CRS for the WMS request
-      }).addTo(map);
-      
+    // 添加新WMS层
+  wmsLayer = L.tileLayer.wms(geoserverUrl, {
+    layers: currentMap.layerName,
+    format: 'image/png',
+    transparent: true,
+    version: '1.1.0',
+    tiled: true,
+    crs: map.options.crs // Use the map's CRS for the WMS request
+  }).addTo(map);
+  
+  // 替换为以下代码
+  const wmsUrl = `${geoserverUrl}?service=WMS&version=1.1.0&request=GetMap&layers=${currentMap.layerName}&bbox=0.0,1.1102230246251565E-16,1.0,0.7241712262632765&width=768&height=556&srs=EPSG:4326&styles=&format=image/png`;
+  
+  // 使用普通图层加载，而不是WMS交互式图层
+  const bounds = [[0, 0], [0.7241712262632765, 1.0]];
+  wmsLayer = L.imageOverlay(wmsUrl, bounds).addTo(map);
+   
+   // 设置地图视图到这个边界
+   map.fitBounds(bounds);
       // Set map view to the bounds of current map
       try {
         map.fitBounds(currentMap.bounds);

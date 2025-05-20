@@ -61,33 +61,15 @@
   </view>
 </template>
 
+// pages/index/index.vue
 <script>
+import { API } from '@/common/config.js'
+
 export default {
   data() {
     return {
       searchQuery: '',
-      topicList: [
-        {
-          id: "1",
-          title: "极目楚天",
-          image: "/static/icons/topic-landscape.png"
-        },
-        {
-          id: "2",
-          title: "富饶资源",
-          image: "/static/icons/topic-resources.png"
-        },
-        {
-          id: "3",
-          title: "绿色发展",
-          image: "/static/icons/topic-green.png"
-        },
-        {
-          id: "4",
-          title: "四水同治",
-          image: "/static/icons/topic-water.png"
-        }
-      ],
+      topicList: [], // 改为空数组，将从API获取数据
       carouselItems: [
         {
           id: "map1",
@@ -107,7 +89,51 @@ export default {
       ]
     }
   },
+  onLoad() {
+    // 页面加载时获取专题数据
+    this.getTopics()
+  },
   methods: {
+    // 获取专题数据的方法
+    getTopics() {
+      uni.showLoading({
+        title: '加载中...'
+      })
+      
+      uni.request({
+        url: API.TOPICS,
+        method: 'GET',
+        success: (res) => {
+          console.log('获取专题数据成功:', res)
+          if (res.statusCode === 200 && res.data.code === 200) {
+            // 处理返回的数据
+            this.topicList = res.data.data.map(item => ({
+              id: item.id,
+              title: item.title,
+              image: item.image || "/static/icons/topic-default.png" // 使用默认图片作为备选
+            }))
+          } else {
+            // 请求成功但返回错误
+            uni.showToast({
+              title: '获取专题数据失败',
+              icon: 'none'
+            })
+          }
+        },
+        fail: (err) => {
+          console.error('获取专题数据失败:', err)
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          })
+        },
+        complete: () => {
+          uni.hideLoading()
+        }
+      })
+    },
+    
+    // 保留原有的方法
     navigateToTopic(topicId) {
       uni.navigateTo({
         url: '/pages/map/topic-intro?topic_id=' + topicId
@@ -118,7 +144,6 @@ export default {
         url: '/pages/map/detail?id=' + mapId
       });
     },
-    // Search related methods
     performSearch() {
       if (!this.searchQuery.trim()) {
         uni.showToast({
@@ -128,7 +153,6 @@ export default {
         return;
       }
       
-      // Navigate to search results page with query
       uni.navigateTo({
         url: `/pages/map/search?query=${encodeURIComponent(this.searchQuery)}`
       });

@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import { API } from '@/common/config.js'
+
 export default {
   data() {
     return {
@@ -13,19 +15,21 @@ export default {
       webViewUrl: ''
     }
   },
-  onLoad(options) {
-    this.topicId = options.topic_id || '';
-    this.mapId = options.id || '';
-    
-    this.webViewUrl = `http://localhost:2180/static/map-viewer.html?topic_id=${this.topicId}&map_id=${this.mapId}`;
-    console.log('加载web-view URL:', this.webViewUrl);
-  },
+	onLoad(options) {
+	  this.topicId = options.topic_id || '';
+	  this.mapId = options.id || '';
+	  
+	  // 使用Nginx代理的URL
+	  this.webViewUrl = `http://localhost:2180/static/map-viewer.html?topic_id=${this.topicId}&map_id=${this.mapId}`;
+	  
+	  console.log('加载web-view URL:', this.webViewUrl);
+	},
   methods: {
     handleMessage(event) {
       console.log('收到web-view消息:', event);
       
       try {
-        // 获取消息数据。
+        // 获取消息数据
         const data = event.detail && event.detail.data;
         console.log('解析后的消息数据:', data);
         

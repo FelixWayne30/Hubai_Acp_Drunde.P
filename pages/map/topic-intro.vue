@@ -38,6 +38,8 @@
 </template>
 
 <script>
+import { API } from '@/common/config.js'
+
 export default {
   data() {
     return {
@@ -46,140 +48,69 @@ export default {
         id: '',
         title: '加载中...'
       },
-      maps: []
+      maps: []  // 改为空数组，将从API获取数据
     }
   },
   onLoad(options) {
     this.topicId = options.topic_id || '';
+    // 获取专题信息和地图列表
     this.getTopicInfo();
     this.getTopicMaps();
-    
-    // 设置导航栏标题
-    uni.getStorage({
-      key: 'topicInfo_' + this.topicId,
-      success: (res) => {
-        // 使用缓存数据
-        uni.setNavigationBarTitle({
-          title: res.data.title
-        });
-      },
-      fail: () => {
-        // 如果没有缓存数据，则在获取后设置
-        this.getTopicInfoForTitle();
-      }
-    });
   },
   methods: {
-    // 获取专题信息并设置标题
-    getTopicInfoForTitle() {
-      // 模拟数据
-      const topicData = {
-        '1': { id: '1', title: '极目楚天' },
-        '2': { id: '2', title: '富饶资源' },
-        '3': { id: '3', title: '绿色发展' },
-        '4': { id: '4', title: '四水同治' }
-      };
-      
-      if (topicData[this.topicId]) {
-        uni.setNavigationBarTitle({
-          title: topicData[this.topicId].title
-        });
-        
-        // 缓存数据
-        uni.setStorage({
-          key: 'topicInfo_' + this.topicId,
-          data: topicData[this.topicId]
-        });
-      }
-    },
-    // 获取专题信息
+    // 获取专题基本信息
     getTopicInfo() {
-      // 这里应该是从API获取数据
-      // 模拟数据
-      const topicData = {
-        '1': { id: '1', title: '极目楚天' },
-        '2': { id: '2', title: '富饶资源' },
-        '3': { id: '3', title: '绿色发展' },
-        '4': { id: '4', title: '四水同治' }
-      };
-      
-      if (topicData[this.topicId]) {
-        this.topicInfo = topicData[this.topicId];
-      }
+      // 可以通过API获取单个专题详情，或者从缓存中获取
+      uni.request({
+        url: API.TOPICS,
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            // 在列表中找到当前专题
+            const topic = res.data.data.find(item => item.id === this.topicId);
+            if (topic) {
+              this.topicInfo = topic;
+              // 设置导航栏标题
+              uni.setNavigationBarTitle({
+                title: topic.title
+              });
+            }
+          }
+        }
+      });
     },
     
     // 获取该专题下的所有地图
     getTopicMaps() {
-      // 这里应该是从API获取数据
-      // 模拟数据
-      const mapsData = {
-        '1': [
-          {
-            id: 'map1-1',
-            title: '湖北省水系概况图',
-            thumbnail: '/static/maps/hubei-water-map.png',
-            description: '本图以湖北省域为基础，详细展示了湖北省境内的江河湖泊水系分布情况。图中标识了主要河流如长江、汉江、清江等，以及重要湖泊如洪湖、梁子湖、东湖等。通过颜色深浅区分了不同水系的汇集范围，并标注了主要支流及水文站点位置。'
-          },
-          {
-            id: 'map1-2',
-            title: '湖北省水资源分布图',
-            thumbnail: '/static/maps/hubei-water-resource.png',
-            description: '本图展示湖北省水资源空间分布特征，采用等值线与色带结合的方式表达年均降水量分布，通过统计柱状图反映各市州水资源总量与人均占有量。图中还标注了重点水源地与水资源保护区域，提供了2025年湖北省水资源总量与结构的权威数据。'
-          },
-          {
-            id: 'map1-3',
-            title: '长江中游流域综合治理图',
-            thumbnail: '/static/maps/yangtze-management.png',
-            description: '本图描绘了长江中游流域湖北段的综合治理工程，包括防洪设施、生态修复点、水质监测站等关键基础设施分布。图中以专题符号标记了不同类型的治理项目，展示了2020-2025年间实施的重点工程位置与规模，并通过颜色变化展示治理前后水质改善程度。'
-          }
-        ],
-        '2': [
-          {
-            id: 'map2-1',
-            title: '湖北省国土绿化图',
-            thumbnail: '/static/maps/hubei-green.png',
-            description: '本图全面展示湖北省国土绿化成果，采用多时相遥感影像分析，对比2015-2025年间林地覆盖变化。图中标识了主要造林区、生态公益林与商品林分布，以及重点林区的树种构成，同时以饼图形式展示全省各类林地面积占比与碳汇能力分析。'
-          },
-          {
-            id: 'map2-2',
-            title: '林下经济发展布局图',
-            thumbnail: '/static/maps/forest-economy.png',
-            description: '此图详细描绘了湖北省林下经济发展现状，标识了各类林下产业基地位置与规模，包括食用菌、中药材、森林养殖等典型产业。图中采用符号注记了重点林下经济示范基地，并以统计图表展示了2025年各市州林下经济产值与结构，展现"绿水青山"转化为"金山银山"的生动实践。'
-          }
-        ],
-        '3': [
-          {
-            id: 'map3-1',
-            title: '湖北省矿产资源分布图',
-            thumbnail: '/static/maps/hubei-mineral-map.png',
-            description: '本图全面呈现湖北省矿产资源空间分布特征，标注了煤、铁、磷、盐等主要矿产的分布区域与储量等级。图中采用各类专题符号区分不同矿种，同时标注了重点矿区与矿业开发园区位置，结合饼图展示全省矿产资源结构与产值构成，为资源综合利用规划提供空间参考。'
-          }
-        ],
-        '4': [
-          {
-            id: 'map4-1',
-            title: '江河湖库概况',
-            thumbnail: '/static/maps/map-demo1.png',
-            description: '详细展示湖北省境内的江河湖库水系分布情况，包括长江、汉江等主要河流流域范围，以及洪湖、梁子湖等重要湖泊水域面积与分布。图中标注了各流域之间的水系联系，主要水利枢纽工程位置，以及湖北省水资源总量与结构等关键数据。'
-          },
-          {
-            id: 'map4-2',
-            title: '水资源概况',
-            thumbnail: '/static/maps/map-demo2.png',
-            description: '展示湖北省水资源的分布特征与变化趋势，包括年均降水量分布、地表水资源量、地下水资源量以及可利用水资源总量等。图中以图表形式展示了近十年湖北省水资源变化情况，水资源开发利用现状以及各行业用水结构与效率分析。'
-          },
-          {
-            id: 'map4-3',
-            title: '地表水',
-            thumbnail: '/static/maps/map-demo3.png',
-            description: '详细呈现湖北省地表水空间分布与丰枯变化特征，通过等值线与色带结合的方式表达各区域地表水资源丰富程度。图中标注了主要河流的流量监测站点与历史数据，重点水源地分布，以及地表水水质分区与保护区域划分，为水资源合理配置与利用提供参考。'
-          }
-        ]
-      };
+      uni.showLoading({
+        title: '加载地图数据...'
+      });
       
-      if (mapsData[this.topicId]) {
-        this.maps = mapsData[this.topicId];
-      }
+      uni.request({
+        url: API.MAPS_BY_GROUP + this.topicId,
+        method: 'GET',
+        success: (res) => {
+          console.log('获取地图数据成功:', res);
+          if (res.statusCode === 200 && res.data.code === 200) {
+            // 处理地图数据
+            this.maps = res.data.data;
+          } else {
+            uni.showToast({
+              title: '获取地图数据失败',
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('获取地图数据失败:', err);
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        },
+        complete: () => {
+          uni.hideLoading();
+        }
+      });
     },
     
     // 导航到地图浏览页
