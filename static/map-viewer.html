@@ -1,529 +1,670 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>湖北省地图浏览</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"></script>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 
-        Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
-    }
-    #map {
-      height: calc(100% - 130px);
-      width: 100%;
-      background-color: #f3f3f3;
-    }
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      background-color: #FFFFFF;
-      border-top: 1px solid #EEEEEE;
-      height: 45px;
-    }
-    .tool-btn {
-      width: 80px;
-      height: 35px;
-      line-height: 35px;
-      font-size: 14px;
-      border-radius: 5px;
-      color: #2E8B57;
-      border: 1px solid #2E8B57;
-      background-color: #FFFFFF;
-      text-align: center;
-      cursor: pointer;
-    }
-    .tool-btn:disabled {
-      color: #CCCCCC;
-      border-color: #EEEEEE;
-      background-color: #F8F8F8;
-      cursor: not-allowed;
-    }
-    .map-title {
-      flex: 1;
-      text-align: center;
-      font-size: 15px;
-      font-weight: bold;
-      color: #333333;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding: 0 10px;
-    }
-    .download-bar {
-      padding: 10px 15px;
-      background-color: #FFFFFF;
-      border-top: 1px solid #EEEEEE;
-      display: flex;
-      justify-content: center;
-      height: 40px;
-    }
-    .download-btn {
-      width: 100%;
-      height: 40px;
-      line-height: 40px;
-      font-size: 15px;
-      color: #FFFFFF;
-      background-color: #2E8B57;
-      border-radius: 20px;
-      text-align: center;
-      cursor: pointer;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    .modal-content {
-      width: 80%;
-      background-color: #FFFFFF;
-      border-radius: 15px;
-      padding: 20px 15px;
-    }
-    .modal-title {
-      font-size: 18px;
-      font-weight: bold;
-      color: #333333;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .form-item {
-      margin-bottom: 15px;
-    }
-    .form-label {
-      font-size: 15px;
-      color: #666666;
-      margin-bottom: 8px;
-    }
-    .form-input {
-      width: 100%;
-      height: 40px;
-      border: 1px solid #EEEEEE;
-      border-radius: 4px;
-      padding: 0 10px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-    .form-textarea {
-      width: 100%;
-      height: 100px;
-      border: 1px solid #EEEEEE;
-      border-radius: 4px;
-      padding: 10px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-    .word-count {
-      text-align: right;
-      font-size: 12px;
-      color: #999999;
-      margin-top: 5px;
-    }
-    .modal-btns {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 20px;
-    }
-    .modal-btn {
-      width: 45%;
-      height: 40px;
-      line-height: 40px;
-      text-align: center;
-      border-radius: 4px;
-      font-size: 15px;
-      cursor: pointer;
-    }
-    .cancel-btn {
-      background-color: #F5F5F5;
-      color: #666666;
-    }
-    .confirm-btn {
-      background-color: #2E8B57;
-      color: #FFFFFF;
-    }
-    .loading {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    .loading-text {
-      font-size: 16px;
-      color: #2E8B57;
-      background-color: white;
-      padding: 15px 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>湖北省地图浏览</title>
+    <script src="https://cdn.jsdelivr.net/npm/openseadragon@3.1.0/build/openseadragon/openseadragon.min.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 
+                Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+        }
+        #map-container {
+            height: calc(100% - 130px);
+            width: 100%;
+            background-color: #f3f3f3;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #FFFFFF;
+            border-top: 1px solid #EEEEEE;
+            height: 45px;
+        }
+        .tool-btn {
+            width: 80px;
+            height: 35px;
+            line-height: 35px;
+            font-size: 14px;
+            border-radius: 5px;
+            color: #2E8B57;
+            border: 1px solid #2E8B57;
+            background-color: #FFFFFF;
+            text-align: center;
+            cursor: pointer;
+        }
+        .tool-btn:disabled {
+            color: #CCCCCC;
+            border-color: #EEEEEE;
+            background-color: #F8F8F8;
+            cursor: not-allowed;
+        }
+        .map-title {
+            flex: 1;
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #333333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 10px;
+        }
+        .download-bar {
+            padding: 10px 15px;
+            background-color: #FFFFFF;
+            border-top: 1px solid #EEEEEE;
+            display: flex;
+            justify-content: center;
+            height: 40px;
+        }
+        .download-btn {
+            width: 100%;
+            height: 40px;
+            line-height: 40px;
+            font-size: 15px;
+            color: #FFFFFF;
+            background-color: #2E8B57;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 130px);
+            background-color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .loading-text {
+            font-size: 16px;
+            color: #2E8B57;
+            background-color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .preload-info {
+            position: absolute;
+            bottom: 160px;
+            left: 20px;
+            background-color: rgba(255,255,255,0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
+            z-index: 500;
+            display: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            width: 80%;
+            background-color: #FFFFFF;
+            border-radius: 15px;
+            padding: 20px 15px;
+            max-width: 500px;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-item {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            font-size: 15px;
+            color: #666666;
+            margin-bottom: 8px;
+        }
+        .form-input {
+            width: 100%;
+            height: 40px;
+            border: 1px solid #EEEEEE;
+            border-radius: 4px;
+            padding: 0 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-textarea {
+            width: 100%;
+            height: 100px;
+            border: 1px solid #EEEEEE;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .word-count {
+            text-align: right;
+            font-size: 12px;
+            color: #999999;
+            margin-top: 5px;
+        }
+        .modal-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .modal-btn {
+            width: 45%;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .cancel-btn {
+            background-color: #F5F5F5;
+            color: #666666;
+        }
+        .confirm-btn {
+            background-color: #2E8B57;
+            color: #FFFFFF;
+        }
+    </style>
 </head>
 <body>
-  <div id="map"></div>
-  
-  <!-- Loading indicator -->
-  <div class="loading" id="loadingIndicator">
-    <div class="loading-text">地图加载中...</div>
-  </div>
-  
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <button class="tool-btn" id="prevBtn" disabled>上一张</button>
-    <div class="map-title" id="mapTitle">地图图幅</div>
-    <button class="tool-btn" id="nextBtn">下一张</button>
-  </div>
-  
-  <!-- Download bar -->
-  <div class="download-bar">
-    <div class="download-btn" id="downloadBtn">申请下载此图</div>
-  </div>
-  
-  <!-- Download modal -->
-  <div class="modal" id="downloadModal">
-    <div class="modal-content">
-      <div class="modal-title">下载申请</div>
-      <div class="form-item">
-        <div class="form-label">邮箱地址</div>
-        <input 
-          class="form-input" 
-          id="emailInput"
-          placeholder="请输入您的邮箱地址"
-          type="text"
-        />
-      </div>
-      <div class="form-item">
-        <div class="form-label">申请理由</div>
-        <textarea 
-          class="form-textarea" 
-          id="reasonInput"
-          placeholder="请输入申请理由（50字以内）"
-          maxlength="50"
-        ></textarea>
-        <div class="word-count"><span id="wordCount">0</span>/50</div>
-      </div>
-      <div class="modal-btns">
-        <div class="modal-btn cancel-btn" id="cancelBtn">取消</div>
-        <div class="modal-btn confirm-btn" id="submitBtn">提交</div>
-      </div>
+    <!-- 地图容器 -->
+    <div id="map-container"></div>
+    
+    <!-- 加载指示器 -->
+    <div id="loading" class="loading">
+        <div class="loading-text">地图加载中...</div>
     </div>
-  </div>
-  
-  <script>
-    // Maps data
-    const maps = [
-    {
-        id: '1',
-        title: '湖北省地质图',
-        layerName: 'hubei:8efb06e1-c097-4884-abcc-5384dea12a41', // 使用已知可用的图层ID
-        bounds: [
-          [0, 0], // 调整为图片坐标系的边界
-          [0.7241712262632765, 1.0]
-        ]
-      },
-      {
-        id: '2',
-        title: '湖北省矿产分布图',
-        layerName: 'hubei:矿产分布图',
-        bounds: [
-          [29.0500, 108.3838],
-          [33.2698, 116.1221]
-        ]
-      },
-      {
-        id: '3',
-        title: '湖北省地貌类型图',
-        layerName: 'hubei:地貌类型图',
-        bounds: [
-          [29.0500, 108.3838],
-          [33.2698, 116.1221]
-        ]
-      }
-    ];
     
-    // GeoServer configuration
-    const geoserverUrl = 'http://192.168.50.133:8080/geoserver/hubei/wms';
-	
+    <!-- 预加载信息提示 -->
+    <div id="preload-info" class="preload-info">正在预加载下一张图片...</div>
     
-    // Current state
-    let currentIndex = 0;
-    let map;
-    let wmsLayer;
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <button class="tool-btn" id="prevBtn" disabled>上一张</button>
+        <div class="map-title" id="mapTitle">湖北省地质图</div>
+        <button class="tool-btn" id="nextBtn">下一张</button>
+    </div>
     
-    // Get URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const topicId = urlParams.get('topic_id') || '';
-    const mapId = urlParams.get('map_id') || '';
+    <!-- 下载栏 -->
+    <div class="download-bar">
+        <div class="download-btn" id="downloadBtn">申请下载此图</div>
+    </div>
     
-    // Initialize map
-    function initMap() {
-      // Show loading indicator
-      document.getElementById('loadingIndicator').style.display = 'flex';
-      
-      // Set initial map if specific ID provided
-      if (mapId) {
-        const index = maps.findIndex(item => item.id === mapId);
-        if (index !== -1) {
-          currentIndex = index;
-        }
-      }
-      
-      // Try to get WMS capabilities to determine projection
-      fetch(geoserverUrl + '?SERVICE=WMS&REQUEST=GetCapabilities')
-        .then(response => response.text())
-        .then(text => {
-          const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(text, "text/xml");
-          
-          // Find the layer's CRS
-          let crs = "EPSG:4326"; // Default fallback
-          
-          try {
-            // Try to find the specific layer's CRS
-            const layers = xmlDoc.getElementsByTagName("Layer");
-            for (let i = 0; i < layers.length; i++) {
-              const nameElements = layers[i].getElementsByTagName("Name");
-              if (nameElements.length > 0 && nameElements[0].textContent === maps[currentIndex].layerName) {
-                const crsElements = layers[i].getElementsByTagName("CRS");
-                if (crsElements.length > 0) {
-                  crs = crsElements[0].textContent;
-                  break;
+    <!-- 下载对话框 -->
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">下载申请</div>
+            <div class="form-item">
+                <div class="form-label">邮箱地址</div>
+                <input 
+                    class="form-input" 
+                    id="emailInput"
+                    placeholder="请输入您的邮箱地址"
+                    type="text"
+                />
+            </div>
+            <div class="form-item">
+                <div class="form-label">申请理由</div>
+                <textarea 
+                    class="form-textarea" 
+                    id="reasonInput"
+                    placeholder="请输入申请理由（50字以内）"
+                    maxlength="50"
+                ></textarea>
+                <div class="word-count"><span id="wordCount">0</span>/50</div>
+            </div>
+            <div class="modal-btns">
+                <div class="modal-btn cancel-btn" id="cancelBtn">取消</div>
+                <div class="modal-btn confirm-btn" id="submitBtn">提交</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 图片数据
+        const maps = [
+            {
+                id: '1',
+                title: '湖北省地质图',
+                url: 'maps/2-2土壤0303-01.jpg'
+            },
+            {
+                id: '2',
+                title: '湖北省矿产分布图',
+                url: 'maps/1-5湖北省气候—降水样图0401.jpg'
+            },
+            {
+                id: '3',
+                title: '湖北省地貌类型图',
+                url: 'http://192.168.50.133:8080/geoserver/hubei/wms?service=WMS&version=1.1.0&request=GetMap&layers=hubei%3Ageomorphology&bbox=0.0%2C0.0%2C1.0%2C0.724332153202446&width=6213&height=4500&srs=EPSG%3A4326&styles=&format=image%2Fjpeg'
+            }
+        ];
+        
+        // 预加载管理器
+        class PreloadManager {
+            constructor() {
+                // 图片缓存
+                this.imageCache = {};
+                // 正在加载的图片
+                this.loadingImages = {};
+                // 预加载状态
+                this.preloadStatus = {};
+            }
+            
+            // 预加载图片
+            preload(url) {
+                // 如果已经缓存，直接返回
+                if (this.imageCache[url]) {
+                    return Promise.resolve(this.imageCache[url]);
                 }
                 
-                // Check for older SRS tag
-                const srsElements = layers[i].getElementsByTagName("SRS");
-                if (srsElements.length > 0) {
-                  crs = srsElements[0].textContent;
-                  break;
+                // 如果正在加载，返回现有的Promise
+                if (this.loadingImages[url]) {
+                    return this.loadingImages[url];
                 }
-              }
-            }
-          } catch (e) {
-            console.error("Error parsing layer CRS:", e);
-          }
-          
-          console.log("Using CRS:", crs);
-          
-          // Create map with appropriate CRS
-          let mapCRS;
-          if (crs === "EPSG:4326") {
-            mapCRS = L.CRS.EPSG4326;
-          } else if (crs === "EPSG:3857") {
-            mapCRS = L.CRS.EPSG3857;
-          } else if (crs.startsWith("EPSG:")) {
-            // For other EPSG codes, try to create a custom CRS
-            try {
-              // You'd need the proper projection definition here
-              const epsgCode = crs.split(":")[1];
-              const projDef = proj4.defs[crs] || proj4.defs["EPSG:"+epsgCode];
-              if (projDef) {
-                mapCRS = new L.Proj.CRS(crs, projDef, {
-                  resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5]
+                
+                // 创建新的加载Promise
+                this.preloadStatus[url] = 0; // 0%进度
+                
+                const loadPromise = new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', url, true);
+                    xhr.responseType = 'blob';
+                    
+                    // 进度监听
+                    xhr.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            const percentComplete = Math.round((e.loaded / e.total) * 100);
+                            this.preloadStatus[url] = percentComplete;
+                            this.updatePreloadInfo();
+                        }
+                    };
+                    
+                    xhr.onload = () => {
+                        if (xhr.status === 200) {
+                            const blob = xhr.response;
+                            const imageUrl = URL.createObjectURL(blob);
+                            
+                            // 创建Image对象并加载
+                            const img = new Image();
+                            img.onload = () => {
+                                this.imageCache[url] = {
+                                    blob: blob,
+                                    url: imageUrl,
+                                    image: img
+                                };
+                                delete this.loadingImages[url];
+                                this.preloadStatus[url] = 100;
+                                this.updatePreloadInfo();
+                                resolve(this.imageCache[url]);
+                            };
+                            
+                            img.onerror = (error) => {
+                                delete this.loadingImages[url];
+                                reject(error);
+                            };
+                            
+                            img.src = imageUrl;
+                        } else {
+                            delete this.loadingImages[url];
+                            reject(new Error(`加载图片失败: ${xhr.status}`));
+                        }
+                    };
+                    
+                    xhr.onerror = (error) => {
+                        delete this.loadingImages[url];
+                        reject(error);
+                    };
+                    
+                    xhr.send();
                 });
-              } else {
-                console.warn("Projection definition not found for", crs, "using EPSG:4326");
-                mapCRS = L.CRS.EPSG4326;
-              }
-            } catch (e) {
-              console.error("Error creating custom CRS:", e);
-              mapCRS = L.CRS.EPSG4326;
+                
+                this.loadingImages[url] = loadPromise;
+                return loadPromise;
             }
-          } else {
-            console.warn("Unsupported CRS:", crs, "using EPSG:4326");
-            mapCRS = L.CRS.EPSG4326;
-          }
-          
-          // Initialize the map with the determined CRS
-         map = L.map('map', {
-           crs: L.CRS.Simple, // 使用简单坐标系，适合图片叠加
-           attributionControl: false,
-           zoomControl: true
-         });
-          
-          // Load the WMS layer
-          loadCurrentMap();
-          
-          // Update UI
-          updateUI();
-          
-          // Fix for mobile - invalidate size after a short delay
-          setTimeout(function() {
-            map.invalidateSize();
-            document.getElementById('loadingIndicator').style.display = 'none';
-          }, 500);
-        })
-        .catch(error => {
-          console.error("Error fetching WMS capabilities:", error);
-          
-          // Fallback to EPSG:4326
-          map = L.map('map', {
-            crs: L.CRS.EPSG4326,
-            attributionControl: false,
-            zoomControl: true
-          });
-          
-          loadCurrentMap();
-          updateUI();
-          
-          setTimeout(function() {
-            map.invalidateSize();
-            document.getElementById('loadingIndicator').style.display = 'none';
-          }, 500);
+            
+            // 获取缓存的图片
+            getCachedImage(url) {
+                return this.imageCache[url] || null;
+            }
+            
+            // 检查图片是否已缓存
+            isCached(url) {
+                return !!this.imageCache[url];
+            }
+            
+            // 检查图片是否正在加载
+            isLoading(url) {
+                return !!this.loadingImages[url];
+            }
+            
+            // 获取预加载状态
+            getPreloadStatus(url) {
+                return this.preloadStatus[url] || 0;
+            }
+            
+            // 更新预加载信息显示
+            updatePreloadInfo() {
+                const preloadInfo = document.getElementById('preload-info');
+                let isPreloading = false;
+                let statusText = '';
+                
+                // 检查是否有正在加载的图片
+                for (const url in this.loadingImages) {
+                    isPreloading = true;
+                    const status = this.preloadStatus[url] || 0;
+                    statusText = `预加载中：${status}%`;
+                    break; // 只显示第一个
+                }
+                
+                if (isPreloading) {
+                    preloadInfo.textContent = statusText;
+                    preloadInfo.style.display = 'block';
+                } else {
+                    preloadInfo.style.display = 'none';
+                }
+            }
+            
+            // 清除缓存
+            clearCache() {
+                // 释放Blob URL
+                for (const url in this.imageCache) {
+                    if (this.imageCache[url].url) {
+                        URL.revokeObjectURL(this.imageCache[url].url);
+                    }
+                }
+                
+                this.imageCache = {};
+                this.preloadStatus = {};
+            }
+        }
+        
+        // 创建预加载管理器实例
+        const preloadManager = new PreloadManager();
+        
+        // 状态变量
+        let currentIndex = 0;
+        let viewer;
+        let isViewerInitialized = false;
+        
+        // 初始化查看器
+        function initViewer() {
+            // 获取URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const mapId = urlParams.get('map_id') || '';
+            
+            // 设置初始图片
+            if (mapId) {
+                const index = maps.findIndex(item => item.id === mapId);
+                if (index !== -1) {
+                    currentIndex = index;
+                }
+            }
+            
+            // 更新标题
+            document.getElementById('mapTitle').textContent = maps[currentIndex].title;
+            
+            // 显示加载指示器
+            document.getElementById('loading').style.display = 'flex';
+            
+            // 如果当前图片已预加载，使用缓存
+            const currentMapUrl = maps[currentIndex].url;
+            const cachedImage = preloadManager.getCachedImage(currentMapUrl);
+            
+            // 创建OpenSeadragon查看器
+            viewer = OpenSeadragon({
+                id: "map-container",
+                prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@3.1.0/build/openseadragon/images/",
+                // 使用缓存的图片URL或原始URL
+                tileSources: {
+                    type: 'image',
+                    url: cachedImage ? cachedImage.url : currentMapUrl,
+                    buildPyramid: false
+                },
+                immediateRender: false,
+                blendTime: 0.1,
+                showNavigator: false
+            });
+            
+            // 查看器初始化完成
+            isViewerInitialized = true;
+            
+            // 监听图片加载完成事件
+            viewer.addHandler('open', function() {
+                // 隐藏加载指示器
+                document.getElementById('loading').style.display = 'none';
+                
+                // 预加载前后图片
+                preloadAdjacentImages();
+            });
+            
+            // 更新UI状态
+            updateUI();
+        }
+        
+        // 预加载前后图片
+        function preloadAdjacentImages() {
+            // 预加载下一张图片
+            if (currentIndex < maps.length - 1) {
+                const nextImageUrl = maps[currentIndex + 1].url;
+                if (!preloadManager.isCached(nextImageUrl) && !preloadManager.isLoading(nextImageUrl)) {
+                    preloadManager.preload(nextImageUrl)
+                        .then(() => {
+                            console.log(`预加载下一张图片完成: ${maps[currentIndex + 1].title}`);
+                        })
+                        .catch(error => {
+                            console.error(`预加载下一张图片失败: ${error}`);
+                        });
+                }
+            }
+            
+            // 预加载上一张图片
+            if (currentIndex > 0) {
+                const prevImageUrl = maps[currentIndex - 1].url;
+                if (!preloadManager.isCached(prevImageUrl) && !preloadManager.isLoading(prevImageUrl)) {
+                    preloadManager.preload(prevImageUrl)
+                        .then(() => {
+                            console.log(`预加载上一张图片完成: ${maps[currentIndex - 1].title}`);
+                        })
+                        .catch(error => {
+                            console.error(`预加载上一张图片失败: ${error}`);
+                        });
+                }
+            }
+        }
+        
+        // 加载当前索引的图片
+        function loadImage() {
+            // 更新标题
+            document.getElementById('mapTitle').textContent = maps[currentIndex].title;
+            
+            // 获取图片URL
+            const imageUrl = maps[currentIndex].url;
+            
+            // 检查是否已缓存
+            const cachedImage = preloadManager.getCachedImage(imageUrl);
+            
+            // 如果图片已缓存，直接显示
+            if (cachedImage) {
+                console.log(`使用缓存加载图片: ${maps[currentIndex].title}`);
+                viewer.open({
+                    type: 'image',
+                    url: cachedImage.url,
+                    buildPyramid: false
+                });
+            } else {
+                // 显示加载指示器
+                document.getElementById('loading').style.display = 'flex';
+                
+                // 加载图片
+                preloadManager.preload(imageUrl)
+                    .then((cached) => {
+                        // 隐藏加载指示器
+                        document.getElementById('loading').style.display = 'none';
+                        
+                        // 加载图片到查看器
+                        viewer.open({
+                            type: 'image',
+                            url: cached.url,
+                            buildPyramid: false
+                        });
+                    })
+                    .catch(error => {
+                        console.error(`加载图片失败: ${error}`);
+                        document.getElementById('loading').style.display = 'none';
+                        alert('加载图片失败，请重试');
+                    });
+            }
+            
+            // 更新UI
+            updateUI();
+            
+            // 预加载前后图片
+            preloadAdjacentImages();
+        }
+        
+        // 更新UI状态
+        function updateUI() {
+            document.getElementById('prevBtn').disabled = (currentIndex <= 0);
+            document.getElementById('nextBtn').disabled = (currentIndex >= maps.length - 1);
+        }
+        
+        // 切换到上一张图片
+        function prevImage() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                loadImage();
+            }
+        }
+        
+        // 切换到下一张图片
+        function nextImage() {
+            if (currentIndex < maps.length - 1) {
+                currentIndex++;
+                loadImage();
+            }
+        }
+        
+        // 显示下载对话框
+        function showDownloadModal() {
+            document.getElementById('downloadModal').style.display = 'flex';
+            document.getElementById('emailInput').value = '';
+            document.getElementById('reasonInput').value = '';
+            document.getElementById('wordCount').textContent = '0';
+        }
+        
+        // 隐藏下载对话框
+        function hideDownloadModal() {
+            document.getElementById('downloadModal').style.display = 'none';
+        }
+        
+        // 提交下载请求
+        function submitDownloadRequest() {
+            const email = document.getElementById('emailInput').value.trim();
+            const reason = document.getElementById('reasonInput').value.trim();
+            
+            // 验证邮箱
+            if (!email || !/^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/.test(email)) {
+                alert('请输入有效的邮箱地址');
+                return;
+            }
+            
+            // 验证理由
+            if (!reason) {
+                alert('请输入申请理由');
+                return;
+            }
+            
+            // 发送消息给小程序
+            try {
+                wx.miniProgram.postMessage({
+                    data: {
+                        action: 'downloadRequest',
+                        email: email,
+                        reason: reason,
+                        mapId: maps[currentIndex].id
+                    }
+                });
+                
+                hideDownloadModal();
+                alert('申请已提交，我们会尽快处理！');
+            } catch (e) {
+                console.error('向小程序发送消息失败:', e);
+                hideDownloadModal();
+                alert('申请已提交，我们会尽快处理！');
+            }
+        }
+        
+        // 页面加载完成时执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 预加载当前图片，完成后初始化查看器
+            const currentMapUrl = maps[currentIndex].url;
+            
+            // 显示加载指示器
+            document.getElementById('loading').style.display = 'flex';
+            
+            preloadManager.preload(currentMapUrl)
+                .then(() => {
+                    console.log(`当前图片预加载完成: ${maps[currentIndex].title}`);
+                    // 初始化查看器
+                    initViewer();
+                })
+                .catch(error => {
+                    console.error(`当前图片预加载失败: ${error}`);
+                    // 即使预加载失败也初始化查看器
+                    initViewer();
+                });
+            
+            // 添加事件监听器
+            document.getElementById('prevBtn').addEventListener('click', prevImage);
+            document.getElementById('nextBtn').addEventListener('click', nextImage);
+            document.getElementById('downloadBtn').addEventListener('click', showDownloadModal);
+            document.getElementById('cancelBtn').addEventListener('click', hideDownloadModal);
+            document.getElementById('submitBtn').addEventListener('click', submitDownloadRequest);
+            
+            // 字数统计
+            document.getElementById('reasonInput').addEventListener('input', function() {
+                document.getElementById('wordCount').textContent = this.value.length;
+            });
+            
+            // 检测是否从详情页进入（传递from=detail参数）
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromDetail = urlParams.get('from') === 'detail';
+            
+            if (fromDetail) {
+                console.log('从详情页进入，已预加载当前图片');
+            }
         });
-    }
-    
-    // Load current map WMS layer
-    function loadCurrentMap() {
-      const currentMap = maps[currentIndex];
-      
-      // Update title
-      document.getElementById('mapTitle').textContent = currentMap.title;
-      
-      // Remove existing WMS layer if any
-      if (wmsLayer && map.hasLayer(wmsLayer)) {
-        map.removeLayer(wmsLayer);
-      }
-      
-    // 添加新WMS层
-  wmsLayer = L.tileLayer.wms(geoserverUrl, {
-    layers: currentMap.layerName,
-    format: 'image/png',
-    transparent: true,
-    version: '1.1.0',
-    tiled: true,
-    crs: map.options.crs // Use the map's CRS for the WMS request
-  }).addTo(map);
-  
-  // 替换为以下代码
-  const wmsUrl = `${geoserverUrl}?service=WMS&version=1.1.0&request=GetMap&layers=${currentMap.layerName}&bbox=0.0,1.1102230246251565E-16,1.0,0.7241712262632765&width=768&height=556&srs=EPSG:4326&styles=&format=image/png`;
-  
-  // 使用普通图层加载，而不是WMS交互式图层
-  const bounds = [[0, 0], [0.7241712262632765, 1.0]];
-  wmsLayer = L.imageOverlay(wmsUrl, bounds).addTo(map);
-   
-   // 设置地图视图到这个边界
-   map.fitBounds(bounds);
-      // Set map view to the bounds of current map
-      try {
-        map.fitBounds(currentMap.bounds);
-      } catch (e) {
-        console.error("Error fitting to bounds:", e);
-        map.setView([31.1000, 112.2500], 7);
-      }
-    }
-    
-    // Update UI based on current state
-    function updateUI() {
-      // Update buttons
-      document.getElementById('prevBtn').disabled = (currentIndex <= 0);
-      document.getElementById('nextBtn').disabled = (currentIndex >= maps.length - 1);
-    }
-    
-    // Navigate to previous map
-    function prevMap() {
-      if (currentIndex > 0) {
-        currentIndex--;
-        loadCurrentMap();
-        updateUI();
-      }
-    }
-    
-    // Navigate to next map
-    function nextMap() {
-      if (currentIndex < maps.length - 1) {
-        currentIndex++;
-        loadCurrentMap();
-        updateUI();
-      }
-    }
-    
-    // Show download modal
-    function showDownloadModal() {
-      document.getElementById('downloadModal').style.display = 'flex';
-      document.getElementById('emailInput').value = '';
-      document.getElementById('reasonInput').value = '';
-      document.getElementById('wordCount').textContent = '0';
-    }
-    
-    // Hide download modal
-    function hideDownloadModal() {
-      document.getElementById('downloadModal').style.display = 'none';
-    }
-    
-    // Submit download request
-    function submitDownloadRequest() {
-      const email = document.getElementById('emailInput').value.trim();
-      const reason = document.getElementById('reasonInput').value.trim();
-      
-      // Validate email
-      if (!email || !/^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/.test(email)) {
-        alert('请输入有效的邮箱地址');
-        return;
-      }
-      
-      // Validate reason
-      if (!reason) {
-        alert('请输入申请理由');
-        return;
-      }
-      
-      // Send message to mini program
-      try {
-        wx.miniProgram.postMessage({
-          data: {
-            action: 'downloadRequest',
-            email: email,
-            reason: reason,
-            mapId: maps[currentIndex].id
-          }
+        
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', function() {
+            // 清除图片缓存，释放内存
+            preloadManager.clearCache();
         });
-      } catch (e) {
-        console.error("向小程序发送消息失败:", e);
-        alert('申请已提交，我们会尽快处理！');
-      }
-      
-      // Hide modal
-      hideDownloadModal();
-    }
-    
-    // Event listeners
-    document.addEventListener('DOMContentLoaded', function() {
-      // Initialize map
-      initMap();
-      
-      // Button event listeners
-      document.getElementById('prevBtn').addEventListener('click', prevMap);
-      document.getElementById('nextBtn').addEventListener('click', nextMap);
-      document.getElementById('downloadBtn').addEventListener('click', showDownloadModal);
-      document.getElementById('cancelBtn').addEventListener('click', hideDownloadModal);
-      document.getElementById('submitBtn').addEventListener('click', submitDownloadRequest);
-      
-      // Word count for textarea
-      document.getElementById('reasonInput').addEventListener('input', function() {
-        document.getElementById('wordCount').textContent = this.value.length;
-      });
-    });
-  </script>
+    </script>
 </body>
 </html>
