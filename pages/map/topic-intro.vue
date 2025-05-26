@@ -78,54 +78,91 @@ export default {
         }
       });
     },
-    
-    // 获取该专题下的所有地图
-    getTopicMaps() {
-      uni.showLoading({
-        title: '加载地图数据...'
-      });
-      
-      uni.request({
-        url: API.MAPS_BY_GROUP + this.topicId,
-        method: 'GET',
-        success: (res) => {
-          console.log('获取地图数据成功:', res);
-          if (res.statusCode === 200 && res.data.code === 200) {
-            // 处理地图数据
-            this.maps = res.data.data;
-          } else {
-            uni.showToast({
-              title: '获取地图数据失败',
-              icon: 'none'
-            });
-          }
-        },
-        fail: (err) => {
-          console.error('获取地图数据失败:', err);
-          uni.showToast({
-            title: '网络错误，请稍后重试',
-            icon: 'none'
-          });
-        },
-        complete: () => {
-          uni.hideLoading();
-        }
-      });
-    },
-    
-    // 导航到地图浏览页
-    navigateToMap(mapId) {
-      uni.navigateTo({
-        url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}`
-      });
-    },
-    
-    // 导航到地图详情页
-    navigateToDetail(mapId) {
-      uni.navigateTo({
-        url: `/pages/map/detail?id=${mapId}`
-      });
-    }
+   // 获取该专题下的所有地图
+       getTopicMaps() {
+         uni.showLoading({
+           title: '加载地图数据...'
+         });
+         
+         uni.request({
+           url: API.MAPS_BY_GROUP + this.topicId,
+           method: 'GET',
+           success: (res) => {
+             console.log('=== 地图数据调试开始 ===');
+             console.log('API请求URL:', API.MAPS_BY_GROUP + this.topicId);
+             console.log('获取地图数据成功:', res);
+             console.log('原始数据结构:', res.data.data);
+             
+             if (res.statusCode === 200 && res.data.code === 200) {
+               // 详细打印每个原始数据项
+               res.data.data.forEach((item, index) => {
+                 console.log(`原始数据项 ${index}:`, {
+                   map_id: item.map_id,
+                   title: item.title,
+                   description: item.description,
+                   type: item.type
+                 });
+               });
+               
+               // 处理地图数据
+               this.maps = res.data.data.map((item, index) => {
+                 const processedItem = {
+                   id: item.map_id,
+                   title: item.title,
+                   description: item.description || '暂无描述',
+                   thumbnail: '/static/placeholder.png'
+                 };
+                 console.log(`处理后数据项 ${index}:`, processedItem);
+                 return processedItem;
+               });
+               
+               console.log('最终maps数组:', this.maps);
+               console.log('=== 地图数据调试结束 ===');
+             } else {
+               console.error('获取地图数据失败:', res.data);
+               uni.showToast({
+                 title: '获取地图数据失败',
+                 icon: 'none'
+               });
+             }
+           },
+           fail: (err) => {
+             console.error('获取地图数据失败:', err);
+             uni.showToast({
+               title: '网络错误，请稍后重试',
+               icon: 'none'
+             });
+           },
+           complete: () => {
+             uni.hideLoading();
+           }
+         });
+       },
+       
+       // 导航到地图浏览页
+       navigateToMap(mapId) {
+         console.log('跳转到地图浏览页，mapId:', mapId);
+         uni.navigateTo({
+           url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}`
+         });
+       },
+       
+       // 导航到地图详情页
+       navigateToDetail(mapId) {
+         console.log('跳转到地图详情页，mapId:', mapId);
+         console.log('mapId类型:', typeof mapId);
+         if (!mapId) {
+           console.error('mapId为空，无法跳转');
+           uni.showToast({
+             title: 'mapId参数错误',
+             icon: 'none'
+           });
+           return;
+         }
+         uni.navigateTo({
+           url: `/pages/map/detail?id=${mapId}`
+         });
+       }
   }
 }
 </script>

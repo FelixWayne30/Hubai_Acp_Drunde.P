@@ -161,13 +161,28 @@
 			}
 		},
 		onLoad(options) {
-			this.mapId = options.id || '';
-			// 检查是否从浏览页跳转过来
-			if (options.from === 'browse') {
-				this.fromBrowse = true;
-			}
-			this.getMapDetail();
-		},
+					console.log('详情页接收到的参数:', options);
+					console.log('options.id:', options.id);
+					console.log('options.id类型:', typeof options.id);
+					
+					this.mapId = options.id || '';
+					console.log('设置后的mapId:', this.mapId);
+					
+					// 检查是否从浏览页跳转过来
+					if (options.from === 'browse') {
+						this.fromBrowse = true;
+					}
+					
+					if (this.mapId) {
+						this.getMapDetail();
+					} else {
+						console.error('mapId为空，无法获取详情');
+						uni.showToast({
+							title: '参数错误',
+							icon: 'none'
+						});
+					}
+				},
 		onShareAppMessage() {
 			return {
 				title: this.mapInfo.title,
