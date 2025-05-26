@@ -41,6 +41,7 @@
 <script>
 import { API } from '@/common/config.js'
 import { generateThumbnailUrl } from '@/common/utils.js'
+import thumbnailCache from '@/common/cache.js'
 
 export default {
   data() {
@@ -57,6 +58,9 @@ export default {
     console.log('专题介绍页面加载，接收参数:', options);
     this.topicId = options.topic_id || '';
     console.log('设置的topicId:', this.topicId);
+    
+    // 设置当前专题到缓存管理器
+    thumbnailCache.setCurrentTopic(this.topicId);
     
     // 获取专题信息和地图列表
     this.getTopicInfo();
@@ -125,7 +129,7 @@ export default {
               });
             });
             
-            // 处理地图数据 - 使用真实缩略图
+            // 处理地图数据 - 使用真实缩略图并缓存
             this.maps = res.data.data.map((item, index) => {
               console.log(`=== 处理地图项 ${index} ===`);
               console.log('原始地图数据:', item);
@@ -146,6 +150,16 @@ export default {
                 width: item.width,
                 height: item.height
               };
+              
+              // 将缩略图和地图信息存入缓存
+              console.log('将缩略图存入缓存...');
+              thumbnailCache.setThumbnail(item.map_id, thumbnailUrl, {
+                title: item.title,
+                description: item.description,
+                width: item.width,
+                height: item.height,
+                type: item.type
+              });
               
               console.log(`处理后数据项 ${index}:`, processedItem);
               console.log(`最终缩略图URL: ${processedItem.thumbnail}`);
