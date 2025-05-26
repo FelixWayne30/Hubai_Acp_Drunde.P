@@ -212,7 +212,7 @@ export default {
         return;
       }
       uni.navigateTo({
-        url: `/pages/map/detail?id=${mapId}`
+        url: `/pages/map/detail?id=${mapId}&topic_id=${this.topicId}`
       });
     }
   }

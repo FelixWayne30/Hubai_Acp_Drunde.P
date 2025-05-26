@@ -108,6 +108,7 @@
 		data() {
 			return {
 				mapId: '',
+				topicId: '',
 				// 地图信息（初始化为空，避免显示错误的静态内容）
 				mapInfo: {
 					id: '',
@@ -171,27 +172,30 @@
 			}
 		},
 		onLoad(options) {
-			console.log('详情页接收到的参数:', options);
-			console.log('options.id:', options.id);
-			console.log('options.id类型:', typeof options.id);
-			
-			this.mapId = options.id || '';
-			console.log('设置后的mapId:', this.mapId);
-			
-			// 检查是否从浏览页跳转过来
-			if (options.from === 'browse') {
-				this.fromBrowse = true;
-			}
-			
-			if (this.mapId) {
-				this.getMapDetail();
-			} else {
-				console.error('mapId为空，无法获取详情');
-				uni.showToast({
-					title: '参数错误',
-					icon: 'none'
-				});
-			}
+		  console.log('详情页接收到的参数:', options);
+		  console.log('options.id:', options.id);
+		  console.log('options.id类型:', typeof options.id);
+		  console.log('options.topic_id:', options.topic_id); // 新增日志
+		  
+		  this.mapId = options.id || '';
+		  this.topicId = options.topic_id || ''; // 新增：保存topicId
+		  console.log('设置后的mapId:', this.mapId);
+		  console.log('设置后的topicId:', this.topicId); // 新增日志
+		  
+		  // 检查是否从浏览页跳转过来
+		  if (options.from === 'browse') {
+		    this.fromBrowse = true;
+		  }
+		  
+		  if (this.mapId) {
+		    this.getMapDetail();
+		  } else {
+		    console.error('mapId为空，无法获取详情');
+		    uni.showToast({
+		      title: '参数错误',
+		      icon: 'none'
+		    });
+		  }
 		},
 		onShareAppMessage() {
 			return {
@@ -483,13 +487,22 @@
 			
 			// 返回浏览页
 			backToBrowse() {
-				if (this.fromBrowse) {
-					uni.navigateBack();
-				} else {
-					uni.navigateTo({
-						url: `/pages/map/browse?id=${this.mapId}`
-					});
-				}
+			  if (this.fromBrowse) {
+			    uni.navigateBack();
+			  } else {
+			    // 修改：检查topicId是否存在
+			    if (!this.topicId) {
+			      uni.showToast({
+			        title: '缺少专题信息，无法进入浏览页',
+			        icon: 'none'
+			      });
+			      return;
+			    }
+			    
+			    uni.navigateTo({
+			      url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
+			    });
+			  }
 			}
 		}
 	}
