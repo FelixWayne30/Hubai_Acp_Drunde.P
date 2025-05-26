@@ -1,9 +1,9 @@
 // 后端服务基础URL
-export const BASE_URL = 'http://localhost:8088';
+export const BASE_URL = 'http://192.168.50.133:8088';
 
 // GeoServer配置
 export const GEOSERVER_CONFIG = {
-  BASE_URL: 'http://localhost:8080/geoserver',
+  BASE_URL: 'http://192.168.50.133:8080/geoserver',
   WORKSPACE: 'hubei'
 };
 

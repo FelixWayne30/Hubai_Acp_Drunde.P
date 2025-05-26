@@ -102,6 +102,7 @@
 
 <script>
 	import { API } from '@/common/config.js'
+	import { generateFullImageUrl } from '@/common/utils.js'
 	
 	export default {
 		data() {
@@ -221,12 +222,20 @@
 							console.log('原始地图数据:', mapData);
 							
 							if (mapData) {
+								console.log('=== 开始生成详情页地图图片 ===');
+								console.log('地图ID:', mapData.map_id);
+								console.log('地图尺寸:', mapData.width, 'x', mapData.height);
+								
+								// 生成真实的地图图片URL
+								const fullImageUrl = generateFullImageUrl(mapData.map_id, mapData.width, mapData.height);
+								console.log('生成的完整图片URL:', fullImageUrl);
+								
 								// 更新地图信息
 								const newMapInfo = {
 									id: mapData.map_id,
 									title: mapData.title,
 									description: mapData.description || '暂无描述',
-									image: '/static/placeholder.png',
+									image: fullImageUrl, // 使用真实的WMS图片URL
 									type: mapData.type,
 									width: mapData.width,
 									height: mapData.height,
@@ -247,6 +256,8 @@
 								
 								console.log('更新后的mapInfo:', this.mapInfo);
 								console.log('页面标题应该显示:', this.mapInfo.title);
+								console.log('页面图片应该显示:', this.mapInfo.image);
+								console.log('=== 详情页地图图片生成完成 ===');
 								
 								// 强制重新渲染（Vue2兼容）
 								this.$forceUpdate();

@@ -23,6 +23,7 @@
             :src="item.thumbnail" 
             mode="aspectFill"
             @click="navigateToMap(item.id)"
+            @error="handleImageError"
           ></image>
           <view class="map-description">
             <text>{{item.description}}</text>
@@ -39,6 +40,7 @@
 
 <script>
 import { API } from '@/common/config.js'
+import { generateThumbnailUrl } from '@/common/utils.js'
 
 export default {
   data() {
@@ -48,121 +50,157 @@ export default {
         id: '',
         title: '加载中...'
       },
-      maps: []  // 改为空数组，将从API获取数据
+      maps: []
     }
   },
   onLoad(options) {
+    console.log('专题介绍页面加载，接收参数:', options);
     this.topicId = options.topic_id || '';
+    console.log('设置的topicId:', this.topicId);
+    
     // 获取专题信息和地图列表
     this.getTopicInfo();
     this.getTopicMaps();
   },
   methods: {
+    // 图片加载错误处理
+    handleImageError(e) {
+      console.log('图片加载失败:', e);
+      // 可以设置为默认图片
+      e.target.src = '/static/placeholder.png';
+    },
+    
     // 获取专题基本信息
     getTopicInfo() {
-      // 可以通过API获取单个专题详情，或者从缓存中获取
       uni.request({
         url: API.TOPICS,
         success: (res) => {
           if (res.statusCode === 200 && res.data.code === 200) {
-            // 在列表中找到当前专题
-            const topic = res.data.data.find(item => item.id === this.topicId);
+            const topic = res.data.data.find(item => item.topic_id === this.topicId);
             if (topic) {
-              this.topicInfo = topic;
-              // 设置导航栏标题
+              this.topicInfo = {
+                id: topic.topic_id,
+                title: topic.title,
+                description: topic.description
+              };
               uni.setNavigationBarTitle({
                 title: topic.title
               });
             }
           }
+        },
+        fail: (err) => {
+          console.error('获取专题信息失败:', err);
         }
       });
     },
-   // 获取该专题下的所有地图
-       getTopicMaps() {
-         uni.showLoading({
-           title: '加载地图数据...'
-         });
-         
-         uni.request({
-           url: API.MAPS_BY_GROUP + this.topicId,
-           method: 'GET',
-           success: (res) => {
-             console.log('=== 地图数据调试开始 ===');
-             console.log('API请求URL:', API.MAPS_BY_GROUP + this.topicId);
-             console.log('获取地图数据成功:', res);
-             console.log('原始数据结构:', res.data.data);
-             
-             if (res.statusCode === 200 && res.data.code === 200) {
-               // 详细打印每个原始数据项
-               res.data.data.forEach((item, index) => {
-                 console.log(`原始数据项 ${index}:`, {
-                   map_id: item.map_id,
-                   title: item.title,
-                   description: item.description,
-                   type: item.type
-                 });
-               });
-               
-               // 处理地图数据
-               this.maps = res.data.data.map((item, index) => {
-                 const processedItem = {
-                   id: item.map_id,
-                   title: item.title,
-                   description: item.description || '暂无描述',
-                   thumbnail: '/static/placeholder.png'
-                 };
-                 console.log(`处理后数据项 ${index}:`, processedItem);
-                 return processedItem;
-               });
-               
-               console.log('最终maps数组:', this.maps);
-               console.log('=== 地图数据调试结束 ===');
-             } else {
-               console.error('获取地图数据失败:', res.data);
-               uni.showToast({
-                 title: '获取地图数据失败',
-                 icon: 'none'
-               });
-             }
-           },
-           fail: (err) => {
-             console.error('获取地图数据失败:', err);
-             uni.showToast({
-               title: '网络错误，请稍后重试',
-               icon: 'none'
-             });
-           },
-           complete: () => {
-             uni.hideLoading();
-           }
-         });
-       },
-       
-       // 导航到地图浏览页
-       navigateToMap(mapId) {
-         console.log('跳转到地图浏览页，mapId:', mapId);
-         uni.navigateTo({
-           url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}`
-         });
-       },
-       
-       // 导航到地图详情页
-       navigateToDetail(mapId) {
-         console.log('跳转到地图详情页，mapId:', mapId);
-         console.log('mapId类型:', typeof mapId);
-         if (!mapId) {
-           console.error('mapId为空，无法跳转');
-           uni.showToast({
-             title: 'mapId参数错误',
-             icon: 'none'
-           });
-           return;
-         }
-         uni.navigateTo({
-           url: `/pages/map/detail?id=${mapId}`
-         });
-       }
+    
+    // 获取该专题下的所有地图
+    getTopicMaps() {
+      console.log('=== 开始获取专题地图数据 ===');
+      
+      uni.showLoading({
+        title: '加载地图数据...'
+      });
+      
+      uni.request({
+        url: API.MAPS_BY_GROUP + this.topicId,
+        method: 'GET',
+        success: (res) => {
+          console.log('=== 地图数据调试开始 ===');
+          console.log('API请求URL:', API.MAPS_BY_GROUP + this.topicId);
+          console.log('获取地图数据成功:', res);
+          console.log('原始数据结构:', res.data.data);
+          
+          if (res.statusCode === 200 && res.data.code === 200) {
+            // 详细打印每个原始数据项
+            res.data.data.forEach((item, index) => {
+              console.log(`原始数据项 ${index}:`, {
+                map_id: item.map_id,
+                title: item.title,
+                description: item.description,
+                type: item.type,
+                width: item.width,
+                height: item.height
+              });
+            });
+            
+            // 处理地图数据 - 使用真实缩略图
+            this.maps = res.data.data.map((item, index) => {
+              console.log(`=== 处理地图项 ${index} ===`);
+              console.log('原始地图数据:', item);
+              console.log('map_id:', item.map_id);
+              console.log('width:', item.width);
+              console.log('height:', item.height);
+              
+              // 调用工具函数生成真实缩略图URL
+              console.log('准备调用generateThumbnailUrl函数...');
+              const thumbnailUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
+              console.log('generateThumbnailUrl返回结果:', thumbnailUrl);
+              
+              const processedItem = {
+                id: item.map_id,
+                title: item.title,
+                description: item.description || '暂无描述',
+                thumbnail: thumbnailUrl, // 使用生成的真实缩略图URL
+                width: item.width,
+                height: item.height
+              };
+              
+              console.log(`处理后数据项 ${index}:`, processedItem);
+              console.log(`最终缩略图URL: ${processedItem.thumbnail}`);
+              console.log(`=== 处理地图项 ${index} 结束 ===`);
+              
+              return processedItem;
+            });
+            
+            console.log('最终maps数组:', this.maps);
+            console.log('=== 地图数据调试结束 ===');
+          } else {
+            console.error('获取地图数据失败:', res.data);
+            uni.showToast({
+              title: '获取地图数据失败',
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('获取地图数据失败:', err);
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        },
+        complete: () => {
+          uni.hideLoading();
+        }
+      });
+    },
+    
+    // 导航到地图浏览页
+    navigateToMap(mapId) {
+      console.log('跳转到地图浏览页，mapId:', mapId);
+      uni.navigateTo({
+        url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}`
+      });
+    },
+    
+    // 导航到地图详情页
+    navigateToDetail(mapId) {
+      console.log('跳转到地图详情页，mapId:', mapId);
+      console.log('mapId类型:', typeof mapId);
+      if (!mapId) {
+        console.error('mapId为空，无法跳转');
+        uni.showToast({
+          title: 'mapId参数错误',
+          icon: 'none'
+        });
+        return;
+      }
+      uni.navigateTo({
+        url: `/pages/map/detail?id=${mapId}`
+      });
+    }
   }
 }
 </script>
@@ -175,22 +213,21 @@ export default {
   padding-bottom: 30rpx;
 }
 
-/* 基础纯色背景 - 淡米色 */
-/* Base solid background color - modified to match other pages */
+/* 基础纯色背景 */
 .background-solid {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: #E8F4F0; /* Updated to light mint green */
+  background-color: #E8F4F0;
   z-index: -2;
 }
 
 /* Background image container - repositioned to bottom */
 .background-image-container {
   position: absolute;
-  bottom: 0; /* Changed from top to bottom */
+  bottom: 0;
   left: 0;
   width: 100%;
   height: 45%;
@@ -208,38 +245,21 @@ export default {
 /* Gradient overlay - direction reversed */
 .gradient-overlay {
   position: absolute;
-  top: 0; /* Changed from bottom to top */
+  top: 0;
   left: 0;
   width: 100%;
-  height: 60%; /* Increased fade height */
+  height: 60%;
   background: linear-gradient(to top, transparent 0%, #E8F4F0 100%);
   z-index: 1;
-}
-
-/* 专题标题区域 */
-.topic-header {
-  padding: 40rpx 30rpx;
-  margin-top: 120rpx;
-  position: relative;
-  z-index: 1;
-}
-
-.topic-title {
-  font-size: 44rpx;
-  font-weight: bold;
-  color: #333;
-  text-align: center;
-  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
-  margin-bottom: 20rpx;
 }
 
 /* 地图列表 */
 .maps-list {
   height: calc(100vh - 120rpx); 
-  padding: 160rpx 30rpx 30rpx 30rpx; /* 增加顶部内边距，补偿移除的标题区域 */
+  padding: 160rpx 30rpx 30rpx 30rpx;
   position: relative;
   z-index: 1;
-  box-sizing: border-box; /* 确保padding不会增加元素实际尺寸 */
+  box-sizing: border-box;
   width: 100%;
 }
 
@@ -250,20 +270,20 @@ export default {
   padding: 30rpx;
   box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.08);
   width: 100%;
-  box-sizing: border-box; /* 确保内边距计入宽度计算 */
-  overflow: hidden; /* 防止内容溢出 */
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .map-name {
   font-size: 34rpx;
   font-weight: bold;
-  color: #2E8B57; /* 与应用中使用的主色调匹配 */
+  color: #2E8B57;
   margin-bottom: 20rpx;
   border-bottom: 1px solid rgba(46, 139, 87, 0.2);
   padding-bottom: 15rpx;
   width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis; /* 文字过长时显示省略号 */
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -278,7 +298,7 @@ export default {
   height: 300rpx;
   border-radius: 10rpx;
   margin-bottom: 20rpx;
-  object-fit: cover; /* 确保图片比例合适 */
+  object-fit: cover;
 }
 
 .map-description {
@@ -286,7 +306,7 @@ export default {
   color: #666;
   line-height: 1.6;
   width: 100%;
-  overflow-wrap: break-word; /* 确保长单词自动换行 */
+  overflow-wrap: break-word;
   word-wrap: break-word;
 }
 
@@ -320,7 +340,7 @@ export default {
 @media screen and (min-width: 768px) {
   .map-content {
     flex-direction: row;
-    flex-wrap: wrap; /* 允许在需要时换行 */
+    flex-wrap: wrap;
     justify-content: space-between;
   }
   
@@ -329,11 +349,11 @@ export default {
     height: 250rpx;
     margin-right: 20rpx;
     margin-bottom: 0;
-    flex-shrink: 0; /* 防止图片被挤压 */
+    flex-shrink: 0;
   }
   
   .map-description {
-    width: calc(60% - 20rpx); /* 计算正确的宽度，考虑到margin */
+    width: calc(60% - 20rpx);
     flex-grow: 1;
   }
   

@@ -94,7 +94,6 @@ export default {
   },
   methods: {
     // 获取专题数据的方法
-   // 获取专题数据的方法
        getTopics() {
          uni.showLoading({
            title: '加载中...'
