@@ -12,31 +12,90 @@ export default {
     return {
       topicId: '',
       mapId: '',
-      webViewUrl: ''
+      webViewUrl: '',
+      mapData: null
     }
   },
-	onLoad(options) {
-	  this.topicId = options.topic_id || '';
-	  this.mapId = options.id || '';
-	  
-	  // 使用Nginx代理的URL
-	  this.webViewUrl = `http://localhost:2180/static/map-viewer.html?topic_id=${this.topicId}&map_id=${this.mapId}`;
-	  
-	  console.log('加载web-view URL:', this.webViewUrl);
-	},
+  onLoad(options) {
+    this.topicId = options.topic_id || '';
+    this.mapId = options.id || '';
+    
+    console.log('地图浏览页加载，参数:', options);
+    console.log('topicId:', this.topicId);
+    console.log('mapId:', this.mapId);
+    
+    if (this.mapId) {
+      this.getMapData();
+    } else {
+      console.error('mapId为空，无法加载地图');
+    }
+  },
   methods: {
+    // 获取地图数据
+    getMapData() {
+      console.log('=== 开始获取地图数据 ===');
+      uni.showLoading({
+        title: '加载地图数据...'
+      });
+      
+      uni.request({
+        url: API.MAP_DETAIL + this.mapId,
+        method: 'GET',
+        success: (res) => {
+          console.log('获取地图数据成功:', res);
+          if (res.statusCode === 200 && res.data.code === 200) {
+            const mapData = res.data.data[0];
+            if (mapData) {
+              this.mapData = mapData;
+              console.log('地图数据:', this.mapData);
+              this.initWebView();
+            } else {
+              uni.showToast({
+                title: '地图数据不存在',
+                icon: 'none'
+              });
+            }
+          } else {
+            uni.showToast({
+              title: '获取地图数据失败',
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('获取地图数据失败:', err);
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        },
+        complete: () => {
+          uni.hideLoading();
+        }
+      });
+    },
+    
+    // 初始化WebView
+    initWebView() {
+      // 将地图数据编码后传递给web-view
+      const encodedMapData = encodeURIComponent(JSON.stringify(this.mapData));
+      
+      // 使用nginx代理地址
+      this.webViewUrl = `http://localhost:2180/static/map-viewer.html?mapData=${encodedMapData}&topicId=${this.topicId}`;
+      
+      console.log('WebView URL:', this.webViewUrl);
+    },
+    
     handleMessage(event) {
       console.log('收到web-view消息:', event);
       
       try {
-        // 获取消息数据
         const data = event.detail && event.detail.data;
         console.log('解析后的消息数据:', data);
         
         if (data && data.action === 'viewDetail') {
           console.log('准备跳转到详情页:', data.mapId);
           
-          // 设置延迟确保消息处理完成
           setTimeout(() => {
             uni.navigateTo({
               url: `/pages/map/detail?id=${data.mapId}&from=browse`,

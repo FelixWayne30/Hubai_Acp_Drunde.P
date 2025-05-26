@@ -200,13 +200,13 @@
     </div>
     
     <!-- 预加载信息提示 -->
-    <div id="preload-info" class="preload-info">正在预加载下一张图片...</div>
+    <div id="preload-info" class="preload-info">正在预加载图片...</div>
     
     <!-- 工具栏 -->
     <div class="toolbar">
-        <button class="tool-btn" id="prevBtn" disabled>上一张</button>
-        <div class="map-title" id="mapTitle">湖北省地质图</div>
-        <button class="tool-btn" id="nextBtn">下一张</button>
+        <button class="tool-btn" id="prevBtn" style="display:none;" disabled>上一张</button>
+        <div class="map-title" id="mapTitle">加载中...</div>
+        <button class="tool-btn" id="nextBtn" style="display:none;">下一张</button>
     </div>
     
     <!-- 下载栏 -->
@@ -245,24 +245,91 @@
     </div>
 
     <script>
-        // 图片数据
-        const maps = [
-            {
-                id: '1',
-                title: '湖北省地质图',
-                url: 'maps/2-2土壤0303-01.jpg'
-            },
-            {
-                id: '2',
-                title: '湖北省矿产分布图',
-                url: 'maps/1-5湖北省气候—降水样图0401.jpg'
-            },
-            {
-                id: '3',
-                title: '湖北省地貌类型图',
-                url: 'http://192.168.50.133:8080/geoserver/hubei/wms?service=WMS&version=1.1.0&request=GetMap&layers=hubei%3Ageomorphology&bbox=0.0%2C0.0%2C1.0%2C0.724332153202446&width=6213&height=4500&srs=EPSG%3A4326&styles=&format=image%2Fjpeg'
+        // 解析URL参数获取地图数据
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mapDataParam = urlParams.get('mapData');
+            const topicId = urlParams.get('topicId');
+            
+            console.log('=== 开始解析URL参数 ===');
+            console.log('mapData参数:', mapDataParam);
+            console.log('topicId参数:', topicId);
+            
+            let mapData = null;
+            if (mapDataParam) {
+                try {
+                    mapData = JSON.parse(decodeURIComponent(mapDataParam));
+                    console.log('解析后的地图数据:', mapData);
+                } catch (e) {
+                    console.error('解析地图数据失败:', e);
+                }
             }
-        ];
+            
+            return { mapData, topicId };
+        }
+        
+        // 根据地图数据生成WMS完整图片URL
+        function generateFullMapUrl(mapData) {
+            if (!mapData || !mapData.map_id) {
+                console.error('地图数据无效');
+                return null;
+            }
+            
+            console.log('=== 生成完整地图URL ===');
+            console.log('地图ID:', mapData.map_id);
+            console.log('地图尺寸:', mapData.width, 'x', mapData.height);
+            
+            const baseUrl = 'http://192.168.50.133:8080/geoserver/hubei/wms';
+            const aspectRatio = (mapData.height && mapData.width) ? (mapData.height / mapData.width) : 0.724;
+            const layers = `hubei:${mapData.map_id}`;
+            
+            // 构建查询参数
+            const params = {
+                SERVICE: 'WMS',
+                VERSION: '1.1.1',
+                REQUEST: 'GetMap',
+                FORMAT: 'image/png',
+                TRANSPARENT: 'true',
+                LAYERS: layers,
+                STYLES: '',
+                SRS: 'EPSG:4326',
+                BBOX: `0,0,1,${aspectRatio}`,
+                WIDTH: mapData.width.toString(),
+                HEIGHT: mapData.height.toString(),
+            };
+            
+            // 手动构建查询字符串
+            const queryParts = [];
+            for (const [key, value] of Object.entries(params)) {
+                if (value !== null && value !== undefined) {
+                    queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+                }
+            }
+            const queryString = queryParts.join('&');
+            
+            const fullUrl = `${baseUrl}?${queryString}`;
+            console.log('生成的完整地图URL:', fullUrl);
+            
+            return fullUrl;
+        }
+        
+        // 解析URL参数获取数据
+        const { mapData, topicId } = getUrlParams();
+        
+        // 初始化地图数据
+        let maps = [];
+        
+        if (mapData) {
+            // 使用真实地图数据
+            maps = [{
+                id: mapData.map_id,
+                title: mapData.title,
+                url: generateFullMapUrl(mapData)
+            }];
+            console.log('初始化地图数据完成:', maps);
+        } else {
+            console.error('未获取到地图数据，使用默认数据');
+        }
         
         // 预加载管理器
         class PreloadManager {
@@ -352,21 +419,6 @@
                 return this.imageCache[url] || null;
             }
             
-            // 检查图片是否已缓存
-            isCached(url) {
-                return !!this.imageCache[url];
-            }
-            
-            // 检查图片是否正在加载
-            isLoading(url) {
-                return !!this.loadingImages[url];
-            }
-            
-            // 获取预加载状态
-            getPreloadStatus(url) {
-                return this.preloadStatus[url] || 0;
-            }
-            
             // 更新预加载信息显示
             updatePreloadInfo() {
                 const preloadInfo = document.getElementById('preload-info');
@@ -407,32 +459,22 @@
         const preloadManager = new PreloadManager();
         
         // 状态变量
-        let currentIndex = 0;
         let viewer;
         let isViewerInitialized = false;
         
         // 初始化查看器
         function initViewer() {
-            // 获取URL参数
-            const urlParams = new URLSearchParams(window.location.search);
-            const mapId = urlParams.get('map_id') || '';
-            
-            // 设置初始图片
-            if (mapId) {
-                const index = maps.findIndex(item => item.id === mapId);
-                if (index !== -1) {
-                    currentIndex = index;
-                }
-            }
+            console.log('=== 初始化查看器 ===');
+            console.log('当前地图数据:', maps[0]);
             
             // 更新标题
-            document.getElementById('mapTitle').textContent = maps[currentIndex].title;
+            document.getElementById('mapTitle').textContent = maps[0].title;
             
             // 显示加载指示器
             document.getElementById('loading').style.display = 'flex';
             
             // 如果当前图片已预加载，使用缓存
-            const currentMapUrl = maps[currentIndex].url;
+            const currentMapUrl = maps[0].url;
             const cachedImage = preloadManager.getCachedImage(currentMapUrl);
             
             // 创建OpenSeadragon查看器
@@ -457,60 +499,29 @@
             viewer.addHandler('open', function() {
                 // 隐藏加载指示器
                 document.getElementById('loading').style.display = 'none';
-                
-                // 预加载前后图片
-                preloadAdjacentImages();
+                console.log('地图加载完成');
             });
             
-            // 更新UI状态
+            // 更新UI状态（隐藏切换按钮，因为只有一张图）
             updateUI();
         }
         
-        // 预加载前后图片
-        function preloadAdjacentImages() {
-            // 预加载下一张图片
-            if (currentIndex < maps.length - 1) {
-                const nextImageUrl = maps[currentIndex + 1].url;
-                if (!preloadManager.isCached(nextImageUrl) && !preloadManager.isLoading(nextImageUrl)) {
-                    preloadManager.preload(nextImageUrl)
-                        .then(() => {
-                            console.log(`预加载下一张图片完成: ${maps[currentIndex + 1].title}`);
-                        })
-                        .catch(error => {
-                            console.error(`预加载下一张图片失败: ${error}`);
-                        });
-                }
-            }
-            
-            // 预加载上一张图片
-            if (currentIndex > 0) {
-                const prevImageUrl = maps[currentIndex - 1].url;
-                if (!preloadManager.isCached(prevImageUrl) && !preloadManager.isLoading(prevImageUrl)) {
-                    preloadManager.preload(prevImageUrl)
-                        .then(() => {
-                            console.log(`预加载上一张图片完成: ${maps[currentIndex - 1].title}`);
-                        })
-                        .catch(error => {
-                            console.error(`预加载上一张图片失败: ${error}`);
-                        });
-                }
-            }
-        }
-        
-        // 加载当前索引的图片
+        // 加载图片
         function loadImage() {
+            console.log('=== 加载图片 ===');
+            
             // 更新标题
-            document.getElementById('mapTitle').textContent = maps[currentIndex].title;
+            document.getElementById('mapTitle').textContent = maps[0].title;
             
             // 获取图片URL
-            const imageUrl = maps[currentIndex].url;
+            const imageUrl = maps[0].url;
             
             // 检查是否已缓存
             const cachedImage = preloadManager.getCachedImage(imageUrl);
             
             // 如果图片已缓存，直接显示
             if (cachedImage) {
-                console.log(`使用缓存加载图片: ${maps[currentIndex].title}`);
+                console.log(`使用缓存加载图片: ${maps[0].title}`);
                 viewer.open({
                     type: 'image',
                     url: cachedImage.url,
@@ -532,6 +543,8 @@
                             url: cached.url,
                             buildPyramid: false
                         });
+                        
+                        console.log('图片加载完成');
                     })
                     .catch(error => {
                         console.error(`加载图片失败: ${error}`);
@@ -542,31 +555,13 @@
             
             // 更新UI
             updateUI();
-            
-            // 预加载前后图片
-            preloadAdjacentImages();
         }
         
-        // 更新UI状态
+        // 更新UI状态（隐藏切换按钮）
         function updateUI() {
-            document.getElementById('prevBtn').disabled = (currentIndex <= 0);
-            document.getElementById('nextBtn').disabled = (currentIndex >= maps.length - 1);
-        }
-        
-        // 切换到上一张图片
-        function prevImage() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                loadImage();
-            }
-        }
-        
-        // 切换到下一张图片
-        function nextImage() {
-            if (currentIndex < maps.length - 1) {
-                currentIndex++;
-                loadImage();
-            }
+            // 隐藏上一张和下一张按钮，因为只有一张图
+            document.getElementById('prevBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
         }
         
         // 显示下载对话框
@@ -606,7 +601,7 @@
                         action: 'downloadRequest',
                         email: email,
                         reason: reason,
-                        mapId: maps[currentIndex].id
+                        mapId: maps[0].id
                     }
                 });
                 
@@ -621,27 +616,35 @@
         
         // 页面加载完成时执行
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== 页面DOM加载完成 ===');
+            console.log('地图数组:', maps);
+            
+            if (maps.length === 0 || !maps[0].url) {
+                console.error('没有有效的地图数据');
+                document.getElementById('loading').style.display = 'none';
+                alert('无法加载地图数据');
+                return;
+            }
+            
             // 预加载当前图片，完成后初始化查看器
-            const currentMapUrl = maps[currentIndex].url;
+            const currentMapUrl = maps[0].url;
             
             // 显示加载指示器
             document.getElementById('loading').style.display = 'flex';
             
             preloadManager.preload(currentMapUrl)
                 .then(() => {
-                    console.log(`当前图片预加载完成: ${maps[currentIndex].title}`);
+                    console.log(`地图预加载完成: ${maps[0].title}`);
                     // 初始化查看器
                     initViewer();
                 })
                 .catch(error => {
-                    console.error(`当前图片预加载失败: ${error}`);
+                    console.error(`地图预加载失败: ${error}`);
                     // 即使预加载失败也初始化查看器
                     initViewer();
                 });
             
             // 添加事件监听器
-            document.getElementById('prevBtn').addEventListener('click', prevImage);
-            document.getElementById('nextBtn').addEventListener('click', nextImage);
             document.getElementById('downloadBtn').addEventListener('click', showDownloadModal);
             document.getElementById('cancelBtn').addEventListener('click', hideDownloadModal);
             document.getElementById('submitBtn').addEventListener('click', submitDownloadRequest);
@@ -650,14 +653,6 @@
             document.getElementById('reasonInput').addEventListener('input', function() {
                 document.getElementById('wordCount').textContent = this.value.length;
             });
-            
-            // 检测是否从详情页进入（传递from=detail参数）
-            const urlParams = new URLSearchParams(window.location.search);
-            const fromDetail = urlParams.get('from') === 'detail';
-            
-            if (fromDetail) {
-                console.log('从详情页进入，已预加载当前图片');
-            }
         });
         
         // 页面卸载时清理
