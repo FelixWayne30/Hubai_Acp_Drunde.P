@@ -61,7 +61,6 @@
   </view>
 </template>
 
-// pages/index/index.vue
 <script>
 import { API } from '@/common/config.js'
 
@@ -172,18 +171,6 @@ export default {
   overflow: hidden;
 }
 
-/* Base solid background color - light cream color */
-.background-solid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #F9F7F2; /* Light cream background color */
-  z-index: -2;
-}
-
-/* Top background image container */
 /* Base solid background color */
 .background-solid {
   position: absolute;
@@ -195,10 +182,10 @@ export default {
   z-index: -2;
 }
 
-/* Background image container - now at bottom */
+/* Background image container - positioned at bottom */
 .background-image-container {
   position: absolute;
-  bottom: 0; /* Changed from top to bottom */
+  bottom: 0;
   left: 0;
   width: 100%;
   height: 45%;
@@ -213,16 +200,17 @@ export default {
   object-fit: cover;
 }
 
-/* Gradient overlay - now fades upward */
+/* Gradient overlay - fades upward */
 .gradient-overlay {
   position: absolute;
-  top: 0; /* Changed from bottom to top */
+  top: 0;
   left: 0;
   width: 100%;
-  height: 60%; /* Increased fade height */
+  height: 60%;
   background: linear-gradient(to top, transparent 0%, #E8F4F0 100%);
   z-index: 1;
 }
+
 /* Search Bar Styling */
 .search-container {
   position: relative;
@@ -262,7 +250,7 @@ export default {
   padding: 0 10rpx;
 }
 
-/* Carousel/Swiper styling - NOW POSITIONED BEFORE TOPIC GRID */
+/* Carousel/Swiper styling */
 .swiper-container {
   width: 90%;
   height: 350rpx;
@@ -316,7 +304,7 @@ export default {
   padding: 0 20rpx 30rpx;
 }
 
-/* Topic grid styling - NOW POSITIONED AFTER CAROUSEL */
+/* Topic grid styling */
 .topic-grid {
   display: flex;
   flex-wrap: wrap;
