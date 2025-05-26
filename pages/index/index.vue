@@ -94,44 +94,46 @@ export default {
   },
   methods: {
     // 获取专题数据的方法
-    getTopics() {
-      uni.showLoading({
-        title: '加载中...'
-      })
-      
-      uni.request({
-        url: API.TOPICS,
-        method: 'GET',
-        success: (res) => {
-          console.log('获取专题数据成功:', res)
-          if (res.statusCode === 200 && res.data.code === 200) {
-            // 处理返回的数据
-            this.topicList = res.data.data.map(item => ({
-              id: item.id,
-              title: item.title,
-              image: item.image || "/static/icons/topic-default.png" // 使用默认图片作为备选
-            }))
-          } else {
-            // 请求成功但返回错误
-            uni.showToast({
-              title: '获取专题数据失败',
-              icon: 'none'
-            })
-          }
-        },
-        fail: (err) => {
-          console.error('获取专题数据失败:', err)
-          uni.showToast({
-            title: '网络错误，请稍后重试',
-            icon: 'none'
-          })
-        },
-        complete: () => {
-          uni.hideLoading()
-        }
-      })
-    },
-    
+   // 获取专题数据的方法
+       getTopics() {
+         uni.showLoading({
+           title: '加载中...'
+         })
+         
+         uni.request({
+           url: API.TOPICS,
+           method: 'GET',
+           success: (res) => {
+             console.log('获取专题数据成功:', res)
+             if (res.statusCode === 200 && res.data.code === 200) {
+               // 处理返回的数据 - 注意后端返回的字段名
+               this.topicList = res.data.data.map(item => ({
+                 id: item.topic_id, // 后端返回的是topic_id
+                 title: item.title,
+                 image: item.image || "/static/icons/topic-default.png"
+               }))
+               console.log('处理后的专题数据:', this.topicList)
+             } else {
+               console.error('接口返回错误:', res.data)
+               uni.showToast({
+                 title: '获取专题数据失败',
+                 icon: 'none'
+               })
+             }
+           },
+           fail: (err) => {
+             console.error('获取专题数据失败:', err)
+             uni.showToast({
+               title: '网络错误，请稍后重试',
+               icon: 'none'
+             })
+           },
+           complete: () => {
+             uni.hideLoading()
+           }
+         })
+       },
+	   
     // 保留原有的方法
     navigateToTopic(topicId) {
       uni.navigateTo({
