@@ -5,7 +5,7 @@
     
     <!-- Top decorative background with gradient fade -->
     <view class="background-image-container">
-      <image class="background-image-top" src="/static/background/hubei-landscape.png" mode="aspectFill"></image>
+      <image class="background-image-top" src="/static/background/center-bg.png" mode="aspectFill"></image>
       <view class="gradient-overlay"></view>
     </view>
     
