@@ -30,7 +30,7 @@
 		<view class="description-section">
 			<view class="section-title">图幅描述</view>
 			<view class="description-content">
-				{{mapInfo.description || '暂无描述'}}
+				{{mapInfo.description}}
 			</view>
 		</view>
 		
@@ -101,22 +101,31 @@
 </template>
 
 <script>
+	import { API } from '@/common/config.js'
+	
 	export default {
 		data() {
 			return {
 				mapId: '',
-				// 地图信息（示例数据）
+				// 地图信息（初始化为空，避免显示错误的静态内容）
 				mapInfo: {
 					id: '',
-					title: '湖北省地质图',
+					title: '加载中...',
 					image: '/static/placeholder.png',
-					description: '展示湖北省地质结构分布'
+					description: '正在加载地图描述...',
+					type: '',
+					width: 0,
+					height: 0,
+					createTime: '',
+					viewCount: 0,
+					likeCount: 0,
+					commentCount: 0
 				},
 				// 交互数据
 				isLiked: false,
 				isCollected: false,
-				likeCount: 123,
-				commentCount: 5,
+				likeCount: 0,
+				commentCount: 0,
 				// 评论相关
 				comments: [
 					{
@@ -161,28 +170,28 @@
 			}
 		},
 		onLoad(options) {
-					console.log('详情页接收到的参数:', options);
-					console.log('options.id:', options.id);
-					console.log('options.id类型:', typeof options.id);
-					
-					this.mapId = options.id || '';
-					console.log('设置后的mapId:', this.mapId);
-					
-					// 检查是否从浏览页跳转过来
-					if (options.from === 'browse') {
-						this.fromBrowse = true;
-					}
-					
-					if (this.mapId) {
-						this.getMapDetail();
-					} else {
-						console.error('mapId为空，无法获取详情');
-						uni.showToast({
-							title: '参数错误',
-							icon: 'none'
-						});
-					}
-				},
+			console.log('详情页接收到的参数:', options);
+			console.log('options.id:', options.id);
+			console.log('options.id类型:', typeof options.id);
+			
+			this.mapId = options.id || '';
+			console.log('设置后的mapId:', this.mapId);
+			
+			// 检查是否从浏览页跳转过来
+			if (options.from === 'browse') {
+				this.fromBrowse = true;
+			}
+			
+			if (this.mapId) {
+				this.getMapDetail();
+			} else {
+				console.error('mapId为空，无法获取详情');
+				uni.showToast({
+					title: '参数错误',
+					icon: 'none'
+				});
+			}
+		},
 		onShareAppMessage() {
 			return {
 				title: this.mapInfo.title,
@@ -192,23 +201,83 @@
 		methods: {
 			// 获取地图详情
 			getMapDetail() {
-				// 这里应该是从API获取数据
-				console.log('获取地图详情，地图ID:', this.mapId);
-				// 模拟API调用
-				// uni.request({
-				//   url: `/api/maps/${this.mapId}`,
-				//   success: (res) => {
-				//     this.mapInfo = res.data;
-				//     this.isLiked = res.data.isLiked;
-				//     this.isCollected = res.data.isCollected;
-				//     this.likeCount = res.data.likeCount;
-				//     this.commentCount = res.data.commentCount;
-				//     this.getComments();
-				//   }
-				// });
+				// 显示加载状态
+				uni.showLoading({
+					title: '加载中...'
+				});
 				
-				// 假设我们已经获取到了详情
-				this.mapInfo.id = this.mapId;
+				console.log('=== 地图详情获取开始 ===');
+				console.log('请求地图ID:', this.mapId);
+				console.log('请求URL:', API.MAP_DETAIL + this.mapId);
+				
+				// 调用后端API获取地图详情
+				uni.request({
+					url: API.MAP_DETAIL + this.mapId,
+					method: 'GET',
+					success: (res) => {
+						console.log('API响应成功:', res);
+						if (res.statusCode === 200 && res.data.code === 200) {
+							const mapData = res.data.data[0]; // 后端返回的是数组，取第一个元素
+							console.log('原始地图数据:', mapData);
+							
+							if (mapData) {
+								// 更新地图信息
+								const newMapInfo = {
+									id: mapData.map_id,
+									title: mapData.title,
+									description: mapData.description || '暂无描述',
+									image: '/static/placeholder.png',
+									type: mapData.type,
+									width: mapData.width,
+									height: mapData.height,
+									createTime: mapData.create_time,
+									viewCount: mapData.view_count || 0,
+									likeCount: mapData.like_count || 0,
+									commentCount: mapData.comment_count || 0
+								};
+								
+								console.log('新的地图信息:', newMapInfo);
+								
+								// 直接赋值更新数据
+								this.mapInfo = newMapInfo;
+								
+								// 更新相关统计数据
+								this.likeCount = mapData.like_count || 0;
+								this.commentCount = mapData.comment_count || 0;
+								
+								console.log('更新后的mapInfo:', this.mapInfo);
+								console.log('页面标题应该显示:', this.mapInfo.title);
+								
+								// 强制重新渲染（Vue2兼容）
+								this.$forceUpdate();
+								
+							} else {
+								console.error('地图数据为空');
+								uni.showToast({
+									title: '地图数据不存在',
+									icon: 'none'
+								});
+							}
+						} else {
+							console.error('API返回错误:', res.data);
+							uni.showToast({
+								title: '获取地图详情失败',
+								icon: 'none'
+							});
+						}
+					},
+					fail: (err) => {
+						console.error('网络请求失败:', err);
+						uni.showToast({
+							title: '网络错误，请稍后重试',
+							icon: 'none'
+						});
+					},
+					complete: () => {
+						uni.hideLoading();
+						console.log('=== 地图详情获取结束 ===');
+					}
+				});
 			},
 			
 			// 获取评论列表

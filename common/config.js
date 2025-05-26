@@ -1,5 +1,11 @@
-// 后端服务基础URL，使用局域网IP地址(测试)
-export const BASE_URL = 'http://192.168.50.133:8088'; 
+// 后端服务基础URL
+export const BASE_URL = 'http://localhost:8088';
+
+// GeoServer配置
+export const GEOSERVER_CONFIG = {
+  BASE_URL: 'http://localhost:8080/geoserver',
+  WORKSPACE: 'hubei'
+};
 
 // API路径常量
 export const API = {
@@ -10,5 +16,5 @@ export const API = {
   ALL_MAPS: `${BASE_URL}/mapinfo/maps`,
   
   // GeoServer WMS服务地址
-  WMS_URL: 'http://192.168.50.133:8080/geoserver/hubei/wms'
+  WMS_URL: `${GEOSERVER_CONFIG.BASE_URL}/${GEOSERVER_CONFIG.WORKSPACE}/wms`
 };
