@@ -310,7 +310,7 @@ export default {
   font-size: 40rpx;
   font-weight: 900;
   color: #0c0c0c;
-  padding: 20rpx 30rpx 10rpx;
+  padding: 0 30rpx 10rpx;
   margin-bottom: 10rpx;
   text-align: center;
 }
