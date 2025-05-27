@@ -15,6 +15,8 @@
         class="map-item" 
         v-for="(item, index) in maps" 
         :key="index"
+        :data-map-id="item.id"
+        :data-index="index"
       >
         <view class="map-name">{{item.title}}</view>
         <view class="map-content">
@@ -22,14 +24,14 @@
             class="map-thumbnail" 
             :src="item.thumbnail" 
             mode="aspectFill"
-            @click="navigateToMap(item.id)"
+            @click="navigateToMap(item.id, index)"
             @error="handleImageError"
           ></image>
           <view class="map-description">
             <text>{{item.description}}</text>
             <view class="action-buttons">
               <button class="detail-btn primary-bg" @click="navigateToDetail(item.id)">查看详情</button>
-              <button class="browse-btn" @click="navigateToMap(item.id)">浏览地图</button>
+              <button class="browse-btn" @click="navigateToMap(item.id, index)">浏览地图</button>
             </view>
           </view>
         </view>
@@ -41,7 +43,7 @@
 <script>
 import { API } from '@/common/config.js'
 import { generateThumbnailUrl } from '@/common/utils.js'
-import thumbnailCache from '@/common/cache.js'
+import { preloader } from '@/common/preload.js'
 
 export default {
   data() {
@@ -59,18 +61,23 @@ export default {
     this.topicId = options.topic_id || '';
     console.log('设置的topicId:', this.topicId);
     
-    // 设置当前专题到缓存管理器
-    thumbnailCache.setCurrentTopic(this.topicId);
+    // 切换专题时重置预加载器
+    preloader.switchTopic(this.topicId);
     
     // 获取专题信息和地图列表
     this.getTopicInfo();
     this.getTopicMaps();
   },
+  
+  onUnload() {
+    // 页面卸载时清理过期缓存
+    preloader.cleanExpiredCache();
+  },
+  
   methods: {
     // 图片加载错误处理
     handleImageError(e) {
-      console.log('图片加载失败:', e);
-      // 可以设置为默认图片
+      console.log('缩略图加载失败，使用默认图片');
       e.target.src = '/static/placeholder.png';
     },
     
@@ -111,65 +118,32 @@ export default {
         url: API.MAPS_BY_GROUP + this.topicId,
         method: 'GET',
         success: (res) => {
-          console.log('=== 地图数据调试开始 ===');
-          console.log('API请求URL:', API.MAPS_BY_GROUP + this.topicId);
-          console.log('获取地图数据成功:', res);
-          console.log('原始数据结构:', res.data.data);
-          
+          console.log('获取地图数据成功');
           if (res.statusCode === 200 && res.data.code === 200) {
-            // 详细打印每个原始数据项
-            res.data.data.forEach((item, index) => {
-              console.log(`原始数据项 ${index}:`, {
-                map_id: item.map_id,
-                title: item.title,
-                description: item.description,
-                type: item.type,
-                width: item.width,
-                height: item.height
-              });
-            });
-            
-            // 处理地图数据 - 使用真实缩略图并缓存
+            // 处理地图数据
             this.maps = res.data.data.map((item, index) => {
-              console.log(`=== 处理地图项 ${index} ===`);
-              console.log('原始地图数据:', item);
-              console.log('map_id:', item.map_id);
-              console.log('width:', item.width);
-              console.log('height:', item.height);
+              console.log(`处理地图项 ${index}: ${item.title}`);
               
-              // 调用工具函数生成真实缩略图URL
-              console.log('准备调用generateThumbnailUrl函数...');
+              // 生成缩略图URL
               const thumbnailUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
-              console.log('generateThumbnailUrl返回结果:', thumbnailUrl);
               
-              const processedItem = {
+              return {
                 id: item.map_id,
                 title: item.title,
                 description: item.description || '暂无描述',
-                thumbnail: thumbnailUrl, // 使用生成的真实缩略图URL
+                thumbnail: thumbnailUrl,
                 width: item.width,
                 height: item.height
               };
-              
-              // 将缩略图和地图信息存入缓存
-              console.log('将缩略图存入缓存...');
-              thumbnailCache.setThumbnail(item.map_id, thumbnailUrl, {
-                title: item.title,
-                description: item.description,
-                width: item.width,
-                height: item.height,
-                type: item.type
-              });
-              
-              console.log(`处理后数据项 ${index}:`, processedItem);
-              console.log(`最终缩略图URL: ${processedItem.thumbnail}`);
-              console.log(`=== 处理地图项 ${index} 结束 ===`);
-              
-              return processedItem;
             });
             
-            console.log('最终maps数组:', this.maps);
-            console.log('=== 地图数据调试结束 ===');
+            console.log(`地图数据处理完成，共${this.maps.length}个地图`);
+            
+            // 延迟启动激进预加载，避免影响页面渲染
+            setTimeout(() => {
+              this.startAggressivePreload();
+            }, 500);
+            
           } else {
             console.error('获取地图数据失败:', res.data);
             uni.showToast({
@@ -191,18 +165,52 @@ export default {
       });
     },
     
+    // 启动激进预加载策略
+    startAggressivePreload() {
+      if (this.maps.length === 0) {
+        console.log('没有地图数据，跳过预加载');
+        return;
+      }
+      
+      console.log('=== 启动激进预加载策略 ===');
+      
+      // 从第一个地图开始激进预加载整个图组
+      preloader.startAggressivePreload(this.maps, 0, this.topicId);
+      
+      // 定期输出预加载进度（仅控制台）
+      const progressTimer = setInterval(() => {
+        const progress = preloader.getProgress();
+        console.log(`预加载进度: ${progress.completed}/${progress.total} (${progress.percentage}%)`);
+        
+        if (progress.completed === progress.total) {
+          console.log('=== 所有地图预加载完成 ===');
+          clearInterval(progressTimer);
+        }
+      }, 2000);
+      
+      // 10秒后清理定时器（防止内存泄漏）
+      setTimeout(() => {
+        clearInterval(progressTimer);
+      }, 10000);
+    },
+    
     // 导航到地图浏览页
-    navigateToMap(mapId) {
-      console.log('跳转到地图浏览页，mapId:', mapId);
+    navigateToMap(mapId, index = 0) {
+      console.log(`跳转到地图浏览页: ${mapId}, 索引: ${index}`);
+      
+      // 检查是否有预加载缓存
+      const isCached = preloader.isCached(mapId);
+      console.log(`地图缓存状态: ${isCached ? '已缓存' : '未缓存'}`);
+      
       uni.navigateTo({
-        url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}`
+        url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}&index=${index}`
       });
     },
     
     // 导航到地图详情页
     navigateToDetail(mapId) {
-      console.log('跳转到地图详情页，mapId:', mapId);
-      console.log('mapId类型:', typeof mapId);
+      console.log(`跳转到地图详情页: ${mapId}`);
+      
       if (!mapId) {
         console.error('mapId为空，无法跳转');
         uni.showToast({
@@ -211,6 +219,7 @@ export default {
         });
         return;
       }
+      
       uni.navigateTo({
         url: `/pages/map/detail?id=${mapId}&topic_id=${this.topicId}`
       });
