@@ -1,29 +1,36 @@
 <template>
   <view class="container">
-    <!-- Base solid color background -->
+    <!-- 和个人中心一致的背景设计 -->
     <view class="background-solid"></view>
     
-    <!-- Top decorative background with gradient fade -->
     <view class="background-image-container">
       <image class="background-image-top" src="/static/background/center-bg.png" mode="aspectFill"></image>
       <view class="gradient-overlay"></view>
     </view>
     
-    <!-- Search Bar -->
-    <view class="search-container">
-      <view class="search-box">
+    <!-- 简化的搜索区域 -->
+    <view class="search-section">
+      <view class="search-container">
         <input 
           class="search-input" 
-          placeholder="搜索" 
+          placeholder="搜索地图、专题..." 
+          placeholder-class="search-placeholder"
           confirm-type="search"
           @confirm="performSearch"
+          @input="onSearchInput"
           v-model="searchQuery"
         />
-        <text v-if="searchQuery" class="clear-icon" @click="clearSearch">×</text>
+        <view 
+          v-if="searchQuery" 
+          class="clear-button" 
+          @click="clearSearch"
+        >
+          <text class="clear-icon">×</text>
+        </view>
       </view>
     </view>
     
-    <!-- 轮播图区域 - MOVED UP -->
+    <!-- 轮播图区域 -->
     <view class="swiper-container">
       <swiper 
         class="swiper" 
@@ -43,9 +50,9 @@
       </swiper>
     </view>
     
-    <!-- 四大图组区域 - MOVED DOWN -->
+    <!-- 专题分类区域 -->
     <scroll-view class="topic-scroll" scroll-y>
-      <view class="section-header">专题分类</view>
+      <view class="section-header">图组列表</view>
       <view class="topic-grid">
         <view 
           class="topic-item" 
@@ -68,7 +75,7 @@ export default {
   data() {
     return {
       searchQuery: '',
-      topicList: [], // 改为空数组，将从API获取数据
+      topicList: [],
       carouselItems: [
         {
           id: "map1",
@@ -89,49 +96,50 @@ export default {
     }
   },
   onLoad() {
-    // 页面加载时获取专题数据
     this.getTopics()
   },
   methods: {
-    // 获取专题数据的方法
-        getTopics() {
-          uni.showLoading({
-            title: '加载中...'
-          })
-          
-          uni.request({
-            url: API.TOPICS,
-            method: 'GET',
-            success: (res) => {
-              console.log('获取专题数据成功:', res)
-              if (res.statusCode === 200 && res.data.code === 200) {
-                // 处理返回的数据 - 注意后端返回的字段名
-                this.topicList = res.data.data.map(item => ({
-                  id: item.topic_id, // 后端返回的是topic_id
-                  title: item.title,
-                  image: item.image || "/static/icons/topic-default.png"
-                }))
-                console.log('处理后的专题数据:', this.topicList)
-              } else {
-                console.error('接口返回错误:', res.data)
-                uni.showToast({
-                  title: '获取专题数据失败',
-                  icon: 'none'
-                })
-              }
-            },
-            fail: (err) => {
-              console.error('获取专题数据失败:', err)
-              uni.showToast({
-                title: '网络错误，请稍后重试',
-                icon: 'none'
-              })
-            },
-            complete: () => {
-              uni.hideLoading()
-            }
+    getTopics() {
+      uni.showLoading({
+        title: '加载中...'
+      })
+      
+      uni.request({
+        url: API.TOPICS,
+        method: 'GET',
+        success: (res) => {
+          console.log('获取专题数据成功:', res)
+          if (res.statusCode === 200 && res.data.code === 200) {
+            this.topicList = res.data.data.map(item => ({
+              id: item.topic_id,
+              title: item.title,
+              image: item.image || "/static/icons/topic-default.png"
+            }))
+            console.log('处理后的专题数据:', this.topicList)
+          } else {
+            console.error('接口返回错误:', res.data)
+            uni.showToast({
+              title: '获取专题数据失败',
+              icon: 'none'
+            })
+          }
+        },
+        fail: (err) => {
+          console.error('获取专题数据失败:', err)
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
           })
         },
+        complete: () => {
+          uni.hideLoading()
+        }
+      })
+    },
+
+    onSearchInput(e) {
+      this.searchQuery = e.detail.value;
+    },
 	   
     navigateToTopic(topicId) {
       uni.navigateTo({
@@ -171,7 +179,7 @@ export default {
   overflow: hidden;
 }
 
-/* Base solid background color */
+/* ========== 背景设计 ========== */
 .background-solid {
   position: absolute;
   top: 0;
@@ -182,7 +190,6 @@ export default {
   z-index: -2;
 }
 
-/* Background image container - positioned at bottom */
 .background-image-container {
   position: absolute;
   bottom: 0;
@@ -193,14 +200,12 @@ export default {
   overflow: hidden;
 }
 
-/* Background image */
 .background-image-top {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Gradient overlay - fades upward */
 .gradient-overlay {
   position: absolute;
   top: 0;
@@ -211,46 +216,59 @@ export default {
   z-index: 1;
 }
 
-/* Search Bar Styling */
+/* ========== 简化的搜索区域样式 ========== */
+.search-section {
+  padding: 30rpx 30rpx;
+  position: relative;
+  z-index: 2;
+}
+
 .search-container {
   position: relative;
-  padding: 30rpx 20rpx;
-  z-index: 2;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.search-box {
-  height: 80rpx;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 40rpx;
+  height: 88rpx;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 44rpx;
   display: flex;
   align-items: center;
-  padding: 0 30rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.search-icon {
-  font-size: 36rpx;
-  margin-right: 20rpx;
-  color: #666;
+  box-shadow: 0 2rpx 16rpx rgba(46, 139, 87, 0.08);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
 }
 
 .search-input {
   flex: 1;
-  height: 80rpx;
-  line-height: 80rpx;
-  font-size: 28rpx;
-  color: #333;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+  color: #333333;
+  padding: 0 30rpx;
+  margin: 0;
+}
+
+.search-placeholder {
+  color: #CCCCCC;
+  font-size: 30rpx;
+}
+
+.clear-button {
+  width: 60rpx;
+  height: 60rpx;
+  margin-right: 14rpx;
+  background-color: #F5F5F5;
+  border-radius: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .clear-icon {
   font-size: 36rpx;
-  color: #999;
-  padding: 0 10rpx;
+  color: #999999;
+  font-weight: normal;
+  line-height: 1;
 }
 
-/* Carousel/Swiper styling */
+/* ========== 轮播图样式 ========== */
 .swiper-container {
   width: 90%;
   height: 350rpx;
@@ -287,16 +305,16 @@ export default {
   font-size: 28rpx;
 }
 
-/* Section header for topic grid */
+/* ========== 专题分类区域样式 ========== */
 .section-header {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-  padding: 0 30rpx 10rpx;
+  font-size: 40rpx;
+  font-weight: 900;
+  color: #0c0c0c;
+  padding: 20rpx 30rpx 10rpx;
   margin-bottom: 10rpx;
+  text-align: center;
 }
 
-/* Scrollable container for topic grid */
 .topic-scroll {
   height: calc(100vh - 530rpx);
   position: relative;
@@ -304,7 +322,6 @@ export default {
   padding: 0 20rpx 30rpx;
 }
 
-/* Topic grid styling */
 .topic-grid {
   display: flex;
   flex-wrap: wrap;
@@ -312,43 +329,37 @@ export default {
   padding: 10rpx 0;
 }
 
+/* ========== 专题卡片 ========== */
 .topic-item {
   width: 42%;
   margin: 15rpx;
   border-radius: 20rpx;
   overflow: hidden;
-  box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s;
+  background-color: rgba(227, 244, 240, 1.0);
+  box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  opacity: 0.85;
 }
 
-.topic-item:nth-child(1) {
-  background-color: rgba(173, 216, 230, 0.85); /* 天青蓝 */
-}
-
-.topic-item:nth-child(2) {
-  background-color: rgba(218, 165, 32, 0.85); /* 琥珀金 */
-}
-
-.topic-item:nth-child(3) {
-  background-color: rgba(144, 238, 144, 0.85); /* 鲜绿色 */
-}
-
-.topic-item:nth-child(4) {
-  background-color: rgba(70, 130, 180, 0.85); /* 靛蓝色 */
+.topic-item:active {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
 }
 
 .topic-image {
-  width: 100rpx;
-  height: 100rpx;
-  margin: 20rpx auto 10rpx;
+  width: 155.4rpx;
+  height: 112.5rpx;
+  margin: 30rpx auto 15rpx;
   display: block;
 }
 
 .topic-title {
   text-align: center;
-  font-size: 32rpx;
-  font-weight: bold;
+  font-size: 30rpx;
+  font-weight: 800;
   color: #333;
-  padding: 15rpx 0 20rpx;
+  padding: 0 20rpx 30rpx;
+  line-height: 1.3;
+  opacity: 1;
 }
 </style>
