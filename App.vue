@@ -82,9 +82,5 @@
 	.list-item:last-child {
 		border-bottom: none;
 	}
-	
-	/* 图片占位符 */
-	.placeholder-image {
-		background-color: #DDDDDD;
-	}
+
 </style>
