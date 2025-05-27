@@ -126,26 +126,23 @@ export default {
     },
     
     // 初始化WebView
-    initWebView() {
-      // 预热WebView
-      webViewManager.init();
-      
-      // 构建WebView数据
-      const webViewData = {
-        currentMap: this.allMaps[this.mapIndex],
-        allMaps: this.allMaps,
-        currentIndex: this.mapIndex,
-        topicId: this.topicId
-      };
-      
-      const encodedData = encodeURIComponent(JSON.stringify(webViewData));
-      const newUrl = `http://localhost:2180/static/map-viewer.html?data=${encodedData}`;
-      
-      // 更新WebView URL
-      this.webViewUrl = webViewManager.updateUrl(newUrl);
-      
-      console.log('WebView初始化完成:', this.webViewUrl);
-    },
+ initWebView() {
+   // 预热WebView
+   webViewManager.init();
+   
+   // 构建WebView数据
+   const webViewData = {
+     currentMap: this.allMaps[this.mapIndex],
+     allMaps: this.allMaps,
+     currentIndex: this.mapIndex,
+     topicId: this.topicId
+   };
+   
+   // 使用新的URL生成方法
+   this.webViewUrl = webViewManager.generateViewerUrl(webViewData);
+   
+   console.log('WebView初始化完成:', this.webViewUrl);
+ },
     
     // 处理WebView消息
     handleMessage(event) {

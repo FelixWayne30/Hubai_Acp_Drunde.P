@@ -1,44 +1,42 @@
 // common/preload.js
 import thumbnailCache from '@/common/cache.js';
 
-/**
- * WebView 管理器
- * 仅负责WebView实例的预热和管理，不进行预加载
- */
 class SingleWebViewManager {
   constructor() {
     this.isInitialized = false;
     this.currentUrl = '';
   }
 
-  /**
-   * 初始化单个WebView实例
-   */
   init() {
     if (this.isInitialized) {
       console.log('WebView已初始化，跳过重复初始化');
       return;
     }
     
-    console.log('初始化单个WebView实例');
+    // 使用简单的URL进行预热，不包含复杂数据
+    const simpleUrl = 'http://localhost:2180/static/map-viewer.html?init=true';
+    this.currentUrl = simpleUrl;
     this.isInitialized = true;
+    console.log('WebView预热完成 (轻量模式)');
   }
 
   /**
    * 更新WebView URL
+   * @param {object} data 需要传递的数据
    */
-  updateUrl(newUrl) {
-    if (this.currentUrl !== newUrl) {
-      console.log('更新WebView URL:', newUrl);
-      this.currentUrl = newUrl;
-      return newUrl;
-    }
-    return this.currentUrl;
+  generateViewerUrl(data) {
+    // 只传递最基本信息：当前地图ID和专题ID
+    const minimalData = {
+      mapId: data.currentMap.id,
+      topicId: data.topicId,
+      mapIndex: data.currentIndex,
+      totalMaps: data.allMaps.length
+    };
+    
+    const encodedData = encodeURIComponent(JSON.stringify(minimalData));
+    return `http://localhost:2180/static/map-viewer.html?data=${encodedData}`;
   }
 
-  /**
-   * 获取状态
-   */
   getStatus() {
     return {
       initialized: this.isInitialized,
@@ -46,9 +44,6 @@ class SingleWebViewManager {
     };
   }
 
-  /**
-   * 重置WebView
-   */
   reset() {
     console.log('重置WebView实例');
     this.isInitialized = false;
@@ -56,7 +51,6 @@ class SingleWebViewManager {
   }
 }
 
-// 创建全局实例
 const webViewManager = new SingleWebViewManager();
 
 // 重新导出 thumbnailCache，确保其他组件可以使用

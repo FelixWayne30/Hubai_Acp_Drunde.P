@@ -131,25 +131,6 @@
             color: #666;
             margin-bottom: 15px;
         }
-        .progress-container {
-            height: 6px;
-            background-color: #f0f0f0;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-bottom: 5px;
-        }
-        .progress-bar {
-            height: 100%;
-            background-color: #2E8B57;
-            width: 0%;
-            transition: width 0.3s ease;
-            border-radius: 3px;
-        }
-        .progress-text {
-            font-size: 12px;
-            color: #999;
-            text-align: right;
-        }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -234,19 +215,6 @@
             background-color: #2E8B57;
             color: #FFFFFF;
         }
-        /* 缓存状态指示器 */
-        .cache-status {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            font-size: 10px;
-            color: #999;
-            background-color: rgba(255, 255, 255, 0.7);
-            padding: 2px 5px;
-            border-radius: 3px;
-            z-index: 100;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -259,15 +227,8 @@
             <div class="loading-spinner"></div>
             <div class="loading-text" id="loading-text">加载地图中...</div>
             <div class="loading-desc" id="loading-desc">请稍候，正在加载高清地图资源</div>
-            <div class="progress-container">
-                <div class="progress-bar" id="progress-bar"></div>
-            </div>
-            <div class="progress-text" id="progress-text">0%</div>
         </div>
     </div>
-    
-    <!-- 缓存状态 -->
-    <div id="cache-status" class="cache-status">缓存: 0/0</div>
     
     <!-- 工具栏 -->
     <div class="toolbar">
@@ -322,36 +283,12 @@
                 this.maxConcurrent = 2; // 最大并发数
                 this.totalMaps = 0; // 总地图数量
                 this.cachedCount = 0; // 已缓存数量
-                this.isDebugMode = false; // 调试模式
-                this.progressCallback = null; // 进度回调
-                this.statusCallback = null; // 状态回调
-                this.isPreloading = false; // 是否正在预加载
             }
             
             // 初始化
-            init(maps, progressCallback, statusCallback) {
+            init(maps) {
                 this.totalMaps = maps.length;
-                this.progressCallback = progressCallback;
-                this.statusCallback = statusCallback;
-                this.updateStatus();
-                console.log(`缓存管理器初始化完成，总地图数: ${this.totalMaps}`);
-            }
-            
-            // 更新状态
-            updateStatus() {
-                if (this.statusCallback) {
-                    this.statusCallback({
-                        cached: this.cachedCount,
-                        total: this.totalMaps,
-                        loading: this.loadingMap.size,
-                        queue: this.loadingQueue.length
-                    });
-                }
-            }
-            
-            // 设置调试模式
-            setDebugMode(mode) {
-                this.isDebugMode = mode;
+                this.cachedCount = 0;
             }
             
             // 检查是否已缓存
@@ -367,7 +304,6 @@
             // 生成地图URL
             generateMapUrl(map) {
                 if (!map || !map.id) {
-                    console.error('地图数据无效');
                     return null;
                 }
                 
@@ -388,7 +324,7 @@
                     BBOX: `0,0,1,${aspectRatio}`,
                     WIDTH: map.width ? map.width.toString() : '3000',
                     HEIGHT: map.height ? map.height.toString() : '2000',
-                    _t: Date.now() // 防止缓存
+                    _t: Date.now()
                 };
                 
                 const queryParts = [];
@@ -404,24 +340,19 @@
             // 加载单个地图
             async loadMap(map) {
                 if (!map || !map.id) {
-                    console.error('地图数据无效');
                     return null;
                 }
                 
                 // 检查缓存
                 if (this.isCached(map.id)) {
-                    const cached = this.getCached(map.id);
-                    console.log(`使用缓存: ${map.title}`);
-                    return cached;
+                    return this.getCached(map.id);
                 }
                 
                 // 检查是否正在加载
                 if (this.loadingMap.has(map.id)) {
-                    console.log(`已在加载队列: ${map.title}`);
                     return this.loadingMap.get(map.id);
                 }
                 
-                console.log(`开始加载地图: ${map.title}`);
                 const mapUrl = this.generateMapUrl(map);
                 
                 const loadPromise = new Promise(async (resolve, reject) => {
@@ -443,16 +374,13 @@
                         
                         this.cache.set(map.id, cacheItem);
                         this.cachedCount++;
-                        this.updateStatus();
                         
-                        console.log(`地图加载成功: ${map.title}`);
                         resolve(cacheItem);
                     } catch (error) {
-                        console.error(`地图加载失败: ${map.title}`, error);
                         reject(error);
                     } finally {
                         this.loadingMap.delete(map.id);
-                        this.processQueue(); // 处理下一个
+                        this.processQueue();
                     }
                 });
                 
@@ -504,7 +432,7 @@
                 // 取出队列中的下一项
                 const next = this.loadingQueue.shift();
                 this.loadMap(next.map).catch(err => {
-                    console.error(`预加载失败: ${next.map.title}`, err);
+                    // 错误处理
                 });
                 
                 // 如果未达到并发上限，继续处理
@@ -515,11 +443,6 @@
             
             // 开始预加载
             startPreloading(allMaps, currentIndex) {
-                if (this.isPreloading) return;
-                
-                this.isPreloading = true;
-                console.log(`开始预加载 ${allMaps.length} 张地图`);
-                
                 // 构建预加载队列
                 const preloadQueue = [];
                 
@@ -557,19 +480,6 @@
                 for (const item of preloadQueue) {
                     this.addToQueue(item.map, item.priority);
                 }
-                
-                // 定期更新进度
-                const progressInterval = setInterval(() => {
-                    const progress = this.cachedCount / this.totalMaps;
-                    if (this.progressCallback) {
-                        this.progressCallback(progress);
-                    }
-                    
-                    // 如果全部缓存完成或页面已关闭，清除定时器
-                    if (this.cachedCount >= this.totalMaps || document.hidden) {
-                        clearInterval(progressInterval);
-                    }
-                }, 300);
             }
             
             // 清理缓存
@@ -583,9 +493,6 @@
                 this.cachedCount = 0;
                 this.loadingQueue = [];
                 this.loadingMap.clear();
-                this.isPreloading = false;
-                this.updateStatus();
-                console.log('缓存已清理');
             }
         }
         
@@ -596,24 +503,39 @@
         let currentMapIndex = 0;
         let allMaps = [];
         let cacheManager = new MapCacheManager();
-        let isDebugMode = false;
         
         // 解析URL参数
         function getUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
+            
+            // 处理初始化模式
+            if (urlParams.get('init') === 'true') {
+                return null;
+            }
+            
             const dataParam = urlParams.get('data');
-            
-            console.log('=== 解析URL参数 ===');
-            
             let parsedData = null;
+            
             if (dataParam) {
                 try {
                     parsedData = JSON.parse(decodeURIComponent(dataParam));
-                    console.log('解析成功，地图数量:', parsedData.allMaps?.length || 0);
-                    console.log('当前地图:', parsedData.currentMap?.title);
-                    console.log('当前索引:', parsedData.currentIndex);
+                    
+                    // 如果只传递了基本信息，需要获取完整地图数据
+                    if (parsedData.mapId && !parsedData.allMaps) {
+                        loadFullMapData(parsedData);
+                    } else if (parsedData.allMaps) {
+                        // 完整数据已传递
+                        allMaps = parsedData.allMaps;
+                        currentMapIndex = parsedData.currentIndex || 0;
+                        
+                        // 初始化缓存管理器
+                        cacheManager.init(allMaps);
+                        
+                        // 加载当前地图
+                        loadCurrentMap();
+                    }
                 } catch (e) {
-                    console.error('解析失败:', e);
+                    // 解析错误处理
                 }
             }
             
@@ -625,49 +547,64 @@
             try {
                 wx.miniProgram.postMessage({ data });
             } catch (e) {
-                console.log('向小程序发送消息失败:', e);
+                // 消息发送失败处理
             }
         }
         
         // 更新加载状态
-        function sendLoadingStatus(status, message, progress = 0) {
+        function sendLoadingStatus(status, message) {
             sendMessageToMiniProgram({
                 action: 'loadingStatus',
                 status: status,
-                message: message,
-                showProgress: progress > 0,
-                progress: progress
+                message: message
             });
         }
         
-        // 更新加载进度
-        function updateLoadingProgress(progress) {
-            const progressBar = document.getElementById('progress-bar');
-            const progressText = document.getElementById('progress-text');
+        // 加载完整地图数据
+        async function loadFullMapData(basicData) {
+            // 显示加载状态
+            showLoading('正在获取地图数据...');
             
-            if (progressBar && progressText) {
-                const percent = Math.min(Math.round(progress * 100), 100);
-                progressBar.style.width = `${percent}%`;
-                progressText.textContent = `${percent}%`;
-                
-                // 向小程序发送进度更新
-                sendMessageToMiniProgram({
-                    action: 'loadingProgress',
-                    progress: progress
-                });
-            }
-        }
-        
-        // 更新缓存状态显示
-        function updateCacheStatus(status) {
-            const statusEl = document.getElementById('cache-status');
-            if (statusEl) {
-                if (isDebugMode) {
-                    statusEl.style.display = 'block';
-                    statusEl.textContent = `缓存: ${status.cached}/${status.total}, 加载中: ${status.loading}, 队列: ${status.queue}`;
-                } else {
-                    statusEl.style.display = 'none';
+            try {
+                // 加载所有地图数据
+                const response = await fetch(`http://192.168.50.133:8088/mapinfo/maps/${basicData.topicId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
                 }
+                
+                const result = await response.json();
+                if (result.code === 200 && result.data) {
+                    // 处理地图数据
+                    allMaps = result.data.map(item => ({
+                        id: item.map_id,
+                        title: item.title,
+                        description: item.description || '暂无描述',
+                        type: item.type,
+                        width: item.width || 6000,
+                        height: item.height || 4000,
+                        create_time: item.create_time
+                    }));
+                    
+                    // 查找当前地图索引
+                    currentMapIndex = allMaps.findIndex(map => map.id === basicData.mapId);
+                    if (currentMapIndex === -1) {
+                        currentMapIndex = basicData.mapIndex || 0;
+                    }
+                    
+                    // 初始化缓存管理器
+                    cacheManager.init(allMaps);
+                    
+                    // 加载当前地图
+                    loadCurrentMap();
+                } else {
+                    throw new Error('获取地图数据失败');
+                }
+            } catch (error) {
+                document.getElementById('loading-text').textContent = '获取地图数据失败';
+                document.getElementById('loading-desc').textContent = '请返回重试';
+                
+                // 通知小程序
+                sendLoadingStatus('error', '获取地图数据失败');
             }
         }
         
@@ -680,8 +617,6 @@
         function updateUI() {
             const currentMap = getCurrentMapData();
             if (!currentMap) return;
-            
-            console.log(`更新UI: ${currentMap.title} (${currentMapIndex + 1}/${allMaps.length})`);
             
             // 更新标题
             document.getElementById('mapTitle').textContent = currentMap.title;
@@ -707,9 +642,6 @@
                 overlay.style.display = 'flex';
                 textEl.textContent = message || '加载中...';
                 descEl.textContent = description || '请稍候，正在准备地图资源';
-                
-                // 重置进度条
-                updateLoadingProgress(0);
             }
             
             // 通知小程序
@@ -731,11 +663,8 @@
         async function loadCurrentMap() {
             const currentMap = getCurrentMapData();
             if (!currentMap) {
-                console.error('当前地图数据无效');
                 return;
             }
-            
-            console.log(`=== 加载地图: ${currentMap.title} ===`);
             
             // 显示加载状态
             showLoading(
@@ -758,7 +687,6 @@
                 
                 // 加载到OpenSeadragon
                 if (!isViewerInitialized) {
-                    console.log('初始化OpenSeadragon查看器');
                     viewer = OpenSeadragon({
                         id: "map-container",
                         prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@3.1.0/build/openseadragon/images/",
@@ -767,23 +695,21 @@
                             url: mapUrl,
                             buildPyramid: false
                         },
-                        immediateRender: false,
-                        blendTime: 0.1,
+                        immediateRender: true,
+                        blendTime: 0,
                         showNavigator: false
                     });
                     
                     isViewerInitialized = true;
                     
                     viewer.addHandler('open', function() {
-                        console.log(`地图加载完成: ${currentMap.title}`);
                         hideLoading();
                         
                         // 开始预加载其他地图
-                        startPreloading();
+                        cacheManager.startPreloading(allMaps, currentMapIndex);
                     });
                     
                 } else {
-                    console.log('切换到新地图');
                     viewer.open({
                         type: 'image',
                         url: mapUrl,
@@ -791,13 +717,11 @@
                     });
                     
                     viewer.addOnceHandler('open', function() {
-                        console.log(`地图切换完成: ${currentMap.title}`);
                         hideLoading();
                     });
                 }
                 
             } catch (error) {
-                console.error('地图加载失败:', error);
                 document.getElementById('loading-text').textContent = '地图加载失败';
                 document.getElementById('loading-desc').textContent = '请检查网络连接并重试';
                 
@@ -809,16 +733,8 @@
             }
         }
         
-        // 开始预加载
-        function startPreloading() {
-            console.log('开始预加载流程');
-            cacheManager.startPreloading(allMaps, currentMapIndex);
-        }
-        
         // 切换地图
         function switchMap(direction) {
-            console.log(`=== 切换地图: ${direction} ===`);
-            
             let newIndex = currentMapIndex;
             
             if (direction === 'next' && currentMapIndex < allMaps.length - 1) {
@@ -826,12 +742,10 @@
             } else if (direction === 'prev' && currentMapIndex > 0) {
                 newIndex = currentMapIndex - 1;
             } else {
-                console.log('无法切换到指定方向');
                 return;
             }
             
             currentMapIndex = newIndex;
-            console.log(`新地图: ${getCurrentMapData().title} (${currentMapIndex + 1}/${allMaps.length})`);
             
             // 加载新地图
             loadCurrentMap();
@@ -878,8 +792,6 @@
         
         // 查看详情
         function viewDetail() {
-            console.log('查看详情:', getCurrentMapData().title);
-            
             // 向小程序发送查看详情请求
             sendMessageToMiniProgram({
                 action: 'viewDetail',
@@ -887,48 +799,20 @@
             });
         }
         
-        // 切换调试模式
-        function toggleDebugMode() {
-            isDebugMode = !isDebugMode;
-            cacheManager.setDebugMode(isDebugMode);
-            
-            const statusEl = document.getElementById('cache-status');
-            if (statusEl) {
-                statusEl.style.display = isDebugMode ? 'block' : 'none';
-            }
-            
-            console.log(`调试模式: ${isDebugMode ? '开启' : '关闭'}`);
-        }
-        
         // 页面初始化
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('=== 页面初始化 ===');
-            
             // 发送初始加载状态
             sendLoadingStatus('start', '正在初始化...');
             
             // 解析数据
             webViewData = getUrlParams();
             
-            if (!webViewData || !webViewData.allMaps || webViewData.allMaps.length === 0) {
-                console.error('没有有效的地图数据');
-                document.getElementById('loading-text').textContent = '无法加载地图数据';
-                document.getElementById('loading-desc').textContent = '请返回重试';
-                sendLoadingStatus('error', '无法加载地图数据');
+            if (!webViewData) {
+                // 预热模式，不做实际加载
+                document.getElementById('loading-text').textContent = '预热模式';
+                document.getElementById('loading-desc').textContent = '无需加载实际地图';
                 return;
             }
-            
-            // 初始化全局变量
-            allMaps = webViewData.allMaps;
-            currentMapIndex = webViewData.currentIndex || 0;
-            
-            console.log(`初始化完成 - 地图总数: ${allMaps.length}, 当前索引: ${currentMapIndex}`);
-            
-            // 初始化缓存管理器
-            cacheManager.init(allMaps, updateLoadingProgress, updateCacheStatus);
-            
-            // 加载初始地图
-            loadCurrentMap();
             
             // 绑定事件
             document.getElementById('prevBtn').addEventListener('click', () => switchMap('prev'));
@@ -938,20 +822,14 @@
             document.getElementById('submitBtn').addEventListener('click', submitDownloadRequest);
             document.getElementById('map-container').addEventListener('dblclick', viewDetail);
             
-            // 调试模式切换
-            document.getElementById('cache-status').addEventListener('click', toggleDebugMode);
-            
             // 字数统计
             document.getElementById('reasonInput').addEventListener('input', function() {
                 document.getElementById('wordCount').textContent = this.value.length;
             });
-            
-            console.log('事件绑定完成');
         });
         
         // 页面卸载时清理
         window.addEventListener('beforeunload', function() {
-            console.log('页面卸载，清理资源');
             cacheManager.clearCache();
         });
     </script>
