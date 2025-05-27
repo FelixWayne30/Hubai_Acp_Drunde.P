@@ -1,37 +1,46 @@
 <template>
   <view class="container">
-    <!-- 基础纯色背景 -->
+    <!-- 保持原有背景设计不变 -->
     <view class="background-solid"></view>
     
-    <!-- 顶部装饰背景带渐变过渡效果 -->
     <view class="background-image-container">
       <image class="background-image-top" src="/static/background/center-bg.png" mode="aspectFill"></image>
       <view class="gradient-overlay"></view>
     </view>
     
-    <!-- 地图列表 -->
-    <scroll-view class="maps-list" scroll-y>
-      <view 
-        class="map-item" 
-        v-for="(item, index) in maps" 
-        :key="index"
-        :data-map-id="item.id"
-        :data-index="index"
-      >
-        <view class="map-name">{{item.title}}</view>
-        <view class="map-content">
-          <image 
-            class="map-thumbnail" 
-            :src="item.thumbnail" 
-            mode="aspectFill"
-            @click="navigateToMap(item.id, index)"
-            @error="handleImageError"
-          ></image>
-          <view class="map-description">
-            <text>{{item.description}}</text>
-            <view class="action-buttons">
-              <button class="detail-btn primary-bg" @click="navigateToDetail(item.id)">查看详情</button>
-              <button class="browse-btn" @click="navigateToMap(item.id, index)">浏览地图</button>
+    <!-- 优化后的地图列表区域 -->
+    <scroll-view class="maps-scroll" scroll-y enhanced :show-scrollbar="false">
+      <view class="maps-container">
+        <view 
+          class="map-item" 
+          v-for="(item, index) in maps" 
+          :key="index"
+          :data-map-id="item.id"
+          :data-index="index"
+        >
+          <view class="map-header">
+            <view class="map-name">{{item.title}}</view>
+          </view>
+          
+          <view class="map-content">
+            <view class="map-thumbnail-wrapper">
+              <image 
+                class="map-thumbnail" 
+                :src="item.thumbnail" 
+                mode="aspectFill"
+                @click="navigateToMap(item.id, index)"
+                @error="handleImageError"
+              ></image>
+            </view>
+            
+            <view class="map-info">
+              <view class="map-description">
+                <text>{{item.description}}</text>
+              </view>
+              <view class="action-buttons">
+                <button class="detail-btn primary-bg" @click="navigateToDetail(item.id)">查看详情</button>
+                <button class="browse-btn" @click="navigateToMap(item.id, index)">浏览地图</button>
+              </view>
             </view>
           </view>
         </view>
@@ -40,8 +49,6 @@
   </view>
 </template>
 
-
-// pages/map/topic-intro.vue
 <script>
 import { API } from '@/common/config.js';
 import { generateThumbnailUrl } from '@/common/utils.js';
@@ -192,12 +199,12 @@ export default {
 <style>
 .container {
   position: relative;
-  min-height: 100vh;
-  padding: 0;
-  padding-bottom: 30rpx;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
 }
 
-/* 基础纯色背景 */
+/* ========== 保持原有背景设计不变 ========== */
 .background-solid {
   position: absolute;
   top: 0;
@@ -208,7 +215,6 @@ export default {
   z-index: -2;
 }
 
-/* Background image container - repositioned to bottom */
 .background-image-container {
   position: absolute;
   bottom: 0;
@@ -219,14 +225,12 @@ export default {
   overflow: hidden;
 }
 
-/* The actual background image */
 .background-image-top {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Gradient overlay - direction reversed */
 .gradient-overlay {
   position: absolute;
   top: 0;
@@ -237,118 +241,143 @@ export default {
   z-index: 1;
 }
 
-/* 地图列表 */
-.maps-list {
-  height: calc(100vh - 120rpx); 
-  padding: 160rpx 30rpx 30rpx 30rpx;
+/* ========== 优化后的滚动区域 ========== */
+.maps-scroll {
   position: relative;
-  z-index: 1;
-  box-sizing: border-box;
+  z-index: 2;
+  height: 100vh;
   width: 100%;
 }
 
+.maps-container {
+  padding: 40rpx 30rpx 60rpx;
+  min-height: calc(100vh + 100rpx);
+}
+
+/* ========== 优化后的地图卡片 ========== */
 .map-item {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 20rpx;
-  margin-bottom: 40rpx;
-  padding: 30rpx;
-  box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.08);
-  width: 100%;
-  box-sizing: border-box;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 24rpx;
+  margin-bottom: 32rpx;
   overflow: hidden;
+  box-shadow: 0 8rpx 24rpx rgba(46, 139, 87, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.map-item:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 16rpx rgba(46, 139, 87, 0.12);
+}
+
+.map-header {
+  padding: 32rpx 32rpx 24rpx;
+  border-bottom: 2rpx solid #F5F7FA;
 }
 
 .map-name {
-  font-size: 34rpx;
-  font-weight: bold;
+  font-size: 36rpx;
+  font-weight: 600;
   color: #2E8B57;
-  margin-bottom: 20rpx;
-  border-bottom: 1px solid rgba(46, 139, 87, 0.2);
-  padding-bottom: 15rpx;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
 }
 
 .map-content {
+  padding: 24rpx 32rpx 32rpx;
   display: flex;
   flex-direction: column;
+  gap: 24rpx;
+}
+
+.map-thumbnail-wrapper {
   width: 100%;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
 }
 
 .map-thumbnail {
   width: 100%;
-  height: 300rpx;
-  border-radius: 10rpx;
-  margin-bottom: 20rpx;
+  height: 360rpx;
   object-fit: cover;
+  display: block;
+}
+
+.map-info {
+  flex: 1;
 }
 
 .map-description {
   font-size: 28rpx;
-  color: #666;
+  color: #666666;
   line-height: 1.6;
-  width: 100%;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
+  margin-bottom: 24rpx;
+  text-align: justify;
 }
 
-/* 按钮样式 */
+/* ========== 按钮样式优化 ========== */
 .action-buttons {
   display: flex;
-  justify-content: space-between;
-  margin-top: 20rpx;
+  gap: 20rpx;
 }
 
 .detail-btn, .browse-btn {
-  width: 48%;
-  height: 70rpx;
-  line-height: 70rpx;
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
   text-align: center;
-  border-radius: 35rpx;
-  font-size: 28rpx;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .detail-btn {
   color: #FFFFFF;
+  border: none;
+}
+
+.detail-btn:active {
+  background-color: #267A4A !important;
 }
 
 .browse-btn {
   background-color: #FFFFFF;
   color: #2E8B57;
-  border: 1px solid #2E8B57;
+  border: 2rpx solid #2E8B57;
 }
 
-/* 针对不同设备的响应式设计 */
+.browse-btn:active {
+  background-color: #F0F8F4;
+  transform: scale(0.98);
+}
+
+/* ========== 适配不同屏幕 ========== */
 @media screen and (min-width: 768px) {
   .map-content {
     flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    align-items: flex-start;
   }
   
-  .map-thumbnail {
-    width: 40%;
-    height: 250rpx;
-    margin-right: 20rpx;
-    margin-bottom: 0;
+  .map-thumbnail-wrapper {
+    width: 300rpx;
     flex-shrink: 0;
   }
   
-  .map-description {
-    width: calc(60% - 20rpx);
-    flex-grow: 1;
+  .map-thumbnail {
+    height: 240rpx;
+  }
+  
+  .map-info {
+    margin-left: 24rpx;
   }
   
   .action-buttons {
-    margin-top: 20rpx;
     justify-content: flex-start;
   }
   
   .detail-btn, .browse-btn {
+    flex: none;
     width: 180rpx;
-    margin-right: 20rpx;
   }
 }
 </style>
