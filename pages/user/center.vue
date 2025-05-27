@@ -11,38 +11,44 @@
 		
 		<!-- 用户信息区域 -->
 		<view class="user-info-section">
-			<view class="avatar-container" @click="uploadAvatar">
+			<view class="avatar-container" @click="handleUserInfoClick">
 				<image
 					class="avatar"
 					:src="userInfo.avatar || '/static/avatar-placeholder.png'"
 				></image>
-				<view class="edit-icon">+</view>
+				<view class="edit-icon" v-if="isLoggedIn">+</view>
 			</view>
-			<view class="user-name">
-				{{userInfo.nickName || '点击登录'}}
-				<text class="edit-name" @click="editNickname">✎</text>
+			<view class="user-name" @click="handleUserInfoClick">
+				{{userInfo.nickName}}
+				<text class="edit-name" v-if="isLoggedIn" @click.stop="editNickname">✎</text>
 			</view>
 		</view>
 		
 		<!-- 功能列表 -->
 		<view class="function-list">
-			<view class="function-card" @click="navigateToCollection">
+			<view class="function-card" @click="navigateWithLogin('/pages/user/collection')">
 				<view class="function-title">我的收藏</view>
 				<view class="function-arrow">></view>
 			</view>
 			
-			<view class="function-card" @click="navigateToCustomLists">
+			<view class="function-card" @click="navigateWithLogin('/pages/user/custom-lists')">
 				<view class="function-title">自定义列表</view>
 				<view class="function-arrow">></view>
 			</view>
 			
-			<view class="function-card" @click="navigateToDownloads">
+			<view class="function-card" @click="navigateWithLogin('/pages/user/downloads')">
 				<view class="function-title">下载记录</view>
 				<view class="function-arrow">></view>
 			</view>
 			
 			<view class="function-card" @click="showAbout">
 				<view class="function-title">关于我们</view>
+				<view class="function-arrow">></view>
+			</view>
+			
+			<!-- 退出登录按钮 - 仅登录时显示 -->
+			<view class="function-card logout-card" v-if="isLoggedIn" @click="handleLogout">
+				<view class="function-title logout-text">退出登录</view>
 				<view class="function-arrow">></view>
 			</view>
 		</view>
@@ -67,155 +73,187 @@
 </template>
 
 <script>
-	export default {
-		data() {
-			return {
-				// 用户信息（示例数据）
-				userInfo: {
-					nickName: '地图爱好者',
-					avatar: ''
-				},
-				// 编辑昵称
-				showEditModal: false,
-				newNickname: ''
-			}
-		},
-		onLoad() {
-			this.getUserInfo();
-		},
-		methods: {
-			// 获取用户信息
-			getUserInfo() {
-				// 检查是否已登录
-				const userInfo = uni.getStorageSync('userInfo');
-				if (userInfo) {
-					this.userInfo = JSON.parse(userInfo);
-				} else {
-					// 未登录，显示默认状态
-					this.userInfo = {
-						nickName: '点击登录',
-						avatar: ''
-					};
-				}
+import authManager from '@/common/auth.js';
+
+export default {
+	data() {
+		return {
+			// 用户信息显示
+			userInfo: {
+				nickName: '点击登录',
+				avatar: ''
 			},
-			
-			// 上传头像
-			uploadAvatar() {
-				// 检查是否已登录
-				if (!this.checkLogin()) return;
-				
-				uni.chooseImage({
-					count: 1,
-					sizeType: ['compressed'],
-					sourceType: ['album', 'camera'],
-					success: (res) => {
-						const tempFilePath = res.tempFilePaths[0];
-						
-						// 模拟成功
-						this.userInfo.avatar = tempFilePath;
-						// 更新本地存储
-						uni.setStorageSync('userInfo', JSON.stringify(this.userInfo));
-					}
-				});
-			},
-			
+			// 登录状态
+			isLoggedIn: false,
 			// 编辑昵称
-			editNickname() {
-				// 检查是否已登录
-				if (!this.checkLogin()) return;
-				
-				this.newNickname = this.userInfo.nickName;
-				this.showEditModal = true;
-			},
-			
-			// 取消编辑
-			cancelEdit() {
-				this.showEditModal = false;
-				this.newNickname = '';
-			},
-			
-			// 保存昵称
-			saveNickname() {
-				if (!this.newNickname.trim()) {
-					uni.showToast({
-						title: '昵称不能为空',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				// 模拟成功
-				this.userInfo.nickName = this.newNickname;
-				// 更新本地存储
-				uni.setStorageSync('userInfo', JSON.stringify(this.userInfo));
-				this.showEditModal = false;
-				
-				uni.showToast({
-					title: '修改成功',
-					icon: 'success'
-				});
-			},
-			
-			// 检查是否已登录
-			checkLogin() {
-				if (this.userInfo.nickName === '点击登录') {
-					// 不跳转到登录页面，而是显示提示
-					uni.showModal({
-						title: '提示',
-						content: '请先登录',
-						showCancel: false
-					});
-					
-					// 临时设置模拟登录信息(仅用于演示)
-					this.userInfo = {
-						nickName: '地图爱好者',
-						avatar: ''
-					};
-					// 更新本地存储
-					uni.setStorageSync('userInfo', JSON.stringify(this.userInfo));
-					
-					return true; // 临时返回true以允许继续操作
-				}
-				return true;
-			},
-			
-			// 导航到收藏页面
-			navigateToCollection() {
-				if (!this.checkLogin()) return;
-				
-				uni.navigateTo({
-					url: '/pages/user/collection'
-				});
-			},
-			
-			// 导航到自定义列表页面
-			navigateToCustomLists() {
-				if (!this.checkLogin()) return;
-				
-				uni.navigateTo({
-					url: '/pages/user/custom-lists'
-				});
-			},
-			
-			// 导航到下载记录
-			navigateToDownloads() {
-				if (!this.checkLogin()) return;
-				
-				uni.navigateTo({
-					url: '/pages/user/downloads'
-				});
-			},
-			
-			// 显示关于我们
-			showAbout() {
-				uni.showModal({
-					title: '关于我们',
-					content: '《湖北省自然资源地图集》小程序由湖北省自然资源厅与远图实验室提供支持。版本：0.0.0',
-					showCancel: false
-				});
+			showEditModal: false,
+			newNickname: ''
+		}
+	},
+	onLoad() {
+		this.initUserInfo();
+	},
+	onShow() {
+		// 每次显示页面时检查登录状态
+		this.updateUserInfoDisplay();
+	},
+	methods: {
+		// 初始化用户信息
+		initUserInfo() {
+			this.updateUserInfoDisplay();
+		},
+		
+		// 更新用户信息显示
+		updateUserInfoDisplay() {
+			const userData = authManager.getUserInfo();
+			if (userData) {
+				this.isLoggedIn = true;
+				this.userInfo = {
+					nickName: userData.nickname || '用户',
+					avatar: userData.avatar || ''
+				};
+			} else {
+				this.isLoggedIn = false;
+				this.userInfo = {
+					nickName: '点击登录',
+					avatar: ''
+				};
 			}
+		},
+		
+		// 处理用户信息点击（头像或昵称）
+		handleUserInfoClick() {
+			if (!this.isLoggedIn) {
+				// 未登录，触发登录
+				this.triggerLogin();
+			} else {
+				// 已登录，可以上传头像
+				this.uploadAvatar();
+			}
+		},
+		
+		// 触发登录
+		triggerLogin() {
+			authManager.requireLogin()
+				.then(() => {
+					this.updateUserInfoDisplay();
+					uni.showToast({
+						title: '登录成功',
+						icon: 'success'
+					});
+				})
+				.catch((err) => {
+					console.log('登录失败或取消:', err.message);
+				});
+		},
+		
+		// 上传头像
+		uploadAvatar() {
+			uni.chooseImage({
+				count: 1,
+				sizeType: ['compressed'],
+				sourceType: ['album', 'camera'],
+				success: (res) => {
+					const tempFilePath = res.tempFilePaths[0];
+					
+					// 临时更新显示
+					this.userInfo.avatar = tempFilePath;
+					
+					// TODO: 这里应该上传到服务器
+					// 现在只是本地模拟
+					const userInfo = authManager.getUserInfo();
+					userInfo.avatar = tempFilePath;
+					uni.setStorageSync('userInfo', JSON.stringify(userInfo));
+					
+					uni.showToast({
+						title: '头像更新成功',
+						icon: 'success'
+					});
+				}
+			});
+		},
+		
+		// 编辑昵称
+		editNickname() {
+			if (!this.isLoggedIn) return;
+			
+			this.newNickname = this.userInfo.nickName;
+			this.showEditModal = true;
+		},
+		
+		// 取消编辑
+		cancelEdit() {
+			this.showEditModal = false;
+			this.newNickname = '';
+		},
+		
+		// 保存昵称
+		saveNickname() {
+			if (!this.newNickname.trim()) {
+				uni.showToast({
+					title: '昵称不能为空',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			// 更新显示
+			this.userInfo.nickName = this.newNickname;
+			
+			// 更新本地存储
+			const userInfo = authManager.getUserInfo();
+			userInfo.nickname = this.newNickname;
+			uni.setStorageSync('userInfo', JSON.stringify(userInfo));
+			
+			this.showEditModal = false;
+			
+			// TODO: 这里应该同步到服务器
+			
+			uni.showToast({
+				title: '修改成功',
+				icon: 'success'
+			});
+		},
+		
+		// 需要登录的导航
+		navigateWithLogin(url) {
+			authManager.requireLogin()
+				.then(() => {
+					uni.navigateTo({ url });
+				})
+				.catch(() => {
+					// 用户取消登录，不跳转
+				});
+		},
+		
+		// 退出登录
+		handleLogout() {
+			uni.showModal({
+				title: '确认退出',
+				content: '确定要退出登录吗？',
+				success: (res) => {
+					if (res.confirm) {
+						authManager.logout();
+						this.updateUserInfoDisplay();
+						uni.showToast({
+							title: '已退出登录',
+							icon: 'success'
+						});
+					}
+				}
+			});
+		},
+		
+		// 显示关于我们
+		showAbout() {
+			uni.showModal({
+				title: '关于我们',
+				content: '《湖北省自然资源地图集》小程序由湖北省自然资源厅与远图实验室提供支持。版本：0.0.0',
+				showCancel: false
+			});
 		}
 	}
+}
 </script>
 
 <style>
@@ -225,7 +263,6 @@
 		padding-bottom: 30rpx;
 	}
 	
-	/* Base solid background color - light cream color */
 	/* Base solid background color */
 	.background-solid {
 	  position: absolute;
@@ -240,7 +277,7 @@
 	/* Background image container - now at bottom */
 	.background-image-container {
 	  position: absolute;
-	  bottom: 0; /* Changed from top to bottom */
+	  bottom: 0;
 	  left: 0;
 	  width: 100%;
 	  height: 45%;
@@ -258,10 +295,10 @@
 	/* Gradient overlay - now fades upward */
 	.gradient-overlay {
 	  position: absolute;
-	  top: 0; /* Changed from bottom to top */
+	  top: 0;
 	  left: 0;
 	  width: 100%;
-	  height: 60%; /* Increased fade height */
+	  height: 60%;
 	  background: linear-gradient(to top, transparent 0%, #E8F4F0 100%);
 	  z-index: 1;
 	}
@@ -269,7 +306,6 @@
 	/* 用户信息区域 */
 	.user-info-section {
 	  padding: 50rpx 30rpx;
-	  /* Removed the background gradient */
 	  display: flex;
 	  flex-direction: column;
 	  align-items: center;
@@ -283,6 +319,7 @@
 		overflow: hidden;
 		margin-bottom: 20rpx;
 		border: 4rpx solid #FFFFFF;
+		cursor: pointer;
 	}
 	
 	.avatar {
@@ -310,7 +347,7 @@
 	  color: #333333; 
 	  display: flex;
 	  align-items: center;
-	  text-shadow: none; /* Removed text shadow */
+	  cursor: pointer;
 	}
 	
 	.edit-name {
@@ -332,6 +369,7 @@
 		border-radius: 15rpx;
 		margin-bottom: 20rpx;
 		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+		cursor: pointer;
 	}
 	
 	.function-title {
@@ -342,6 +380,16 @@
 	.function-arrow {
 		font-size: 30rpx;
 		color: #999999;
+	}
+	
+	/* 退出登录特殊样式 */
+	.logout-card {
+		margin-top: 40rpx;
+		border: 1rpx solid #FF6B6B;
+	}
+	
+	.logout-text {
+		color: #FF6B6B;
 	}
 	
 	/* 编辑昵称弹窗 */
