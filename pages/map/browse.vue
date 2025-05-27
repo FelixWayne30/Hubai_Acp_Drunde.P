@@ -1,5 +1,20 @@
+<!-- pages/map/browse.vue -->
 <template>
   <view class="container">
+    <!-- 美观的加载指示器 -->
+    <view class="loading-overlay" v-if="isLoading">
+      <view class="loading-content">
+        <view class="loading-spinner"></view>
+        <view class="loading-text">{{ loadingText }}</view>
+        <view class="loading-progress" v-if="showProgress">
+          <view class="progress-track">
+            <view class="progress-bar" :style="{ width: progressWidth + '%' }"></view>
+          </view>
+          <view class="progress-text">{{ progressWidth }}%</view>
+        </view>
+      </view>
+    </view>
+    
     <web-view 
       :src="webViewUrl" 
       @message="handleMessage"
@@ -10,7 +25,7 @@
 
 <script>
 import { API } from '@/common/config.js'
-import { preloader, webViewManager } from '@/common/preload.js'
+import { webViewManager } from '@/common/preload.js'
 
 export default {
   data() {
@@ -20,9 +35,12 @@ export default {
       mapIndex: 0,
       webViewUrl: '',
       allMaps: [],
-      currentMapData: null,
+      isLoading: true,
+      loadingText: '准备加载地图...',
+      showProgress: false,
+      progressWidth: 0,
       webviewStyles: {
-        progress: false
+        progress: false // 隐藏默认进度条
       }
     }
   },
@@ -41,17 +59,18 @@ export default {
       this.getAllMapsInTopic();
     } else {
       console.error('缺少必要参数');
+      this.isLoading = false;
+      uni.showToast({
+        title: '参数错误',
+        icon: 'none'
+      });
     }
   },
   
   methods: {
     // 获取当前专题下的所有地图
     getAllMapsInTopic() {
-      console.log('获取专题下所有地图');
-      
-      uni.showLoading({
-        title: '准备中...'
-      });
+      this.loadingText = '获取地图数据...';
       
       uni.request({
         url: API.MAPS_BY_GROUP + this.topicId,
@@ -64,8 +83,8 @@ export default {
               title: item.title,
               description: item.description || '暂无描述',
               type: item.type,
-              width: item.width,
-              height: item.height,
+              width: item.width || 6000, // 设置默认值
+              height: item.height || 4000, // 设置默认值
               create_time: item.create_time
             }));
             
@@ -84,21 +103,15 @@ export default {
               }
             }
             
-            this.currentMapData = this.allMaps[this.mapIndex];
-            console.log(`当前地图: ${this.currentMapData.title}, 索引: ${this.mapIndex}`);
-            
-            // 初始化WebView
+            this.loadingText = '初始化地图浏览器...';
             this.initWebView();
-            
-            // 如果预加载器还没开始预加载，在这里启动
-            this.ensurePreloadStarted();
-            
           } else {
             console.error('获取地图数据失败:', res.data);
             uni.showToast({
               title: '获取地图数据失败',
               icon: 'none'
             });
+            this.isLoading = false;
           }
         },
         fail: (err) => {
@@ -107,39 +120,19 @@ export default {
             title: '网络错误，请稍后重试',
             icon: 'none'
           });
-        },
-        complete: () => {
-          uni.hideLoading();
+          this.isLoading = false;
         }
       });
     },
     
-    // 确保预加载已启动
-    ensurePreloadStarted() {
-      const stats = preloader.getStats();
-      if (!stats.isPreloading && stats.cached === 0) {
-        console.log('预加载器未启动，现在启动激进预加载');
-        preloader.startAggressivePreload(this.allMaps, this.mapIndex, this.topicId);
-      } else {
-        console.log('预加载器已运行或已有缓存，跳过启动');
-      }
-    },
-    
     // 初始化WebView
     initWebView() {
-      if (!this.currentMapData) {
-        console.error('当前地图数据为空');
-        return;
-      }
-      
-      console.log('初始化单个WebView实例');
-      
-      // 初始化单实例WebView管理器
+      // 预热WebView
       webViewManager.init();
       
       // 构建WebView数据
       const webViewData = {
-        currentMap: this.currentMapData,
+        currentMap: this.allMaps[this.mapIndex],
         allMaps: this.allMaps,
         currentIndex: this.mapIndex,
         topicId: this.topicId
@@ -151,10 +144,10 @@ export default {
       // 更新WebView URL
       this.webViewUrl = webViewManager.updateUrl(newUrl);
       
-      console.log('WebView初始化完成');
-      console.log('WebView状态:', webViewManager.getStatus());
+      console.log('WebView初始化完成:', this.webViewUrl);
     },
     
+    // 处理WebView消息
     handleMessage(event) {
       console.log('收到WebView消息:', event);
       
@@ -166,11 +159,21 @@ export default {
         
         switch (data.action) {
           case 'viewDetail':
-            this.handleViewDetail();
+            this.handleViewDetail(data.mapId);
             break;
             
           case 'downloadRequest':
             this.handleDownloadRequest(data);
+            break;
+            
+          case 'loadingStatus':
+            // 处理加载状态更新
+            this.updateLoadingStatus(data);
+            break;
+            
+          case 'loadingProgress':
+            // 处理加载进度更新
+            this.updateLoadingProgress(data.progress);
             break;
             
           default:
@@ -182,13 +185,57 @@ export default {
       }
     },
     
+    // 更新加载状态
+    updateLoadingStatus(data) {
+      console.log('更新加载状态:', data);
+      
+      if (data.status === 'start') {
+        this.isLoading = true;
+        this.loadingText = data.message || '加载中...';
+        
+        if (data.showProgress) {
+          this.showProgress = true;
+          this.progressWidth = data.progress || 0;
+        }
+      } 
+      else if (data.status === 'progress') {
+        this.showProgress = true;
+        this.progressWidth = data.progress || 0;
+      }
+      else if (data.status === 'complete') {
+        // 完成后延迟关闭加载提示，给用户更好的视觉体验
+        setTimeout(() => {
+          this.isLoading = false;
+          this.showProgress = false;
+        }, 500);
+      }
+      else if (data.status === 'error') {
+        this.loadingText = data.message || '加载失败';
+        // 错误状态保持显示，让用户看到
+        setTimeout(() => {
+          this.isLoading = false;
+          this.showProgress = false;
+        }, 2000);
+      }
+    },
+    
+    // 更新加载进度
+    updateLoadingProgress(progress) {
+      if (typeof progress === 'number') {
+        this.progressWidth = Math.min(Math.round(progress * 100), 100);
+      }
+    },
+    
     // 处理查看详情
-    handleViewDetail() {
-      console.log('跳转到详情页');
+    handleViewDetail(mapId) {
+      console.log('跳转到详情页', mapId);
+      
+      // 使用实际接收到的mapId
+      const targetMapId = mapId || this.mapId;
       
       setTimeout(() => {
         uni.navigateTo({
-          url: `/pages/map/detail?id=${this.currentMapData.id}&from=browse`,
+          url: `/pages/map/detail?id=${targetMapId}&from=browse`,
           success: () => {
             console.log('跳转成功');
           },
@@ -224,5 +271,74 @@ export default {
 .container {
   width: 100%;
   height: 100vh;
+  position: relative;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.loading-content {
+  text-align: center;
+  padding: 40rpx;
+  border-radius: 16rpx;
+  background-color: #fff;
+  box-shadow: 0 0 30rpx rgba(0, 0, 0, 0.1);
+  width: 80%;
+  max-width: 600rpx;
+}
+
+.loading-spinner {
+  width: 80rpx;
+  height: 80rpx;
+  margin: 0 auto 30rpx;
+  border: 6rpx solid rgba(46, 139, 87, 0.2);
+  border-top: 6rpx solid #2E8B57;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  font-size: 32rpx;
+  color: #333;
+  margin-bottom: 30rpx;
+  font-weight: bold;
+}
+
+.loading-progress {
+  margin-top: 20rpx;
+}
+
+.progress-track {
+  height: 8rpx;
+  background-color: #f0f0f0;
+  border-radius: 4rpx;
+  margin-bottom: 10rpx;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #2E8B57;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 24rpx;
+  color: #666;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>

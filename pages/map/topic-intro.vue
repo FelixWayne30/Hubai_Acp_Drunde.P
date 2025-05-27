@@ -40,10 +40,12 @@
   </view>
 </template>
 
+
+// pages/map/topic-intro.vue
 <script>
-import { API } from '@/common/config.js'
-import { generateThumbnailUrl } from '@/common/utils.js'
-import { preloader } from '@/common/preload.js'
+import { API } from '@/common/config.js';
+import { generateThumbnailUrl } from '@/common/utils.js';
+import { thumbnailCache } from '@/common/preload.js';
 
 export default {
   data() {
@@ -54,24 +56,19 @@ export default {
         title: '加载中...'
       },
       maps: []
-    }
+    };
   },
   onLoad(options) {
     console.log('专题介绍页面加载，接收参数:', options);
     this.topicId = options.topic_id || '';
     console.log('设置的topicId:', this.topicId);
     
-    // 切换专题时重置预加载器
-    preloader.switchTopic(this.topicId);
+    // 设置当前专题ID，用于缩略图缓存
+    thumbnailCache.setCurrentTopic(this.topicId);
     
     // 获取专题信息和地图列表
     this.getTopicInfo();
     this.getTopicMaps();
-  },
-  
-  onUnload() {
-    // 页面卸载时清理过期缓存
-    preloader.cleanExpiredCache();
   },
   
   methods: {
@@ -127,6 +124,9 @@ export default {
               // 生成缩略图URL
               const thumbnailUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
               
+              // 缓存缩略图URL，供其他页面使用
+              thumbnailCache.setThumbnail(item.map_id, thumbnailUrl, item);
+              
               return {
                 id: item.map_id,
                 title: item.title,
@@ -138,12 +138,6 @@ export default {
             });
             
             console.log(`地图数据处理完成，共${this.maps.length}个地图`);
-            
-            // 延迟启动激进预加载，避免影响页面渲染
-            setTimeout(() => {
-              this.startAggressivePreload();
-            }, 500);
-            
           } else {
             console.error('获取地图数据失败:', res.data);
             uni.showToast({
@@ -165,42 +159,9 @@ export default {
       });
     },
     
-    // 启动激进预加载策略
-    startAggressivePreload() {
-      if (this.maps.length === 0) {
-        console.log('没有地图数据，跳过预加载');
-        return;
-      }
-      
-      console.log('=== 启动激进预加载策略 ===');
-      
-      // 从第一个地图开始激进预加载整个图组
-      preloader.startAggressivePreload(this.maps, 0, this.topicId);
-      
-      // 定期输出预加载进度（仅控制台）
-      const progressTimer = setInterval(() => {
-        const progress = preloader.getProgress();
-        console.log(`预加载进度: ${progress.completed}/${progress.total} (${progress.percentage}%)`);
-        
-        if (progress.completed === progress.total) {
-          console.log('=== 所有地图预加载完成 ===');
-          clearInterval(progressTimer);
-        }
-      }, 2000);
-      
-      // 10秒后清理定时器（防止内存泄漏）
-      setTimeout(() => {
-        clearInterval(progressTimer);
-      }, 10000);
-    },
-    
     // 导航到地图浏览页
     navigateToMap(mapId, index = 0) {
       console.log(`跳转到地图浏览页: ${mapId}, 索引: ${index}`);
-      
-      // 检查是否有预加载缓存
-      const isCached = preloader.isCached(mapId);
-      console.log(`地图缓存状态: ${isCached ? '已缓存' : '未缓存'}`);
       
       uni.navigateTo({
         url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}&index=${index}`
@@ -225,7 +186,7 @@ export default {
       });
     }
   }
-}
+};
 </script>
 
 <style>
