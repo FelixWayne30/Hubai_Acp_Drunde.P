@@ -60,7 +60,6 @@
           :key="index" 
           @click="navigateToTopic(item.id)"
         >
-          <image class="topic-image" :src="item.image"></image>
           <view class="topic-title">{{item.title}}</view>
         </view>
       </view>
@@ -333,7 +332,8 @@ export default {
 /* ========== 专题卡片 ========== */
 .topic-item {
   width: 42%;
-  margin: 15rpx;
+  height: 50px;
+ margin: 15rpx;
   border-radius: 20rpx;
   overflow: hidden;
   background-color: rgba(227, 244, 240, 1.0);
@@ -347,13 +347,6 @@ export default {
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
 }
 
-.topic-image {
-  width: 155.4rpx;
-  height: 112.5rpx;
-  margin: 30rpx auto 15rpx;
-  display: block;
-}
-
 .topic-title {
   text-align: center;
   font-size: 30rpx;
@@ -362,5 +355,6 @@ export default {
   padding: 0 20rpx 30rpx;
   line-height: 1.3;
   opacity: 1;
+  transform: translate(0,40%);
 }
 </style>
