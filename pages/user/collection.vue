@@ -24,16 +24,16 @@
 					</view>
 					
 					<!-- 缩略图 -->
-					<image class="thumbnail placeholder-image" :src="item.image"></image>
+					<image class="thumbnail placeholder-image" :src="item.image || '/static/placeholder.png'"></image>
 					
 					<!-- 地图信息 -->
 					<view class="map-info">
 						<view class="map-title">{{item.title}}</view>
-						<view class="collect-time">{{item.time}}</view>
+						<view class="collect-time">{{formatDate(item.create_time)}}</view>
 					</view>
 					
 					<!-- 取消收藏按钮 -->
-					<view class="uncollect-btn" @click.stop="uncollectMap(item.id, index)">
+					<view class="uncollect-btn" @click.stop="uncollectMap(item.map_id, index)">
 						<text class="iconfont">🗑</text>
 					</view>
 				</view>
@@ -48,109 +48,157 @@
 </template>
 
 <script>
+	import { API } from '@/common/config.js';
+	import { generateThumbnailUrl } from '@/common/utils.js';
+	
 	export default {
 		data() {
 			return {
-				// 收藏列表（示例数据）
-				collections: [
-					{
-						id: '1',
-						title: '湖北省地质图',
-						image: '/static/placeholder.png',
-						time: '2025-04-05 10:23',
-						selected: false
-					},
-					{
-						id: '2',
-						title: '湖北省水域图',
-						image: '/static/placeholder.png',
-						time: '2025-04-03 16:45',
-						selected: false
-					},
-					{
-						id: '3',
-						title: '湖北省土地利用图',
-						image: '/static/placeholder.png',
-						time: '2025-04-01 09:12',
-						selected: false
-					},
-					{
-						id: '4',
-						title: '湖北省矿产分布图',
-						image: '/static/placeholder.png',
-						time: '2025-03-28 14:37',
-						selected: false
-					},
-					{
-						id: '5',
-						title: '湖北省自然保护区分布图',
-						image: '/static/placeholder.png',
-						time: '2025-03-25 20:18',
-						selected: false
-					}
-				],
+				// 收藏列表
+				collections: [],
 				// 批量操作模式
 				batchMode: false,
-				allSelected: false
+				allSelected: false,
+				// 用户ID
+				userId: null,
+				// 加载状态
+				isLoading: false
 			}
 		},
 		onLoad() {
-			this.getCollections();
+			// 获取用户ID
+			const userInfo = uni.getStorageSync('userInfo');
+			if (userInfo) {
+				try {
+					const userObj = JSON.parse(userInfo);
+					this.userId = userObj.user_id;
+					// 获取收藏列表
+					this.getCollections();
+				} catch (e) {
+					console.error('解析用户信息失败', e);
+					uni.showToast({
+						title: '获取用户信息失败',
+						icon: 'none'
+					});
+				}
+			} else {
+				uni.showToast({
+					title: '请先登录',
+					icon: 'none'
+				});
+				setTimeout(() => {
+					uni.switchTab({
+						url: '/pages/user/center'
+					});
+				}, 1500);
+			}
 		},
 		methods: {
 			// 获取收藏列表
 			getCollections() {
-				// 这里应该是从API获取数据
-				console.log('获取收藏列表');
-				// 模拟API调用
-				// uni.request({
-				//   url: '/api/user/collections',
-				//   success: (res) => {
-				//     this.collections = res.data.collections.map(item => ({
-				//       ...item,
-				//       selected: false
-				//     }));
-				//   }
-				// });
+				if (!this.userId) return;
+				
+				this.isLoading = true;
+				uni.showLoading({
+					title: '加载中...'
+				});
+				
+				uni.request({
+					url: API.COLLECTION_LIST,
+					method: 'GET',
+					data: {
+						userId: this.userId
+					},
+                    header: {
+                      'content-type': 'application/x-www-form-urlencoded'
+                    },
+					success: (res) => {
+						if (res.statusCode === 200 && res.data.code === 200) {
+							// 处理收藏数据
+							const collections = res.data.data || [];
+							this.collections = collections.map(item => {
+								// 生成缩略图URL
+								const imageUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
+								
+								return {
+									...item,
+									image: imageUrl,
+									selected: false
+								};
+							});
+						} else {
+							uni.showToast({
+								title: '获取收藏列表失败',
+								icon: 'none'
+							});
+						}
+					},
+					fail: (err) => {
+						console.error('请求失败', err);
+						uni.showToast({
+							title: '网络错误，请稍后重试',
+							icon: 'none'
+						});
+					},
+					complete: () => {
+						this.isLoading = false;
+						uni.hideLoading();
+					}
+				});
 			},
 			
 			// 查看地图详情
 			viewMap(item) {
 				if (this.batchMode) {
-					this.toggleSelect(this.collections.findIndex(c => c.id === item.id));
+					this.toggleSelect(this.collections.findIndex(c => c.map_id === item.map_id));
 					return;
 				}
 				
 				uni.navigateTo({
-					url: `/pages/map/detail?id=${item.id}`
+					url: `/pages/map/detail?id=${item.map_id}`
 				});
 			},
 			
 			// 取消收藏
-			uncollectMap(id, index) {
+			uncollectMap(mapId, index) {
 				uni.showModal({
 					title: '提示',
 					content: '确认取消收藏该地图？',
 					success: (res) => {
 						if (res.confirm) {
-							// 模拟API调用
-							// uni.request({
-							//   url: `/api/maps/${id}/collect`,
-							//   method: 'POST',
-							//   data: {
-							//     collected: false
-							//   },
-							//   success: () => {
-							//     this.collections.splice(index, 1);
-							//   }
-							// });
-							
-							// 模拟成功
-							this.collections.splice(index, 1);
-							
-							uni.showToast({
-								title: '已取消收藏',
-								icon: 'success'
+							uni.request({
+								url: API.COLLECTION_TOGGLE,
+								method: 'POST',
+								data: {
+									userId: this.userId,
+									mapId: mapId
+								},
+                                header: {
+                                  'content-type': 'application/x-www-form-urlencoded'
+                                },
+								success: (res) => {
+									if (res.statusCode === 200 && res.data.code === 200) {
+										// 从列表中移除
+										this.collections.splice(index, 1);
+										
+										uni.showToast({
+											title: '已取消收藏',
+											icon: 'success'
+										});
+									} else {
+										uni.showToast({
+											title: '操作失败',
+											icon: 'none'
+										});
+									}
+								},
+								fail: (err) => {
+									console.error('请求失败', err);
+									uni.showToast({
+										title: '网络错误，请稍后重试',
+										icon: 'none'
+									});
+								}
 							});
 						}
 					}
@@ -190,11 +238,9 @@
 			
 			// 删除选中项
 			deleteSelected() {
-				const selectedIds = this.collections
-					.filter(item => item.selected)
-					.map(item => item.id);
+				const selectedItems = this.collections.filter(item => item.selected);
 				
-				if (selectedIds.length === 0) {
+				if (selectedItems.length === 0) {
 					uni.showToast({
 						title: '请选择要删除的项',
 						icon: 'none'
@@ -204,29 +250,52 @@
 				
 				uni.showModal({
 					title: '提示',
-					content: `确认删除${selectedIds.length}项收藏？`,
+					content: `确认删除${selectedItems.length}项收藏？`,
 					success: (res) => {
 						if (res.confirm) {
-							// 模拟API调用
-							// uni.request({
-							//   url: '/api/user/collections/batch-delete',
-							//   method: 'POST',
-							//   data: {
-							//     ids: selectedIds
-							//   },
-							//   success: () => {
-							//     this.collections = this.collections.filter(item => !item.selected);
-							//     this.batchMode = false;
-							//   }
-							// });
+							let completedCount = 0;
+							let successCount = 0;
 							
-							// 模拟成功
-							this.collections = this.collections.filter(item => !item.selected);
-							this.batchMode = false;
+							const totalCount = selectedItems.length;
 							
-							uni.showToast({
-								title: '删除成功',
-								icon: 'success'
+							// 显示加载中
+							uni.showLoading({
+								title: '处理中...'
+							});
+							
+							// 逐个取消收藏
+							selectedItems.forEach(item => {
+								uni.request({
+									url: API.COLLECTION_TOGGLE,
+									method: 'POST',
+									data: {
+										userId: this.userId,
+										mapId: item.map_id
+									},
+                                    header: {
+                                      'content-type': 'application/x-www-form-urlencoded'
+                                    },
+									complete: (res) => {
+										completedCount++;
+										
+										if (res.statusCode === 200 && res.data.code === 200) {
+											successCount++;
+										}
+										
+										// 全部处理完成
+										if (completedCount === totalCount) {
+											// 更新列表
+											this.collections = this.collections.filter(item => !item.selected);
+											this.batchMode = false;
+											
+											uni.hideLoading();
+											uni.showToast({
+												title: successCount === totalCount ? '删除成功' : `成功${successCount}项，失败${totalCount - successCount}项`,
+												icon: successCount === totalCount ? 'success' : 'none'
+											});
+										}
+									}
+								});
 							});
 						}
 					}
@@ -238,6 +307,18 @@
 				uni.switchTab({
 					url: '/pages/index/index'
 				});
+			},
+			
+			// 格式化日期
+			formatDate(dateStr) {
+				if (!dateStr) return '';
+				
+				try {
+					const date = new Date(dateStr);
+					return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+				} catch (e) {
+					return dateStr;
+				}
 			}
 		}
 	}

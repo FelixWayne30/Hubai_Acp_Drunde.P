@@ -9,21 +9,18 @@ export const GEOSERVER_CONFIG = {
 
 // API路径常量
 export const API = {
-  // 地图信息相关接口
+
+
   TOPICS: `${envConfig.API_BASE_URL}/mapinfo/topics`,
   MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/maps/`,
   MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
   ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
-  
-   SEARCH: `${envConfig.API_BASE_URL || 'http://localhost:8080'}/mapinfo/search`,
-  
-  //待写接口
-  USER_LOGIN: `${envConfig.API_BASE_URL}/user/wechatLogin`,
-  USER_PROFILE: `${envConfig.API_BASE_URL}/user/profile`,
-  USER_COLLECTIONS: `${envConfig.API_BASE_URL}/user/collections`,
-  USER_DOWNLOADS: `${envConfig.API_BASE_URL}/user/downloads`,
-  DOWNLOAD_REQUEST: `${envConfig.API_BASE_URL}/download/request`,
-  DOWNLOAD_STATUS: `${envConfig.API_BASE_URL}/download/status`,
+  SEARCH: `${envConfig.API_BASE_URL || 'http://localhost:8080'}/mapinfo/search`,
+  COLLECTION_TOGGLE: `${envConfig.API_BASE_URL}/interaction/collection/toggle`,
+  COLLECTION_CHECK: `${envConfig.API_BASE_URL}/interaction/collection/check`,
+  COLLECTION_LIST: `${envConfig.API_BASE_URL}/interaction/collection/list`,
+  LIKE_TOGGLE: `${envConfig.API_BASE_URL}/interaction/like/toggle`,
+  LIKE_CHECK: `${envConfig.API_BASE_URL}/interaction/like/check`,
   
   // GeoServer WMS服务地址
   WMS_URL: `${GEOSERVER_CONFIG.BASE_URL}/${GEOSERVER_CONFIG.WORKSPACE}/wms`

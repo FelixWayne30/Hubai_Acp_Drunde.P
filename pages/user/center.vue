@@ -46,11 +46,6 @@
 				<view class="function-arrow">></view>
 			</view>
 			
-			<!-- 退出登录按钮 - 仅登录时显示 -->
-			<view class="function-card logout-card" v-if="isLoggedIn" @click="handleLogout">
-				<view class="function-title logout-text">退出登录</view>
-				<view class="function-arrow">></view>
-			</view>
 		</view>
 		
 		<!-- 编辑昵称弹窗 -->

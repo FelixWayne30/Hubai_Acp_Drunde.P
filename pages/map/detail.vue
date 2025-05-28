@@ -109,7 +109,7 @@
 			return {
 				mapId: '',
 				topicId: '',
-				// 地图信息（初始化为空，避免显示错误的静态内容）
+				// 地图信息
 				mapInfo: {
 					id: '',
 					title: '加载中...',
@@ -128,39 +128,9 @@
 				isCollected: false,
 				likeCount: 0,
 				commentCount: 0,
+				userId: null,
 				// 评论相关
-				comments: [
-					{
-						id: '1',
-						userName: '地图爱好者',
-						content: '这张地图非常详细，对我的研究很有帮助！',
-						time: '2025-04-05 10:23'
-					},
-					{
-						id: '2',
-						userName: '资源研究员',
-						content: '色彩搭配很合理，易于识别不同地质类型。',
-						time: '2025-04-03 16:45'
-					},
-					{
-						id: '3',
-						userName: '湖北游客',
-						content: '终于找到了家乡的详细地质信息，感谢提供！',
-						time: '2025-04-01 09:12'
-					},
-					{
-						id: '4',
-						userName: '地理老师',
-						content: '已经下载用于教学，学生们都很喜欢这个地图。',
-						time: '2025-03-28 14:37'
-					},
-					{
-						id: '5',
-						userName: '自然爱好者',
-						content: '图例清晰，内容全面，非常专业的一份地图。',
-						time: '2025-03-25 20:18'
-					}
-				],
+				comments: [],
 				commentContent: '',
 				inputFocus: false,
 				// 自定义列表相关
@@ -175,12 +145,12 @@
 		  console.log('详情页接收到的参数:', options);
 		  console.log('options.id:', options.id);
 		  console.log('options.id类型:', typeof options.id);
-		  console.log('options.topic_id:', options.topic_id); // 新增日志
+		  console.log('options.topic_id:', options.topic_id);
 		  
 		  this.mapId = options.id || '';
-		  this.topicId = options.topic_id || ''; // 新增：保存topicId
+		  this.topicId = options.topic_id || '';
 		  console.log('设置后的mapId:', this.mapId);
-		  console.log('设置后的topicId:', this.topicId); // 新增日志
+		  console.log('设置后的topicId:', this.topicId);
 		  
 		  // 检查是否从浏览页跳转过来
 		  if (options.from === 'browse') {
@@ -189,12 +159,29 @@
 		  
 		  if (this.mapId) {
 		    this.getMapDetail();
+		    this.getComments();
 		  } else {
 		    console.error('mapId为空，无法获取详情');
 		    uni.showToast({
 		      title: '参数错误',
 		      icon: 'none'
 		    });
+		  }
+		  
+		  // 获取用户ID
+		  const userInfo = uni.getStorageSync('userInfo');
+		  if (userInfo) {
+		    try {
+		      const userObj = JSON.parse(userInfo);
+		      this.userId = userObj.user_id;
+		      // 获取是否已点赞和收藏
+              if(this.userId && this.mapId) {
+                this.checkLikeStatus();
+                this.checkCollectionStatus();
+              }
+		    } catch (e) {
+		      console.error('解析用户信息失败', e);
+		    }
 		  }
 		},
 		onShareAppMessage() {
@@ -302,49 +289,120 @@
 			getComments() {
 				// 这里应该是从API获取数据
 				console.log('获取评论列表，地图ID:', this.mapId);
-				// 模拟API调用
-				// uni.request({
-				//   url: `/api/maps/${this.mapId}/comments`,
-				//   success: (res) => {
-				//     this.comments = res.data.comments;
-				//   }
-				// });
+				// 暂时使用空数据
+				this.comments = [];
+			},
+			
+			// 检查点赞状态
+			checkLikeStatus() {
+			  if (!this.userId || !this.mapId) return;
+			  
+			  uni.request({
+			    url: API.LIKE_CHECK,
+			    method: 'GET',
+			    data: {
+			      userId: this.userId,
+			      mapId: this.mapId
+			    },
+			    header: {
+			      'content-type': 'application/x-www-form-urlencoded'
+			    },
+			    success: (res) => {
+			      if (res.statusCode === 200 && res.data.code === 200) {
+			        this.isLiked = res.data.data.liked;
+			      }
+			    }
+			  });
+			},
+			
+			// 检查收藏状态
+			checkCollectionStatus() {
+			  if (!this.userId || !this.mapId) return;
+			  
+			  uni.request({
+			    url: API.COLLECTION_CHECK,
+			    method: 'GET',
+			    data: {
+			      userId: this.userId,
+			      mapId: this.mapId
+			    },
+			    header: {
+			      'content-type': 'application/x-www-form-urlencoded'
+			    },
+			    success: (res) => {
+			      if (res.statusCode === 200 && res.data.code === 200) {
+			        this.isCollected = res.data.data.collected;
+			      }
+			    }
+			  });
 			},
 			
 			// 点赞地图
 			likeMap() {
-				// 模拟状态切换
-				this.isLiked = !this.isLiked;
-				this.likeCount += (this.isLiked ? 1 : -1);
-				
-				// 模拟API调用
-				// uni.request({
-				//   url: `/api/maps/${this.mapId}/like`,
-				//   method: 'POST',
-				//   data: {
-				//     liked: this.isLiked
-				//   }
-				// });
+			  if (!this.userId) {
+			    uni.showToast({
+			      title: '请先登录',
+			      icon: 'none'
+			    });
+			    return;
+			  }
+			  
+			  uni.request({
+			    url: API.LIKE_TOGGLE,
+			    method: 'POST',
+			    data: {
+			      userId: this.userId,
+			      mapId: this.mapId
+			    },
+			    header: {
+			      'content-type': 'application/x-www-form-urlencoded'
+			    },
+			    success: (res) => {
+			      if (res.statusCode === 200 && res.data.code === 200) {
+			        this.isLiked = res.data.data.liked;
+			        // 更新点赞数
+			        this.likeCount += this.isLiked ? 1 : -1;
+			        
+			        uni.showToast({
+			          title: this.isLiked ? '点赞成功' : '已取消点赞',
+			          icon: 'none'
+			        });
+			      }
+			    }
+			  });
 			},
 			
 			// 收藏地图
 			collectMap() {
-				// 模拟状态切换
-				this.isCollected = !this.isCollected;
-				
-				// 模拟API调用
-				// uni.request({
-				//   url: `/api/maps/${this.mapId}/collect`,
-				//   method: 'POST',
-				//   data: {
-				//     collected: this.isCollected
-				//   }
-				// });
-				
-				uni.showToast({
-					title: this.isCollected ? '已收藏' : '已取消收藏',
-					icon: 'none'
-				});
+			  if (!this.userId) {
+			    uni.showToast({
+			      title: '请先登录',
+			      icon: 'none'
+			    });
+			    return;
+			  }
+			  
+			  uni.request({
+			    url: API.COLLECTION_TOGGLE,
+			    method: 'POST',
+			    data: {
+			      userId: this.userId,
+			      mapId: this.mapId
+			    },
+			    header: {
+			      'content-type': 'application/x-www-form-urlencoded'
+			    },
+			    success: (res) => {
+			      if (res.statusCode === 200 && res.data.code === 200) {
+			        this.isCollected = res.data.data.collected;
+			        
+			        uni.showToast({
+			          title: this.isCollected ? '收藏成功' : '已取消收藏',
+			          icon: 'none'
+			        });
+			      }
+			    }
+			  });
 			},
 			
 			// 聚焦评论输入框
@@ -362,29 +420,13 @@
 					return;
 				}
 				
-				// 模拟API调用
-				// uni.request({
-				//   url: `/api/maps/${this.mapId}/comment`,
-				//   method: 'POST',
-				//   data: {
-				//     content: this.commentContent
-				//   },
-				//   success: () => {
-				//     this.commentContent = '';
-				//     uni.showToast({
-				//       title: '评论提交成功，待审核',
-				//       icon: 'none'
-				//     });
-				//   }
-				// });
-				
-				// 模拟成功
-				this.commentContent = '';
-				this.inputFocus = false;
+				// 这里应该调用后端API提交评论
 				uni.showToast({
-					title: '评论提交成功，待审核',
+					title: '评论功能暂未实现',
 					icon: 'none'
 				});
+				this.commentContent = '';
+				this.inputFocus = false;
 			},
 			
 			// 显示自定义列表选择器
@@ -401,22 +443,9 @@
 			
 			// 获取用户的自定义列表
 			fetchCustomLists() {
-				// 模拟API调用
-				// uni.request({
-				//   url: '/api/user/lists',
-				//   success: (res) => {
-				//     this.customLists = res.data.lists;
-				//   }
-				// });
-				
-				// 模拟数据
-				this.customLists = [
-					{ id: '1', name: '长江流域图集' },
-					{ id: '2', name: '矿产资源专题' },
-					{ id: '3', name: '教学资料' }
-				];
-				
-				// 重置选择状态
+				// 这里应该调用后端API获取自定义列表
+				// 暂时使用空数据
+				this.customLists = [];
 				this.selectedLists = [];
 			},
 			
@@ -445,36 +474,12 @@
 					return;
 				}
 				
-				// 模拟API调用
-				uni.showLoading({ title: '添加中...' });
-				
-				// 模拟请求
-				// uni.request({
-				//   url: '/api/user/lists/add-map',
-				//   method: 'POST',
-				//   data: {
-				//     mapId: this.mapId,
-				//     listIds: this.selectedLists
-				//   },
-				//   success: () => {
-				//     uni.hideLoading();
-				//     uni.showToast({
-				//       title: '添加成功',
-				//       icon: 'success'
-				//     });
-				//     this.hideListsModal();
-				//   }
-				// });
-				
-				// 模拟成功
-				setTimeout(() => {
-					uni.hideLoading();
-					uni.showToast({
-						title: '添加成功',
-						icon: 'success'
-					});
-					this.hideListsModal();
-				}, 1000);
+				// 这里应该调用后端API添加到列表
+				uni.showToast({
+					title: '添加功能暂未实现',
+					icon: 'none'
+				});
+				this.hideListsModal();
 			},
 			
 			// 跳转到创建列表页面
@@ -485,55 +490,25 @@
 				});
 			},
 			
-		// 返回浏览页
-		backToBrowse() {
-		  if (this.fromBrowse) {
-		    uni.navigateBack();
-		  } else {
-		    // 如果没有专题ID，获取第一个专题
-		    if (!this.topicId) {
-		      uni.showLoading({ title: '准备浏览...' });
-		      
-		      // 获取专题列表
-		      uni.request({
-		        url: API.TOPICS,
-		        method: 'GET',
-		        success: (res) => {
-		          if (res.statusCode === 200 && res.data.code === 200 && res.data.data.length > 0) {
-		            // 使用第一个专题
-		            this.topicId = res.data.data[0].topic_id;
-		            console.log('使用专题ID:', this.topicId);
-		            uni.hideLoading();
-		            this.navigateToBrowsePage();
-		          } else {
-		            uni.hideLoading();
-		            uni.showToast({
-		              title: '未找到可用专题',
-		              icon: 'none'
-		            });
-		          }
-		        },
-		        fail: (err) => {
-		          console.error('获取专题列表失败:', err);
-		          uni.hideLoading();
-		          uni.showToast({
-		            title: '网络错误，请稍后重试',
-		            icon: 'none'
-		          });
-		        }
-		      });
-		    } else {
-		      this.navigateToBrowsePage();
-		    }
-		  }
-		},
-		
-		// 导航到浏览页面
-		navigateToBrowsePage() {
-		  uni.navigateTo({
-		    url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
-		  });
-		}
+			// 返回浏览页
+			backToBrowse() {
+			  if (this.fromBrowse) {
+			    uni.navigateBack();
+			  } else {
+			    // 修改：检查topicId是否存在
+			    if (!this.topicId) {
+			      uni.showToast({
+			        title: '缺少专题信息，无法进入浏览页',
+			        icon: 'none'
+			      });
+			      return;
+			    }
+			    
+			    uni.navigateTo({
+			      url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
+			    });
+			  }
+			}
 		}
 	}
 </script>
