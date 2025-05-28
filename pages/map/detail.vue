@@ -485,25 +485,55 @@
 				});
 			},
 			
-			// 返回浏览页
-			backToBrowse() {
-			  if (this.fromBrowse) {
-			    uni.navigateBack();
-			  } else {
-			    // 修改：检查topicId是否存在
-			    if (!this.topicId) {
-			      uni.showToast({
-			        title: '缺少专题信息，无法进入浏览页',
-			        icon: 'none'
-			      });
-			      return;
-			    }
-			    
-			    uni.navigateTo({
-			      url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
-			    });
-			  }
-			}
+		// 返回浏览页
+		backToBrowse() {
+		  if (this.fromBrowse) {
+		    uni.navigateBack();
+		  } else {
+		    // 如果没有专题ID，获取第一个专题
+		    if (!this.topicId) {
+		      uni.showLoading({ title: '准备浏览...' });
+		      
+		      // 获取专题列表
+		      uni.request({
+		        url: API.TOPICS,
+		        method: 'GET',
+		        success: (res) => {
+		          if (res.statusCode === 200 && res.data.code === 200 && res.data.data.length > 0) {
+		            // 使用第一个专题
+		            this.topicId = res.data.data[0].topic_id;
+		            console.log('使用专题ID:', this.topicId);
+		            uni.hideLoading();
+		            this.navigateToBrowsePage();
+		          } else {
+		            uni.hideLoading();
+		            uni.showToast({
+		              title: '未找到可用专题',
+		              icon: 'none'
+		            });
+		          }
+		        },
+		        fail: (err) => {
+		          console.error('获取专题列表失败:', err);
+		          uni.hideLoading();
+		          uni.showToast({
+		            title: '网络错误，请稍后重试',
+		            icon: 'none'
+		          });
+		        }
+		      });
+		    } else {
+		      this.navigateToBrowsePage();
+		    }
+		  }
+		},
+		
+		// 导航到浏览页面
+		navigateToBrowsePage() {
+		  uni.navigateTo({
+		    url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
+		  });
+		}
 		}
 	}
 </script>
