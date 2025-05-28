@@ -191,6 +191,83 @@
 			}
 		},
 		methods: {
+			
+			// 根据mapId查找topicId
+			findTopicIdByMapId(mapId) {
+			  uni.showLoading({
+			    title: '查询专题信息...'
+			  });
+			  
+			  // 首先获取所有专题
+			  uni.request({
+			    url: API.TOPICS,
+			    method: 'GET',
+			    success: async (res) => {
+			      if (res.statusCode === 200 && res.data.code === 200) {
+			        const topics = res.data.data;
+			        
+			        // 依次查询每个专题，找到包含当前地图的专题就停止
+			        for (const topic of topics) {
+			          const topicId = topic.topic_id;
+			          
+			          try {
+			            const result = await new Promise((resolve, reject) => {
+			              uni.request({
+			                url: API.MAPS_BY_GROUP + topicId,
+			                method: 'GET',
+			                success: (mapRes) => {
+			                  if (mapRes.statusCode === 200 && mapRes.data.code === 200) {
+			                    const maps = mapRes.data.data;
+			                    // 检查当前地图是否在这个专题中
+			                    const foundMap = maps.find(m => m.map_id === mapId);
+			                    resolve(foundMap ? { found: true, topicId } : { found: false });
+			                  } else {
+			                    resolve({ found: false });
+			                  }
+			                },
+			                fail: (err) => {
+			                  reject(err);
+			                }
+			              });
+			            });
+			            
+			            if (result.found) {
+			              // 找到了专题，设置topicId并跳转
+			              uni.hideLoading();
+			              this.topicId = result.topicId;
+			              this.navigateToBrowsePage();
+			              return; // 找到了就停止查询
+			            }
+			          } catch (err) {
+			            console.error('查询专题地图失败:', err);
+			            // 继续查询下一个专题
+			          }
+			        }
+			        
+			        // 所有专题都查询完了，还没找到
+			        uni.hideLoading();
+			        uni.showToast({
+			          title: '未找到相关专题信息',
+			          icon: 'none'
+			        });
+			      } else {
+			        uni.hideLoading();
+			        uni.showToast({
+			          title: '获取专题信息失败',
+			          icon: 'none'
+			        });
+			      }
+			    },
+			    fail: () => {
+			      uni.hideLoading();
+			      uni.showToast({
+			        title: '网络错误，请稍后重试',
+			        icon: 'none'
+			      });
+			    }
+			  });
+			},
+			
 			// 获取地图详情
 			getMapDetail() {
 				// 显示加载状态
@@ -490,25 +567,28 @@
 				});
 			},
 			
+			// 跳转到浏览页
+			navigateToBrowsePage() {
+			  uni.navigateTo({
+			    url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
+			  });
+			},
+			
 			// 返回浏览页
 			backToBrowse() {
 			  if (this.fromBrowse) {
 			    uni.navigateBack();
 			  } else {
-			    // 修改：检查topicId是否存在
+			    // 检查topicId是否存在
 			    if (!this.topicId) {
-			      uni.showToast({
-			        title: '缺少专题信息，无法进入浏览页',
-			        icon: 'none'
-			      });
-			      return;
+			      // 没有topicId，需要查询
+			      this.findTopicIdByMapId(this.mapId);
+			    } else {
+			      // 有topicId，直接跳转
+			      this.navigateToBrowsePage();
 			    }
-			    
-			    uni.navigateTo({
-			      url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
-			    });
 			  }
-			}
+			},
 		}
 	}
 </script>
