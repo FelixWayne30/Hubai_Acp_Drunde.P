@@ -49,6 +49,13 @@
 			}
 		},
 		{
+		  "path": "pages/map/search",
+		  "style": {
+		    "navigationBarTitleText": "搜索地图",
+		    "enablePullDownRefresh": true
+		  }
+		},
+		{
 			"path": "pages/user/list-detail",
 			"style": {
 				"navigationBarTitleText": "列表详情"

@@ -151,19 +151,20 @@ export default {
         url: '/pages/map/detail?id=' + mapId
       });
     },
-    performSearch() {
-      if (!this.searchQuery.trim()) {
-        uni.showToast({
-          title: '请输入搜索内容',
-          icon: 'none'
-        });
-        return;
-      }
-      
-      uni.navigateTo({
-        url: `/pages/map/search?query=${encodeURIComponent(this.searchQuery)}`
-      });
-    },
+   // 执行搜索
+   performSearch() {
+     if (!this.searchQuery.trim()) {
+       uni.showToast({
+         title: '请输入搜索内容',
+         icon: 'none'
+       });
+       return;
+     }
+     
+     uni.navigateTo({
+       url: `/pages/map/search?query=${encodeURIComponent(this.searchQuery)}`
+     });
+   },
     clearSearch() {
       this.searchQuery = '';
     }

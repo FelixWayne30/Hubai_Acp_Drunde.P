@@ -15,6 +15,8 @@ export const API = {
   MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
   ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
   
+   SEARCH: `${envConfig.API_BASE_URL || 'http://localhost:8080'}/mapinfo/search`,
+  
   //待写接口
   USER_LOGIN: `${envConfig.API_BASE_URL}/user/wechatLogin`,
   USER_PROFILE: `${envConfig.API_BASE_URL}/user/profile`,
