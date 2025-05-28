@@ -9,13 +9,17 @@ export const GEOSERVER_CONFIG = {
 
 // API路径常量
 export const API = {
+  // 用户相关API
+  USER_LOGIN: `${envConfig.API_BASE_URL}/user/wechatLogin`,
 
-
+  // 地图信息API
   TOPICS: `${envConfig.API_BASE_URL}/mapinfo/topics`,
   MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/maps/`,
   MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
   ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
   SEARCH: `${envConfig.API_BASE_URL || 'http://localhost:8080'}/mapinfo/search`,
+  
+  // 交互相关API
   COLLECTION_TOGGLE: `${envConfig.API_BASE_URL}/interaction/collection/toggle`,
   COLLECTION_CHECK: `${envConfig.API_BASE_URL}/interaction/collection/check`,
   COLLECTION_LIST: `${envConfig.API_BASE_URL}/interaction/collection/list`,
