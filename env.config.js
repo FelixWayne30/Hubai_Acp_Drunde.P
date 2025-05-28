@@ -12,8 +12,8 @@ const CURRENT_ENV = ENV_TYPE.DEVELOPMENT;
 // 现用开发环境
 const ENV_CONFIG = {
   [ENV_TYPE.DEVELOPMENT]: {
-    // 开发环境配置
-    API_BASE_URL: 'http://localhost:8088',
+    // 开发环境配置————阿里云服务器：8.138.38.144
+    API_BASE_URL: 'http://192.168.50.133:8088', 
     GEOSERVER_BASE_URL: 'http://192.168.50.133:8080/geoserver',
     WEBVIEW_BASE_URL: 'http://localhost:2180', //nginx代理地址
     DEBUG: true,
