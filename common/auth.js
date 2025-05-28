@@ -1,3 +1,6 @@
+// common/auth.js - 登录状态管理
+import { API, debugLog, errorLog } from '@/common/config.js';
+
 // 登录状态管理
 class AuthManager {
   constructor() {
@@ -11,13 +14,22 @@ class AuthManager {
     const userInfo = uni.getStorageSync('userInfo');
     
     if (userId && userInfo) {
-      this.userInfo = JSON.parse(userInfo);
-      this.isLoggedIn = true;
-      return true;
+      try {
+        this.userInfo = JSON.parse(userInfo);
+        this.isLoggedIn = true;
+        debugLog('用户已登录', this.userInfo);
+        return true;
+      } catch (e) {
+        errorLog('解析用户信息失败', e);
+        // 清除损坏的数据
+        this.logout();
+        return false;
+      }
     }
     
     this.isLoggedIn = false;
     this.userInfo = null;
+    debugLog('用户未登录');
     return false;
   }
 
@@ -45,8 +57,15 @@ class AuthManager {
           if (res.confirm) {
             this.showWechatLogin().then(resolve).catch(reject);
           } else {
-            reject(new Error('用户取消登录'));
+            const cancelError = new Error('用户取消登录');
+            debugLog('用户取消登录操作');
+            reject(cancelError);
           }
+        },
+        fail: (err) => {
+          const modalError = new Error('显示登录对话框失败');
+          errorLog('显示登录对话框失败', err);
+          reject(modalError);
         }
       });
     });
@@ -55,31 +74,43 @@ class AuthManager {
   // 微信授权登录
   showWechatLogin() {
     return new Promise((resolve, reject) => {
+      debugLog('开始微信授权登录流程');
+      
       // 获取用户信息授权
       uni.getUserProfile({
         desc: '用于完善用户资料',
         success: (res) => {
-          console.log('获取用户信息成功:', res.userInfo);
+          debugLog('获取用户信息成功', {
+            nickName: res.userInfo.nickName,
+            avatarUrl: res.userInfo.avatarUrl
+          });
           
           // 获取登录凭证
           uni.login({
             success: (loginRes) => {
               if (loginRes.code) {
+                debugLog('获取微信登录凭证成功', { code: loginRes.code });
                 // 发送到后端处理
                 this.sendLoginToBackend(loginRes.code, res.userInfo)
                   .then(resolve)
                   .catch(reject);
               } else {
-                reject(new Error('获取登录凭证失败'));
+                const error = new Error('获取登录凭证失败');
+                errorLog('微信登录失败 - 无法获取code', loginRes);
+                reject(error);
               }
             },
-            fail: () => {
-              reject(new Error('微信登录失败'));
+            fail: (error) => {
+              const authError = new Error('微信登录失败');
+              errorLog('微信登录失败', error);
+              reject(authError);
             }
           });
         },
-        fail: () => {
-          reject(new Error('用户拒绝授权'));
+        fail: (error) => {
+          const authError = new Error('用户拒绝授权');
+          errorLog('用户拒绝授权', error);
+          reject(authError);
         }
       });
     });
@@ -94,39 +125,89 @@ class AuthManager {
       // 暂时模拟处理
       const mockOpenid = 'mock_openid_' + Date.now();
       
+      const loginData = {
+        openid: mockOpenid,
+        nickname: userInfo.nickName,
+        avatar: userInfo.avatarUrl,
+        code: code
+      };
+      
+      debugLog('发送登录请求到后端', {
+        url: API.USER_LOGIN,
+        data: { ...loginData, code: '***' } // 隐藏敏感信息
+      });
+      
       uni.request({
-        url: 'http://192.168.50.133:8088/user/wechatLogin',
+        url: API.USER_LOGIN,
         method: 'POST',
-        data: {
-          openid: mockOpenid,
-          nickname: userInfo.nickName,
-          avatar: userInfo.avatarUrl
+        data: loginData,
+        header: {
+          'content-type': 'application/json'
         },
         success: (res) => {
           uni.hideLoading();
           
-          if (res.data.code === 200) {
+          debugLog('后端登录响应', {
+            statusCode: res.statusCode,
+            code: res.data?.code,
+            hasData: !!res.data?.data
+          });
+          
+          if (res.statusCode === 200 && res.data.code === 200) {
             // 保存登录信息
             const userData = res.data.data;
-            uni.setStorageSync('userId', userData.user_id);
-            uni.setStorageSync('userInfo', JSON.stringify(userData));
             
-            this.userInfo = userData;
-            this.isLoggedIn = true;
-            
-            uni.showToast({
-              title: '登录成功',
-              icon: 'success'
+            try {
+              uni.setStorageSync('userId', userData.user_id);
+              uni.setStorageSync('userInfo', JSON.stringify(userData));
+              
+              this.userInfo = userData;
+              this.isLoggedIn = true;
+              
+              debugLog('登录信息保存成功', {
+                userId: userData.user_id,
+                nickname: userData.nickname
+              });
+              
+              uni.showToast({
+                title: '登录成功',
+                icon: 'success'
+              });
+              
+              resolve(userData);
+            } catch (storageError) {
+              errorLog('保存登录信息失败', storageError);
+              reject(new Error('保存登录信息失败'));
+            }
+          } else {
+            const error = new Error(res.data?.msg || '登录失败');
+            errorLog('后端登录失败', {
+              statusCode: res.statusCode,
+              response: res.data
             });
             
-            resolve(userData);
-          } else {
-            reject(new Error(res.data.msg || '登录失败'));
+            uni.showToast({
+              title: error.message,
+              icon: 'none'
+            });
+            
+            reject(error);
           }
         },
         fail: (err) => {
           uni.hideLoading();
-          reject(new Error('网络错误'));
+          const error = new Error('网络错误，请检查网络连接');
+          errorLog('登录网络请求失败', {
+            url: API.USER_LOGIN,
+            error: err
+          });
+          
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+          
+          reject(error);
         }
       });
     });
@@ -134,10 +215,71 @@ class AuthManager {
 
   // 退出登录
   logout() {
-    uni.removeStorageSync('userId');
-    uni.removeStorageSync('userInfo');
-    this.userInfo = null;
-    this.isLoggedIn = false;
+    debugLog('用户执行退出登录操作');
+    
+    try {
+      uni.removeStorageSync('userId');
+      uni.removeStorageSync('userInfo');
+      this.userInfo = null;
+      this.isLoggedIn = false;
+      
+      debugLog('退出登录成功');
+      
+      // 可以在这里添加退出登录的后端通知
+      // this.notifyLogoutToBackend();
+      
+    } catch (error) {
+      errorLog('清除本地登录信息失败', error);
+    }
+  }
+
+  // 更新用户信息
+  updateUserInfo(newUserInfo) {
+    if (!this.isLoggedIn) {
+      errorLog('用户未登录，无法更新用户信息');
+      return false;
+    }
+    
+    try {
+      // 合并新的用户信息
+      const updatedInfo = { ...this.userInfo, ...newUserInfo };
+      
+      // 保存到本地存储
+      uni.setStorageSync('userInfo', JSON.stringify(updatedInfo));
+      this.userInfo = updatedInfo;
+      
+      debugLog('用户信息更新成功', newUserInfo);
+      return true;
+    } catch (error) {
+      errorLog('更新用户信息失败', error);
+      return false;
+    }
+  }
+
+  // 检查token是否有效（如果后端使用token机制）
+  async checkTokenValidity() {
+    if (!this.isLoggedIn) {
+      return false;
+    }
+    
+    // 这里可以添加token验证逻辑
+    // 现在只是简单的本地状态检查
+    return this.checkLoginStatus();
+  }
+
+  // 获取用户ID
+  getUserId() {
+    return this.isLoggedIn ? this.userInfo?.user_id : null;
+  }
+
+  // 获取用户昵称
+  getUserNickname() {
+    return this.isLoggedIn ? this.userInfo?.nickname : '未登录';
+  }
+
+  // 获取用户头像
+  getUserAvatar() {
+    return this.isLoggedIn ? this.userInfo?.avatar : '';
   }
 }
 
