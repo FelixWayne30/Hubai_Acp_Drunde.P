@@ -79,17 +79,17 @@ export default {
         {
           id: "map1",
           title: "江河湖库",
-          image: "/static/maps/map-demo1.png"
+          image: ""
         },
         {
           id: "map2",
           title: "水资源概况",
-          image: "/static/maps/map-demo2.png"
+          image: ""
         },
         {
           id: "map3",
           title: "地表水",
-          image: "/static/maps/map-demo3.png"
+          image: ""
         }
       ]
     }
@@ -336,10 +336,10 @@ export default {
  margin: 15rpx;
   border-radius: 20rpx;
   overflow: hidden;
-  background-color: rgba(227, 244, 240, 1.0);
+  background-color: rgba(243, 244, 244, 1.0);
   box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.08);
   transition: transform 0.2s, box-shadow 0.2s;
-  opacity: 0.85;
+  opacity: 0.90;
 }
 
 .topic-item:active {

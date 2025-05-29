@@ -113,7 +113,7 @@
 				mapInfo: {
 					id: '',
 					title: '加载中...',
-					image: '/static/placeholder.png',
+					image: '',
 					description: '正在加载地图描述...',
 					type: '',
 					width: 0,
@@ -299,8 +299,7 @@
 								if (imageUrl) {
 									console.log('缓存命中！使用缓存的缩略图:', imageUrl);
 								} else {
-									console.log('缓存未命中，使用默认占位图');
-									imageUrl = '/static/placeholder.png';
+									console.log('缓存未命中');
 								}
 								
 								// 更新地图信息

@@ -39,7 +39,6 @@
         </view>
         
         <view class="no-results" v-if="searchResults.length === 0 && !isLoading">
-          <image class="empty-icon" src="/static/empty.png"></image>
           <view class="empty-text">未找到相关结果</view>
           <view class="empty-tips">请尝试其他关键词</view>
         </view>

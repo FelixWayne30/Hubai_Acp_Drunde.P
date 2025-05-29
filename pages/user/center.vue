@@ -14,7 +14,7 @@
 			<view class="avatar-container" @click="handleUserInfoClick">
 				<image
 					class="avatar"
-					:src="userInfo.avatar || '/static/avatar-placeholder.png'"
+					:src="userInfo.avatar"
 				></image>
 				<view class="edit-icon" v-if="isLoggedIn">+</view>
 			</view>
