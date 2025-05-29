@@ -70,144 +70,304 @@
 </template>
 
 <script>
-	export default {
-		data() {
-			return {
-				// 自定义列表
-				customLists: [
-					{
-						id: '1',
-						name: '长江流域图集',
-						description: '长江流域相关地图资源整理',
-						count: 5
-					},
-					{
-						id: '2',
-						name: '矿产资源专题',
-						description: '湖北省矿产资源相关图幅整理',
-						count: 3
-					},
-					{
-						id: '3',
-						name: '教学资料',
-						description: '地理教学用图',
-						count: 8
-					}
-				],
-				// 表单相关
-				showModal: false,
-				isEditing: false,
-				currentListId: '',
-				formData: {
-					name: '',
-					description: ''
-				}
-			}
-		},
-		onLoad() {
-			this.getCustomLists();
-		},
-		methods: {
-			// 获取自定义列表
-			getCustomLists() {
-				// API调用代码...
-			},
-			
-			// 查看列表详情
-			viewListDetail(item) {
-			    uni.navigateTo({
-			        url: '/pages/user/list-detail?id=' + item.id + '&name=' + encodeURIComponent(item.name)
-			    });
-			},
-			
-			// 显示创建表单
-			showCreateForm() {
-				this.isEditing = false;
-				this.formData = {
-					name: '',
-					description: ''
-				};
-				this.showModal = true;
-			},
-			
-			// 显示编辑表单
-			showEditForm(item) {
-				this.isEditing = true;
-				this.currentListId = item.id;
-				this.formData = {
-					name: item.name,
-					description: item.description || ''
-				};
-				this.showModal = true;
-			},
-			
-			// 隐藏表单
-			hideModal() {
-				this.showModal = false;
-			},
-			
-			// 保存列表
-			saveList() {
-				// 验证表单
-				if (!this.formData.name.trim()) {
-					uni.showToast({
-						title: '请输入列表名称',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				// 保存逻辑
-				if (this.isEditing) {
-					// 编辑现有列表
-					const index = this.customLists.findIndex(item => item.id === this.currentListId);
-					if (index !== -1) {
-						this.customLists[index].name = this.formData.name;
-						this.customLists[index].description = this.formData.description;
-					}
-				} else {
-					// 创建新列表
-					this.customLists.push({
-						id: Date.now().toString(), // 临时ID
-						name: this.formData.name,
-						description: this.formData.description,
-						count: 0
-					});
-				}
-				
-				this.hideModal();
-				uni.showToast({
-					title: this.isEditing ? '编辑成功' : '创建成功',
-					icon: 'success'
-				});
-			},
-			
-			// 确认删除
-			confirmDelete(item) {
-				uni.showModal({
-					title: '确认删除',
-					content: `确定要删除"${item.name}"列表吗？`,
-					success: (res) => {
-						if (res.confirm) {
-							this.deleteList(item.id);
-						}
-					}
-				});
-			},
-			
-			// 删除列表
-			deleteList(id) {
-				const index = this.customLists.findIndex(item => item.id === id);
-				if (index !== -1) {
-					this.customLists.splice(index, 1);
-					uni.showToast({
-						title: '删除成功',
-						icon: 'success'
-					});
-				}
-			}
-		}
-	}
+import { API } from '@/common/config.js';
+import authManager from '@/common/auth.js';
+
+export default {
+  data() {
+    return {
+      // 自定义列表
+      customLists: [],
+      // 表单相关
+      showModal: false,
+      isEditing: false,
+      currentListId: '',
+      formData: {
+        name: '',
+        description: ''
+      },
+      // 用户信息
+      userId: '',
+      isLoading: false
+    }
+  },
+  onLoad() {
+    // 获取用户ID
+    const userInfo = authManager.getUserInfo();
+    if (userInfo) {
+      this.userId = userInfo.user_id;
+      // 获取用户的自定义列表
+      this.getCustomLists();
+    } else {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none'
+      });
+      setTimeout(() => {
+        uni.switchTab({
+          url: '/pages/user/center'
+        });
+      }, 1500);
+    }
+  },
+  onShow() {
+    // 页面重新显示时刷新列表数据
+    if (this.userId) {
+      this.getCustomLists();
+    }
+  },
+  methods: {
+    // 获取自定义列表
+getCustomLists() {
+  if (!this.userId) return;
+  
+  this.isLoading = true;
+  uni.showLoading({
+    title: '加载中...'
+  });
+  
+  try {
+    uni.request({
+      url: API.CUSTOM_LIST_GET,
+      method: 'GET',
+      data: {
+        userId: this.userId
+      },
+      success: (res) => {
+        uni.hideLoading();
+        if (res.statusCode === 200 && res.data.code === 200) {
+          this.customLists = res.data.data || [];
+        } else {
+          uni.showToast({
+            title: '获取列表失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: (err) => {
+        uni.hideLoading();
+        console.error('请求失败', err);
+        uni.showToast({
+          title: '网络错误，请稍后重试',
+          icon: 'none'
+        });
+      },
+      complete: () => {
+        this.isLoading = false;
+      }
+    });
+  } catch (e) {
+    uni.hideLoading();
+    this.isLoading = false;
+    console.error('获取列表异常', e);
+  }
+},
+	
+    // 查看列表详情
+    viewListDetail(item) {
+      uni.navigateTo({
+        url: '/pages/user/list-detail?id=' + item.id + '&name=' + encodeURIComponent(item.name)
+      });
+    },
+    
+    // 显示创建表单
+    showCreateForm() {
+      this.isEditing = false;
+      this.formData = {
+        name: '',
+        description: ''
+      };
+      this.showModal = true;
+    },
+    
+    // 显示编辑表单
+    showEditForm(item) {
+      this.isEditing = true;
+      this.currentListId = item.id;
+      this.formData = {
+        name: item.name,
+        description: item.description || ''
+      };
+      this.showModal = true;
+    },
+    
+    // 隐藏表单
+    hideModal() {
+      this.showModal = false;
+    },
+    
+    // 保存列表
+  // 保存列表方法的修改
+  saveList() {
+    // 验证表单
+    if (!this.formData.name.trim()) {
+      uni.showToast({
+        title: '请输入列表名称',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    // 显示加载中
+    uni.showLoading({
+      title: this.isEditing ? '更新中...' : '创建中...'
+    });
+    
+    try {
+      if (this.isEditing) {
+        // 更新现有列表
+        uni.request({
+          url: API.CUSTOM_LIST_UPDATE,
+          method: 'POST',
+          data: {
+            listId: this.currentListId,
+            userId: this.userId,
+            name: this.formData.name,
+            description: this.formData.description || ''
+          },
+          header: {
+            'content-type': 'application/x-www-form-urlencoded'
+          },
+          success: (res) => {
+            if (res.statusCode === 200 && res.data.code === 200) {
+              uni.hideLoading(); // 确保这里调用hideLoading
+              this.hideModal();
+              uni.showToast({
+                title: '更新成功',
+                icon: 'success'
+              });
+              this.getCustomLists(); // 刷新列表
+            } else {
+              uni.hideLoading(); // 失败时也要hideLoading
+              uni.showToast({
+                title: res.data.msg || '更新失败',
+                icon: 'none'
+              });
+            }
+          },
+          fail: (err) => {
+            uni.hideLoading(); // 请求失败时hideLoading
+            console.error('请求失败', err);
+            uni.showToast({
+              title: '网络错误，请稍后重试',
+              icon: 'none'
+            });
+          }
+        });
+      } else {
+        // 创建新列表
+        uni.request({
+          url: API.CUSTOM_LIST_CREATE,
+          method: 'POST',
+          data: {
+            userId: this.userId,
+            name: this.formData.name,
+            description: this.formData.description || ''
+          },
+          header: {
+            'content-type': 'application/x-www-form-urlencoded'
+          },
+          success: (res) => {
+            uni.hideLoading(); // 确保这里调用hideLoading
+            if (res.statusCode === 200 && res.data.code === 200) {
+              this.hideModal();
+              uni.showToast({
+                title: '创建成功',
+                icon: 'success'
+              });
+              this.getCustomLists(); // 刷新列表
+            } else {
+              uni.showToast({
+                title: res.data.msg || '创建失败',
+                icon: 'none'
+              });
+            }
+          },
+          fail: (err) => {
+            uni.hideLoading(); // 请求失败时hideLoading
+            console.error('请求失败', err);
+            uni.showToast({
+              title: '网络错误，请稍后重试',
+              icon: 'none'
+            });
+          }
+        });
+      }
+    } catch (e) {
+      uni.hideLoading(); // 确保任何异常情况下都会hideLoading
+      console.error('保存列表异常', e);
+      uni.showToast({
+        title: '操作异常，请稍后重试',
+        icon: 'none'
+      });
+    }
+  },
+  
+  // 隐藏表单方法修改
+  hideModal() {
+    this.showModal = false;
+    this.formData = { name: '', description: '' }; // 重置表单
+    this.isEditing = false;
+    this.currentListId = '';
+  },
+  
+    // 确认删除
+    confirmDelete(item) {
+      uni.showModal({
+        title: '确认删除',
+        content: `确定要删除"${item.name}"列表吗？`,
+        success: (res) => {
+          if (res.confirm) {
+            this.deleteList(item.id);
+          }
+        }
+      });
+    },
+    
+    // 删除列表
+    deleteList(id) {
+      uni.showLoading({
+        title: '删除中...'
+      });
+      
+      uni.request({
+        url: API.CUSTOM_LIST_DELETE,
+        method: 'POST',
+        data: {
+          listId: id,
+          userId: this.userId
+        },
+        header: {
+          'content-type': 'application/x-www-form-urlencoded'
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            uni.showToast({
+              title: '删除成功',
+              icon: 'success'
+            });
+            this.getCustomLists(); // 刷新列表
+          } else {
+            uni.showToast({
+              title: res.data.msg || '删除失败',
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('请求失败', err);
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        },
+        complete: () => {
+          uni.hideLoading();
+        }
+      });
+    }
+  }
+}
 </script>
 
 <style>

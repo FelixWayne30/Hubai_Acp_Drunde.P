@@ -88,214 +88,308 @@
 </template>
 
 <script>
-	export default {
-		data() {
-			return {
-				listId: '',
-				listName: '',
-				// 编辑模式
-				isEditMode: false,
-				allSelected: false,
-				// 图幅列表（示例数据）
-				mapItems: [
-					{
-						id: '1',
-						title: '湖北省地质图',
-						category: '地质资源',
-						image: '/static/placeholder.png',
-						selected: false
-					},
-					{
-						id: '2',
-						title: '湖北省水域图',
-						category: '水资源',
-						image: '/static/placeholder.png',
-						selected: false
-					},
-					{
-						id: '3',
-						title: '湖北省土地利用图',
-						category: '土地资源',
-						image: '/static/placeholder.png',
-						selected: false
-					}
-				],
-				// 批量下载
-				showDownloadModal: false,
-				downloadEmail: '',
-				downloadReason: ''
-			}
-		},
-		computed: {
-			// 是否有选中项
-			hasSelected() {
-				return this.mapItems.some(item => item.selected);
-			},
-			// 选中数量
-			selectedCount() {
-				return this.mapItems.filter(item => item.selected).length;
-			}
-		},
-		onLoad(options) {
-			this.listId = options.id || '';
-			this.listName = decodeURIComponent(options.name || '自定义列表');
-			this.getListDetail();
-		},
-		methods: {
-			// 获取列表详情
-			getListDetail() {
-				// API调用代码...
-			},
-			
-			// 切换编辑模式
-			toggleEditMode() {
-				this.isEditMode = !this.isEditMode;
-				if (!this.isEditMode) {
-					// 退出编辑模式时重置选择状态
-					this.allSelected = false;
-					this.mapItems.forEach(item => {
-						item.selected = false;
-					});
-				}
-			},
-			
-			// 切换全选
-			toggleSelectAll() {
-				this.allSelected = !this.allSelected;
-				this.mapItems.forEach(item => {
-					item.selected = this.allSelected;
-				});
-			},
-			
-			// 切换选择
-			toggleSelect(index) {
-				this.mapItems[index].selected = !this.mapItems[index].selected;
-				// 更新全选状态
-				this.updateAllSelectedState();
-			},
-			
-			// 更新全选状态
-			updateAllSelectedState() {
-				this.allSelected = this.mapItems.length > 0 && this.mapItems.every(item => item.selected);
-			},
-			
+import { API } from '@/common/config.js';
+import { generateThumbnailUrl } from '@/common/utils.js';
+import authManager from '@/common/auth.js';
+
+export default {
+	data() {
+		return {
+			listId: '',
+			listName: '',
+			// 编辑模式
+			isEditMode: false,
+			allSelected: false,
+			// 图幅列表
+			mapItems: [],
 			// 批量下载
-			batchDownload() {
-				if (!this.hasSelected) {
-					uni.showToast({
-						title: '请先选择图幅',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				this.downloadEmail = '';
-				this.downloadReason = '';
-				this.showDownloadModal = true;
-			},
-			
-			// 隐藏下载弹窗
-			hideDownloadModal() {
-				this.showDownloadModal = false;
-			},
-			
-			// 提交批量下载申请
-			submitBatchDownload() {
-				// 表单验证
-				if (!this.downloadEmail.trim()) {
-					uni.showToast({
-						title: '请输入邮箱地址',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				// 验证邮箱格式
-				const emailRegex = /^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/;
-				if (!emailRegex.test(this.downloadEmail)) {
-					uni.showToast({
-						title: '请输入有效的邮箱地址',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				if (!this.downloadReason.trim()) {
-					uni.showToast({
-						title: '请输入申请理由',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				// 获取选中的图幅ID
-				const selectedIds = this.mapItems
-					.filter(item => item.selected)
-					.map(item => item.id);
-				
-				// 模拟API调用
-				uni.showLoading({
-					title: '提交中...'
+			showDownloadModal: false,
+			downloadEmail: '',
+			downloadReason: '',
+			// 用户信息
+			userId: '',
+			isLoading: false
+		}
+	},
+	computed: {
+		// 是否有选中项
+		hasSelected() {
+			return this.mapItems.some(item => item.selected);
+		},
+		// 选中数量
+		selectedCount() {
+			return this.mapItems.filter(item => item.selected).length;
+		}
+	},
+	onLoad(options) {
+		this.listId = options.id || '';
+		this.listName = decodeURIComponent(options.name || '自定义列表');
+		
+		// 获取用户ID
+		const userInfo = authManager.getUserInfo();
+		if (userInfo) {
+			this.userId = userInfo.user_id;
+			// 获取列表详情
+			this.getListDetail();
+		} else {
+			uni.showToast({
+				title: '请先登录',
+				icon: 'none'
+			});
+			setTimeout(() => {
+				uni.switchTab({
+					url: '/pages/user/center'
 				});
-				
-				setTimeout(() => {
-					uni.hideLoading();
-					uni.showToast({
-						title: '申请已提交',
-						icon: 'success'
-					});
-					this.hideDownloadModal();
-					this.toggleEditMode(); // 退出编辑模式
-				}, 1500);
-			},
+			}, 1500);
+		}
+	},
+	methods: {
+		// 获取列表详情
+		getListDetail() {
+			if (!this.listId || !this.userId) return;
 			
-			// 批量删除
-			batchDelete() {
-				if (!this.hasSelected) {
-					uni.showToast({
-						title: '请先选择图幅',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				uni.showModal({
-					title: '确认删除',
-					content: `确定从该列表中移除已选择的${this.selectedCount}个图幅吗？`,
-					success: (res) => {
-						if (res.confirm) {
-							// 删除选中项
-							this.mapItems = this.mapItems.filter(item => !item.selected);
-							uni.showToast({
-								title: '删除成功',
-								icon: 'success'
+			this.isLoading = true;
+			uni.showLoading({
+				title: '加载中...'
+			});
+			
+			uni.request({
+				url: API.CUSTOM_LIST_DETAIL + this.listId,
+				method: 'GET',
+				success: (res) => {
+					if (res.statusCode === 200 && res.data.code === 200) {
+						const listData = res.data.data;
+						if (listData) {
+							// 更新列表名称
+							this.listName = listData.name;
+							
+							// 处理地图数据
+							const maps = listData.maps || [];
+							this.mapItems = maps.map(item => {
+								// 生成缩略图URL
+								const imageUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
+								
+								return {
+									id: item.map_id,
+									title: item.title,
+									category: item.type || '未分类',
+									image: imageUrl || '/static/placeholder.png',
+									selected: false
+								};
 							});
-							this.toggleEditMode(); // 退出编辑模式
 						}
+					} else {
+						uni.showToast({
+							title: '获取列表详情失败',
+							icon: 'none'
+						});
 					}
+				},
+				fail: (err) => {
+					console.error('请求失败', err);
+					uni.showToast({
+						title: '网络错误，请稍后重试',
+						icon: 'none'
+					});
+				},
+				complete: () => {
+					this.isLoading = false;
+					uni.hideLoading();
+				}
+			});
+		},
+		
+		// 切换编辑模式
+		toggleEditMode() {
+			this.isEditMode = !this.isEditMode;
+			if (!this.isEditMode) {
+				// 退出编辑模式时重置选择状态
+				this.allSelected = false;
+				this.mapItems.forEach(item => {
+					item.selected = false;
 				});
-			},
-			
-			// 查看图幅详情
-			viewMapDetail(item) {
-			    if (this.isEditMode) {
-			        this.toggleSelect(this.mapItems.findIndex(i => i.id === item.id));
-			        return;
-			    }
-			    
-			    uni.navigateTo({
-			        url: '/pages/map/detail?id=' + item.id
-			    });
-			},
-			
-			// 更新 navigateToHome 方法
-			navigateToHome() {
-			    uni.switchTab({
-			        url: '/pages/index/index'
-			    });
 			}
+		},
+		
+		// 切换全选
+		toggleSelectAll() {
+			this.allSelected = !this.allSelected;
+			this.mapItems.forEach(item => {
+				item.selected = this.allSelected;
+			});
+		},
+		
+		// 切换选择
+		toggleSelect(index) {
+			this.mapItems[index].selected = !this.mapItems[index].selected;
+			// 更新全选状态
+			this.updateAllSelectedState();
+		},
+		
+		// 更新全选状态
+		updateAllSelectedState() {
+			this.allSelected = this.mapItems.length > 0 && this.mapItems.every(item => item.selected);
+		},
+		
+		// 批量下载
+		batchDownload() {
+			if (!this.hasSelected) {
+				uni.showToast({
+					title: '请先选择图幅',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			this.downloadEmail = '';
+			this.downloadReason = '';
+			this.showDownloadModal = true;
+		},
+		
+		// 隐藏下载弹窗
+		hideDownloadModal() {
+			this.showDownloadModal = false;
+		},
+		
+		// 提交批量下载申请
+		submitBatchDownload() {
+			// 表单验证
+			if (!this.downloadEmail.trim()) {
+				uni.showToast({
+					title: '请输入邮箱地址',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			// 验证邮箱格式
+			const emailRegex = /^[\w-]+(\.[\w-]+)*@[\w-]+(\.[\w-]+)+$/;
+			if (!emailRegex.test(this.downloadEmail)) {
+				uni.showToast({
+					title: '请输入有效的邮箱地址',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			if (!this.downloadReason.trim()) {
+				uni.showToast({
+					title: '请输入申请理由',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			// 获取选中的图幅ID
+			const selectedIds = this.mapItems
+				.filter(item => item.selected)
+				.map(item => item.id);
+			
+			// 模拟API调用
+			// 这里应该是调用后端的批量下载申请API
+			uni.showLoading({
+				title: '提交中...'
+			});
+			
+			setTimeout(() => {
+				uni.hideLoading();
+				uni.showToast({
+					title: '申请已提交',
+					icon: 'success'
+				});
+				this.hideDownloadModal();
+				this.toggleEditMode(); // 退出编辑模式
+			}, 1500);
+		},
+		
+		// 批量删除
+		batchDelete() {
+			if (!this.hasSelected) {
+				uni.showToast({
+					title: '请先选择图幅',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			uni.showModal({
+				title: '确认删除',
+				content: `确定从该列表中移除已选择的${this.selectedCount}个图幅吗？`,
+				success: (res) => {
+					if (res.confirm) {
+						// 获取选中的地图ID
+						const selectedIds = this.mapItems
+							.filter(item => item.selected)
+							.map(item => item.id);
+						
+						uni.showLoading({
+							title: '删除中...'
+						});
+						
+						// 调用批量删除API
+						uni.request({
+							url: API.CUSTOM_LIST_REMOVE_MAPS,
+							method: 'POST',
+							data: {
+								listId: this.listId,
+								mapIds: selectedIds,
+								userId: this.userId
+							},
+							header: {
+								'content-type': 'application/x-www-form-urlencoded'
+							},
+							success: (res) => {
+								if (res.statusCode === 200 && res.data.code === 200) {
+									// 删除成功，更新列表
+									this.mapItems = this.mapItems.filter(item => !item.selected);
+									uni.showToast({
+										title: '删除成功',
+										icon: 'success'
+									});
+									this.toggleEditMode(); // 退出编辑模式
+								} else {
+									uni.showToast({
+										title: res.data.msg || '删除失败',
+										icon: 'none'
+									});
+								}
+							},
+							fail: (err) => {
+								console.error('请求失败', err);
+								uni.showToast({
+									title: '网络错误，请稍后重试',
+									icon: 'none'
+								});
+							},
+							complete: () => {
+								uni.hideLoading();
+							}
+						});
+					}
+				}
+			});
+		},
+		
+		// 查看图幅详情
+		viewMapDetail(item) {
+			if (this.isEditMode) {
+				this.toggleSelect(this.mapItems.findIndex(i => i.id === item.id));
+				return;
+			}
+			
+			uni.navigateTo({
+				url: '/pages/map/detail?id=' + item.id
+			});
+		},
+		
+		// 导航到首页
+		navigateToHome() {
+			uni.switchTab({
+				url: '/pages/index/index'
+			});
 		}
 	}
+}
 </script>
 
 <style>

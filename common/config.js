@@ -11,6 +11,18 @@ export const GEOSERVER_CONFIG = {
 export const API = {
   // 用户相关API
   USER_LOGIN: `${envConfig.API_BASE_URL}/user/wechatLogin`,
+  
+  // 自定义列表相关API
+  CUSTOM_LIST_GET: `${envConfig.API_BASE_URL}/customlist/list`,
+  CUSTOM_LIST_DETAIL: `${envConfig.API_BASE_URL}/customlist/detail/`,
+  CUSTOM_LIST_CREATE: `${envConfig.API_BASE_URL}/customlist/create`,
+  CUSTOM_LIST_UPDATE: `${envConfig.API_BASE_URL}/customlist/update`,
+  CUSTOM_LIST_DELETE: `${envConfig.API_BASE_URL}/customlist/delete`,
+  CUSTOM_LIST_ADD_MAP: `${envConfig.API_BASE_URL}/customlist/addMap`,
+  CUSTOM_LIST_REMOVE_MAP: `${envConfig.API_BASE_URL}/customlist/removeMap`,
+  CUSTOM_LIST_ADD_MAPS: `${envConfig.API_BASE_URL}/customlist/addMaps`,
+  CUSTOM_LIST_REMOVE_MAPS: `${envConfig.API_BASE_URL}/customlist/removeMaps`,
+  CUSTOM_LIST_CHECK_MAP: `${envConfig.API_BASE_URL}/customlist/checkMap`,
 
   // 地图信息API
   TOPICS: `${envConfig.API_BASE_URL}/mapinfo/topics`,

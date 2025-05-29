@@ -77,12 +77,15 @@
 					</view>
 					<view v-else class="lists-scroll">
 						<view 
-							class="list-item"
-							v-for="(item, index) in customLists"
-							:key="item.id"
+						  class="list-item"
+						  v-for="(item, index) in customLists"
+						  :key="item.list_id" 
 						>
-							<checkbox :checked="isMapInList(item.id)" @click="toggleListSelection(item.id)"></checkbox>
-							<text class="list-name">{{item.name}}</text>
+						  <checkbox 
+						    :checked="isMapInList(item.list_id)" 
+						    @click="toggleListSelection(item.list_id)"
+						  ></checkbox>
+						  <text class="list-name">{{item.name}}</text>
 						</view>
 					</view>
 				</view>
@@ -109,6 +112,10 @@
 			return {
 				mapId: '',
 				topicId: '',
+				//自定义列表有关
+				showListsSelector: false,
+				customLists: [],
+				selectedLists: [],
 				// 地图信息
 				mapInfo: {
 					id: '',
@@ -507,63 +514,188 @@
 			
 			// 显示自定义列表选择器
 			showListsModal() {
-				// 获取用户的自定义列表
-				this.fetchCustomLists();
-				this.showListsSelector = true;
-			},
-			
-			// 隐藏自定义列表选择器
-			hideListsModal() {
-				this.showListsSelector = false;
+			  if (!this.userId) {
+			    uni.showToast({
+			      title: '请先登录',
+			      icon: 'none'
+			    });
+			    return;
+			  }
+			  
+			  // 获取用户的自定义列表
+			  this.fetchCustomLists();
+			  this.showListsSelector = true;
 			},
 			
 			// 获取用户的自定义列表
 			fetchCustomLists() {
-				// 这里应该调用后端API获取自定义列表
-				// 暂时使用空数据
-				this.customLists = [];
-				this.selectedLists = [];
+			  uni.showLoading({
+			    title: '加载中...'
+			  });
+			  
+			  try {
+			    uni.request({
+			      url: API.CUSTOM_LIST_GET,
+			      method: 'GET',
+			      data: {
+			        userId: this.userId
+			      },
+			      success: (res) => {
+			        uni.hideLoading();
+			        if (res.statusCode === 200 && res.data.code === 200) {
+			          // 确保数据结构是正确的
+			          this.customLists = (res.data.data || []).map(list => {
+			            return {
+			              list_id: list.list_id,
+			              name: list.name,
+			              description: list.description
+			            };
+			          });
+			          
+			          // 重置选择状态
+			          this.selectedLists = [];
+			          
+			          // 如果有列表，检查当前地图是否已在列表中
+			          if (this.customLists.length > 0) {
+			            this.checkMapInLists();
+			          }
+			        } else {
+			          uni.showToast({
+			            title: '获取列表失败',
+			            icon: 'none'
+			          });
+			        }
+			      },
+			      fail: (err) => {
+			        uni.hideLoading();
+			        console.error('请求失败', err);
+			        uni.showToast({
+			          title: '网络错误，请稍后重试',
+			          icon: 'none'
+			        });
+			      }
+			    });
+			  } catch (e) {
+			    uni.hideLoading();
+			    console.error('获取列表异常', e);
+			  }
 			},
 			
 			// 检查地图是否已在列表中
-			isMapInList(listId) {
-				return this.selectedLists.includes(listId);
+			checkMapInLists() {
+			  const promises = this.customLists.map(list => {
+			    return new Promise((resolve) => {
+			      uni.request({
+			        url: API.CUSTOM_LIST_CHECK_MAP,
+			        method: 'GET',
+			        data: {
+			          listId: list.list_id,
+			          mapId: this.mapId
+			        },
+			        success: (res) => {
+			          if (res.statusCode === 200 && res.data.code === 200) {
+			            if (res.data.data.inList) {
+			              // 如果地图在列表中，添加到已选择列表
+			              this.selectedLists.push(list.list_id);
+			            }
+			          }
+			          resolve();
+			        },
+			        fail: () => {
+			          resolve();
+			        }
+			      });
+			    });
+			  });
+			  
+			  // 等待所有检查完成
+			  Promise.all(promises).then(() => {
+			    // 更新UI状态
+			    this.$forceUpdate();
+			  });
 			},
 			
+			// 检查地图是否已在列表中
+		isMapInList(listId) {
+		  return this.selectedLists.includes(listId);
+		},
+
 			// 切换列表选择状态
 			toggleListSelection(listId) {
-				const index = this.selectedLists.indexOf(listId);
-				if (index > -1) {
-					this.selectedLists.splice(index, 1);
-				} else {
-					this.selectedLists.push(listId);
-				}
+			  console.log('Toggle list:', listId); // 调试用
+			  const index = this.selectedLists.indexOf(listId);
+			  if (index > -1) {
+			    this.selectedLists.splice(index, 1);
+			  } else {
+			    this.selectedLists.push(listId);
+			  }
+			  console.log('Selected lists:', this.selectedLists); // 调试用
 			},
 			
 			// 添加到已选择的列表
 			addToSelectedLists() {
-				if (this.selectedLists.length === 0) {
-					uni.showToast({
-						title: '请选择至少一个列表',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				// 这里应该调用后端API添加到列表
-				uni.showToast({
-					title: '添加功能暂未实现',
-					icon: 'none'
-				});
-				this.hideListsModal();
+			  if (this.selectedLists.length === 0) {
+			    uni.showToast({
+			      title: '请选择至少一个列表',
+			      icon: 'none'
+			    });
+			    return;
+			  }
+			  
+			  uni.showLoading({
+			    title: '添加中...'
+			  });
+			  
+			  // 对每个选中的列表，添加当前地图
+			  const promises = this.selectedLists.map(listId => {
+			    return new Promise((resolve) => {
+			      uni.request({
+			        url: API.CUSTOM_LIST_ADD_MAP,
+			        method: 'POST',
+			        data: {
+			          listId: listId,
+			          mapId: this.mapId,
+			          userId: this.userId
+			        },
+			        header: {
+			          'content-type': 'application/x-www-form-urlencoded'
+			        },
+			        success: () => {
+			          resolve(true);
+			        },
+			        fail: () => {
+			          resolve(false);
+			        }
+			      });
+			    });
+			  });
+			  
+			  // 等待所有请求完成
+			  Promise.all(promises).then((results) => {
+			    uni.hideLoading();
+			    
+			    const successCount = results.filter(r => r).length;
+			    if (successCount > 0) {
+			      uni.showToast({
+			        title: `成功添加到${successCount}个列表`,
+			        icon: 'success'
+			      });
+			      this.hideListsModal();
+			    } else {
+			      uni.showToast({
+			        title: '添加失败',
+			        icon: 'none'
+			      });
+			    }
+			  });
 			},
 			
 			// 跳转到创建列表页面
 			navigateToCreateList() {
-				this.hideListsModal();
-				uni.navigateTo({
-					url: '/pages/user/custom-lists'
-				});
+			  this.hideListsModal();
+			  uni.navigateTo({
+			    url: '/pages/user/custom-lists'
+			  });
 			},
 			
 			// 跳转到浏览页
