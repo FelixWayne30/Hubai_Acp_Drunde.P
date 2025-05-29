@@ -690,6 +690,28 @@
 			  });
 			},
 			
+			hideListsModal() {
+			  console.log('隐藏列表选择器');
+			  this.showListsSelector = false;
+			  this.selectedLists = [];
+			},
+			
+			// 显示自定义列表选择器
+			showListsModal() {
+			  if (!this.userId) {
+			    uni.showToast({
+			      title: '请先登录',
+			      icon: 'none'
+			    });
+			    return;
+			  }
+			  
+			  console.log('显示列表选择器');
+			  // 获取用户的自定义列表
+			  this.fetchCustomLists();
+			  this.showListsSelector = true;
+			},
+			
 			// 跳转到创建列表页面
 			navigateToCreateList() {
 			  this.hideListsModal();
