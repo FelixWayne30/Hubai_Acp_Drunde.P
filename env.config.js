@@ -12,19 +12,19 @@ const CURRENT_ENV = ENV_TYPE.DEVELOPMENT;
 // 现用开发环境
 const ENV_CONFIG = {
   [ENV_TYPE.DEVELOPMENT]: {
-    // 开发环境配置————阿里云服务器：8.138.38.144
-    API_BASE_URL: 'http://localhost:8088', 
-    GEOSERVER_BASE_URL: 'http://192.168.50.133:8080/geoserver',
-    WEBVIEW_BASE_URL: 'http://localhost:2180', //nginx代理地址
+    // 开发环境配置————华为云服务：1.92.85.165
+    API_BASE_URL: 'http://1.92.85.165:8088', 
+    GEOSERVER_BASE_URL: 'http://1.92.85.165:8080/geoserver',
+	WEBVIEW_BASE_URL: 'http://1.92.85.165:2180',
     DEBUG: true,
     LOG_LEVEL: 'debug'
   },
   
   [ENV_TYPE.TEST]: {
-    // 测试环境配置
-    API_BASE_URL: 'http://test-api.example.com:8088',
-    GEOSERVER_BASE_URL: 'http://test-geoserver.example.com:8080/geoserver',
-    WEBVIEW_BASE_URL: 'http://test-webview.example.com:2180',
+    // 手机预览环境配置
+	API_BASE_URL: 'http://vip.xg.frp.one:55746', //手机预览用
+    GEOSERVER_BASE_URL: 'http://vip.xg.frp.one:52404/geoserver',//手机预览用
+    WEBVIEW_BASE_URL: 'http://vip.xg.frp.one:30549', //nginx地址手机预览用
     DEBUG: true,
     LOG_LEVEL: 'info'
   },

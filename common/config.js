@@ -45,7 +45,7 @@ export const API = {
 // WebView相关配置
 export const WEBVIEW_CONFIG = {
   BASE_URL: envConfig.WEBVIEW_BASE_URL,
-  MAP_VIEWER_PATH: '/static/map-viewer.html'
+  MAP_VIEWER_PATH: '/frontend/map-viewer.html'
 };
 
 // 应用配置
