@@ -210,7 +210,6 @@ export default {
     // 加载更多结果
     loadMoreResults() {
       if (!this.hasMore || this.isLoading) return;
-      
       this.page++;
       this.isLoading = true;
       this.fetchSearchResults();
