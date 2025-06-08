@@ -148,6 +148,7 @@
 				fromBrowse: false
 			}
 		},
+	
 		onLoad(options) {
 		  console.log('详情页接收到的参数:', options);
 		  console.log('options.id:', options.id);
@@ -166,7 +167,7 @@
 		  
 		  if (this.mapId) {
 		    this.getMapDetail();
-		    this.getComments();
+		    this.getComments(); // 获取评论列表
 		  } else {
 		    console.error('mapId为空，无法获取详情');
 		    uni.showToast({
@@ -182,15 +183,16 @@
 		      const userObj = JSON.parse(userInfo);
 		      this.userId = userObj.user_id;
 		      // 获取是否已点赞和收藏
-              if(this.userId && this.mapId) {
-                this.checkLikeStatus();
-                this.checkCollectionStatus();
-              }
+		      if(this.userId && this.mapId) {
+		        this.checkLikeStatus();
+		        this.checkCollectionStatus();
+		      }
 		    } catch (e) {
 		      console.error('解析用户信息失败', e);
 		    }
 		  }
 		},
+		
 		onShareAppMessage() {
 			return {
 				title: this.mapInfo.title,
@@ -370,10 +372,43 @@
 			
 			// 获取评论列表
 			getComments() {
-				// 这里应该是从API获取数据
-				console.log('获取评论列表，地图ID:', this.mapId);
-				// 暂时使用空数据
-				this.comments = [];
+			  if (!this.mapId) return;
+			  
+			  uni.showLoading({
+			    title: '加载评论...'
+			  });
+			  
+			  uni.request({
+			    url: API.COMMENT_LIST,
+			    method: 'GET',
+			    success: (res) => {
+			      if (res.statusCode === 200 && res.data.code === 200) {
+			        // 筛选当前地图的评论
+			        const allComments = res.data.data || [];
+			        this.comments = allComments.filter(item => {
+			          return item.mapid === this.mapId && item.status === 1; // 只显示审核通过的评论
+			        }).map(item => {
+			          return {
+			            id: item.comment_id,
+			            userName: item.username || '匿名用户',
+			            content: item.content,
+			            time: item.commentTime || new Date(item.create_time).toLocaleString()
+			          };
+			        });
+			        
+			        // 更新评论计数
+			        this.commentCount = this.comments.length;
+			      } else {
+			        console.error('获取评论失败:', res.data);
+			      }
+			    },
+			    fail: (err) => {
+			      console.error('请求评论接口失败:', err);
+			    },
+			    complete: () => {
+			      uni.hideLoading();
+			    }
+			  });
 			},
 			
 			// 检查点赞状态
@@ -495,21 +530,70 @@
 			
 			// 提交评论
 			submitComment() {
-				if (!this.commentContent.trim()) {
-					uni.showToast({
-						title: '评论内容不能为空',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				// 这里应该调用后端API提交评论
-				uni.showToast({
-					title: '评论功能暂未实现',
-					icon: 'none'
-				});
-				this.commentContent = '';
-				this.inputFocus = false;
+			  if (!this.commentContent.trim()) {
+			    uni.showToast({
+			      title: '评论内容不能为空',
+			      icon: 'none'
+			    });
+			    return;
+			  }
+			  
+			  // 检查用户是否登录
+			  if (!this.userId) {
+			    uni.showToast({
+			      title: '请先登录',
+			      icon: 'none'
+			    });
+			    return;
+			  }
+			  
+			  uni.showLoading({
+			    title: '提交中...'
+			  });
+			  
+			  uni.request({
+			    url: API.COMMENT_ADD,
+			    method: 'GET', // 
+			    data: {
+			      userId: this.userId,
+			      mapId: this.mapId,
+			      comment: this.commentContent
+			    },
+			    success: (res) => {
+			      if (res.statusCode === 200 && res.data.code === 200) {
+			        uni.showToast({
+			          title: '评论已提交，等待审核',
+			          icon: 'success'
+			        });
+			        
+			        // 清空评论内容
+			        this.commentContent = '';
+			        this.inputFocus = false;
+			        
+			        // 由于评论需要审核，暂不立即添加到列表,但可以显示一个临时的评论提示
+			        uni.showModal({
+			          title: '提示',
+			          content: '您的评论已提交，将在审核通过后显示',
+			          showCancel: false
+			        });
+			      } else {
+			        uni.showToast({
+			          title: '评论提交失败',
+			          icon: 'none'
+			        });
+			      }
+			    },
+			    fail: (err) => {
+			      console.error('评论提交失败:', err);
+			      uni.showToast({
+			        title: '网络错误，请稍后重试',
+			        icon: 'none'
+			      });
+			    },
+			    complete: () => {
+			      uni.hideLoading();
+			    }
+			  });
 			},
 			
 			// 显示自定义列表选择器

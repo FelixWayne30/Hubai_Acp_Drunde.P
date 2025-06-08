@@ -11,6 +11,8 @@ export const GEOSERVER_CONFIG = {
 export const API = {
   // 用户相关API
   USER_LOGIN: `${envConfig.API_BASE_URL}/user/wechatLogin`,
+  COMMENT_ADD: `${envConfig.API_BASE_URL}/comment/addcomment`, 
+  COMMENT_LIST: `${envConfig.API_BASE_URL}/comment/comments`,
   
   // 自定义列表相关API
   CUSTOM_LIST_GET: `${envConfig.API_BASE_URL}/customlist/list`,
