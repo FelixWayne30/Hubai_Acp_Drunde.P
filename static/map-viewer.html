@@ -219,7 +219,6 @@
 <body>
     <!-- 地图容器 -->
     <div id="map-container"></div>
-    
     <!-- 加载遮罩 -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-content">
@@ -290,6 +289,8 @@
                 window.ENV_CONFIG.API_BASE_URL = decodeURIComponent(apiUrl);
             } else {
                 console.error('缺少环境配置参数');
+                document.getElementById('loading-text').textContent = '配置参数缺失';
+                document.getElementById('loading-desc').textContent = '无法加载地图，请返回重试';
             }
         }
 
@@ -302,6 +303,8 @@
                 this.maxConcurrent = 2;
                 this.totalMaps = 0;
                 this.cachedCount = 0;
+                this.retryCount = 0;
+                this.maxRetries = 3;
             }
             
             init(maps) {
@@ -322,36 +325,56 @@
                     return null;
                 }
                 
-                const baseUrl = `${window.ENV_CONFIG.GEOSERVER_BASE_URL}/hubei/wms`;
-                const aspectRatio = (map.height && map.width) ? (map.height / map.width) : 0.724;
-                const layers = `hubei:${map.id}`;
-                
-                const params = {
-                    SERVICE: 'WMS',
-                    VERSION: '1.1.1',
-                    REQUEST: 'GetMap',
-                    FORMAT: 'image/png',
-                    TRANSPARENT: 'true',
-                    LAYERS: layers,
-                    STYLES: '',
-                    SRS: 'EPSG:4326',
-                    BBOX: `0,0,1,${aspectRatio}`,
-                    WIDTH: map.width ? map.width.toString() : '3000',
-                    HEIGHT: map.height ? map.height.toString() : '2000',
-                    _t: Date.now()
-                };
-                
-                const queryParts = [];
-                for (const [key, value] of Object.entries(params)) {
-                    if (value !== null && value !== undefined) {
-                        queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+                try {
+                    if (!window.ENV_CONFIG.GEOSERVER_BASE_URL) {
+                        throw new Error('GeoServer基础URL未配置');
                     }
+                    
+                    // 移除可能的URL末尾斜杠
+                    let baseUrl = window.ENV_CONFIG.GEOSERVER_BASE_URL;
+                    if (baseUrl.endsWith('/')) {
+                        baseUrl = baseUrl.slice(0, -1);
+                    }
+                    
+                    // 拼接完整URL，确保路径正确
+                    baseUrl = `${baseUrl}/hubei/wms`;
+                    
+                    const aspectRatio = (map.height && map.width) ? (map.height / map.width) : 0.724;
+                    const layers = `hubei:${map.id}`;
+                    
+                    // 添加时间戳避免缓存问题
+                    const timestamp = new Date().getTime();
+                    
+                    const params = {
+                        SERVICE: 'WMS',
+                        VERSION: '1.1.1',
+                        REQUEST: 'GetMap',
+                        FORMAT: 'image/png',
+                        TRANSPARENT: 'true',
+                        LAYERS: layers,
+                        STYLES: '',
+                        SRS: 'EPSG:4326',
+                        BBOX: `0,0,1,${aspectRatio}`,
+                        WIDTH: map.width ? map.width.toString() : '3000',
+                        HEIGHT: map.height ? map.height.toString() : '2000',
+                        _t: timestamp
+                    };
+                    
+                    const queryParts = [];
+                    for (const [key, value] of Object.entries(params)) {
+                        if (value !== null && value !== undefined) {
+                            queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+                        }
+                    }
+                    
+                    return `${baseUrl}?${queryParts.join('&')}`;
+                } catch (error) {
+                    console.error('生成地图URL发生错误:', error);
+                    return null;
                 }
-                
-                return `${baseUrl}?${queryParts.join('&')}`;
             }
             
-            async loadMap(map) {
+            async loadMap(map, retryCount = 0) {
                 if (!map || !map.id) {
                     return null;
                 }
@@ -365,33 +388,81 @@
                 }
                 
                 const mapUrl = this.generateMapUrl(map);
+                if (!mapUrl) {
+                    return null;
+                }
                 
                 const loadPromise = new Promise(async (resolve, reject) => {
                     try {
-                        const response = await fetch(mapUrl);
-                        if (!response.ok) {
-                            throw new Error(`HTTP错误: ${response.status}`);
-                        }
+                        // 使用Image对象加载，避免CORS问题
+                        const img = new Image();
+                        img.crossOrigin = 'Anonymous'; // 尝试匿名获取
                         
-                        const blob = await response.blob();
-                        const objectUrl = URL.createObjectURL(blob);
-                        
-                        const cacheItem = {
-                            id: map.id,
-                            url: objectUrl,
-                            title: map.title,
-                            timestamp: Date.now()
+                        img.onload = () => {
+                            // 创建canvas将图片转为blob
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            
+                            // 将canvas转为blob
+                            canvas.toBlob((blob) => {
+                                if (!blob) {
+                                    reject(new Error('图片转换失败'));
+                                    return;
+                                }
+                                
+                                const objectUrl = URL.createObjectURL(blob);
+                                
+                                const cacheItem = {
+                                    id: map.id,
+                                    url: objectUrl,
+                                    title: map.title,
+                                    timestamp: Date.now()
+                                };
+                                
+                                this.cache.set(map.id, cacheItem);
+                                this.cachedCount++;
+                                
+                                resolve(cacheItem);
+                            });
                         };
                         
-                        this.cache.set(map.id, cacheItem);
-                        this.cachedCount++;
+                        img.onerror = () => {
+                            // 重试逻辑
+                            if (retryCount < this.maxRetries) {
+                                setTimeout(() => {
+                                    this.loadingMap.delete(map.id);
+                                    this.loadMap(map, retryCount + 1)
+                                        .then(resolve)
+                                        .catch(reject);
+                                }, 1000 * (retryCount + 1));
+                            } else {
+                                reject(new Error('地图加载失败，已达最大重试次数'));
+                            }
+                        };
                         
-                        resolve(cacheItem);
+                        // 启动图片加载
+                        img.src = mapUrl;
+                        
                     } catch (error) {
-                        reject(error);
+                        if (retryCount < this.maxRetries) {
+                            setTimeout(() => {
+                                this.loadingMap.delete(map.id);
+                                this.loadMap(map, retryCount + 1)
+                                    .then(resolve)
+                                    .catch(reject);
+                            }, 1000 * (retryCount + 1));
+                        } else {
+                            reject(error);
+                        }
                     } finally {
-                        this.loadingMap.delete(map.id);
-                        this.processQueue();
+                        if (retryCount >= this.maxRetries) {
+                            this.loadingMap.delete(map.id);
+                            this.processQueue();
+                        }
                     }
                 });
                 
@@ -522,7 +593,12 @@
                     }
                 } catch (e) {
                     console.error('解析URL参数失败:', e);
+                    document.getElementById('loading-text').textContent = '参数解析失败';
+                    document.getElementById('loading-desc').textContent = '请返回重试';
                 }
+            } else {
+                document.getElementById('loading-text').textContent = '缺少参数';
+                document.getElementById('loading-desc').textContent = '请返回重试';
             }
             
             return parsedData;
@@ -531,7 +607,9 @@
         // 向小程序发送消息
         function sendMessageToMiniProgram(data) {
             try {
-                wx.miniProgram.postMessage({ data });
+                if (window.wx && window.wx.miniProgram) {
+                    wx.miniProgram.postMessage({ data });
+                }
             } catch (e) {
                 console.error('发送消息到小程序失败:', e);
             }
@@ -551,12 +629,36 @@
             showLoading('正在获取地图数据...');
             
             try {
-                const response = await fetch(`${window.ENV_CONFIG.API_BASE_URL}/mapinfo/maps/${basicData.topicId}`);
+                if (!window.ENV_CONFIG.API_BASE_URL) {
+                    throw new Error('API基础URL未配置');
+                }
+                
+                // 构建API URL
+                let apiUrl = window.ENV_CONFIG.API_BASE_URL;
+                if (apiUrl.endsWith('/')) {
+                    apiUrl = apiUrl.slice(0, -1);
+                }
+                
+                const url = `${apiUrl}/mapinfo/maps/${basicData.topicId}`;
+                
+                // 设置请求超时
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+                
+                const response = await fetch(url, { 
+                    signal: controller.signal,
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP错误: ${response.status}`);
+                    throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
                 }
                 
                 const result = await response.json();
+                
                 if (result.code === 200 && result.data) {
                     allMaps = result.data.map(item => ({
                         id: item.map_id,
@@ -580,7 +682,7 @@
                 }
             } catch (error) {
                 document.getElementById('loading-text').textContent = '获取地图数据失败';
-                document.getElementById('loading-desc').textContent = '请返回重试';
+                document.getElementById('loading-desc').textContent = error.message || '请返回重试';
                 sendLoadingStatus('error', '获取地图数据失败');
             }
         }
@@ -661,10 +763,16 @@
                         immediateRender: true,
                         blendTime: 0,
                         showNavigator: false,
-						showNavigationControl: false,
-						showZoomControl: false,
-						showHomeControl: false,
-						showFullPageControl: false,
+                        showNavigationControl: false,
+                        showZoomControl: false,
+                        showHomeControl: false,
+                        showFullPageControl: false,
+                        minZoomImageRatio: 0.5,
+                        maxZoomPixelRatio: 2.0,
+                        loadTilesWithAjax: true,
+                        ajaxHeaders: {},
+                        timeout: 60000, // 60秒超时
+                        animationTime: 0.1
                     });
                     
                     isViewerInitialized = true;
@@ -672,6 +780,12 @@
                     viewer.addHandler('open', function() {
                         hideLoading();
                         cacheManager.startPreloading(allMaps, currentMapIndex);
+                    });
+                    
+                    viewer.addHandler('open-failed', function(event) {
+                        document.getElementById('loading-text').textContent = '地图加载失败';
+                        document.getElementById('loading-desc').textContent = '请检查网络连接并重试';
+                        sendLoadingStatus('error', '地图渲染失败，请重试');
                     });
                     
                 } else {
@@ -684,12 +798,18 @@
                     viewer.addOnceHandler('open', function() {
                         hideLoading();
                     });
+                    
+                    viewer.addOnceHandler('open-failed', function(event) {
+                        document.getElementById('loading-text').textContent = '地图加载失败';
+                        document.getElementById('loading-desc').textContent = '请检查网络连接并重试';
+                        sendLoadingStatus('error', '地图渲染失败，请重试');
+                    });
                 }
                 
             } catch (error) {
                 document.getElementById('loading-text').textContent = '地图加载失败';
-                document.getElementById('loading-desc').textContent = '请检查网络连接并重试';
-                sendLoadingStatus('error', '地图加载失败，请重试');
+                document.getElementById('loading-desc').textContent = error.message || '请检查网络连接并重试';
+                sendLoadingStatus('error', `地图加载失败: ${error.message}`);
                 setTimeout(hideLoading, 3000);
             }
         }
@@ -783,7 +903,6 @@
             });
         });
         
-        // 页面卸载时清理
         window.addEventListener('beforeunload', function() {
             cacheManager.clearCache();
         });
