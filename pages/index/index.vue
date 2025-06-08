@@ -69,33 +69,20 @@
 
 <script>
 import { API } from '@/common/config.js'
+import { generateThumbnailUrl } from '@/common/utils.js' 
+import thumbnailCache from '@/common/cache.js' 
 
 export default {
   data() {
     return {
       searchQuery: '',
       topicList: [],
-      carouselItems: [
-        {
-          id: "map1",
-          title: "江河湖库",
-          image: ""
-        },
-        {
-          id: "map2",
-          title: "水资源概况",
-          image: ""
-        },
-        {
-          id: "map3",
-          title: "地表水",
-          image: ""
-        }
-      ]
+      carouselItems: [],  
     }
   },
   onLoad() {
     this.getTopics()
+	this.getBannerMaps()
   },
   methods: {
     getTopics() {
@@ -136,6 +123,46 @@ export default {
       })
     },
 
+
+  getBannerMaps() {
+    this.isLoading = true
+    uni.request({
+      url: API.BANNER_MAPS,
+      method: 'GET',
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.code === 200) {
+          // 处理轮播图数据
+          this.carouselItems = (res.data.data || []).map(item => {
+            // 复用搜索页的逻辑：检查缓存
+            let imageUrl = thumbnailCache.getThumbnail(item.map_id);
+            
+            // 如果缓存中没有，生成并缓存
+            if (!imageUrl) {
+              imageUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
+              // 缓存地图信息，这是关键
+              thumbnailCache.setThumbnail(item.map_id, imageUrl, item);
+            }
+            
+            return {
+              id: item.map_id,
+              title: item.title || '未命名地图',
+              image: imageUrl || '/static/placeholder.png'
+            }
+          });
+        } else {
+          this.setDefaultCarouselItems();
+        }
+      },
+      fail: (err) => {
+        console.error('获取轮播图数据失败:', err);
+        this.setDefaultCarouselItems();
+      },
+      complete: () => {
+        this.isLoading = false;
+      }
+    });
+  },
+
     onSearchInput(e) {
       this.searchQuery = e.detail.value;
     },
@@ -145,6 +172,7 @@ export default {
         url: '/pages/map/topic-intro?topic_id=' + topicId
       });
     },
+	
     navigateToMap(mapId) {
       uni.navigateTo({
         url: '/pages/map/detail?id=' + mapId

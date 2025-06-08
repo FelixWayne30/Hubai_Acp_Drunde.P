@@ -31,7 +31,8 @@ export const API = {
   MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/maps/`,
   MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
   ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
-  SEARCH: `${envConfig.API_BASE_URL || 'http://localhost:8080'}/mapinfo/search`,
+  SEARCH: `${envConfig.API_BASE_URL}/mapinfo/search`,
+  BANNER_MAPS: `${envConfig.API_BASE_URL}/mapinfo/bannerMaps`,
   
   // 交互相关API
   COLLECTION_TOGGLE: `${envConfig.API_BASE_URL}/interaction/collection/toggle`,
