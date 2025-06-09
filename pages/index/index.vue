@@ -15,25 +15,23 @@
         </view>
       </view>
       
-      <!-- 搜索悬浮卡片 -->
-      <view class="search-floating-card">
-        <view class="search-container">
-          <input 
-            class="search-input" 
-            placeholder="搜索地图、专题..." 
-            placeholder-class="search-placeholder"
-            confirm-type="search"
-            @confirm="performSearch"
-            @input="onSearchInput"
-            v-model="searchQuery"
-          />
-          <view 
-            v-if="searchQuery" 
-            class="clear-button" 
-            @click="clearSearch"
-          >
-            <text class="clear-icon">×</text>
-          </view>
+      <!-- 搜索容器 -->
+      <view class="search-container">
+        <input 
+          class="search-input" 
+          placeholder="搜索地图、专题..." 
+          placeholder-class="search-placeholder"
+          confirm-type="search"
+          @confirm="performSearch"
+          @input="onSearchInput"
+          v-model="searchQuery"
+        />
+        <view 
+          v-if="searchQuery" 
+          class="clear-button" 
+          @click="clearSearch"
+        >
+          <text class="clear-icon">×</text>
         </view>
       </view>
       
@@ -53,26 +51,70 @@
               :key="rowIndex"
               :style="{ height: row.height + 'rpx' }"
             >
-              <view 
-                class="topic-card"
-                v-for="(card, cardIndex) in row.cards"
-                :key="cardIndex"
-                :class="[card.sizeClass, card.colorClass]"
-                :style="{ 
-                  width: card.width,
-                  height: '100%',
-                  marginRight: cardIndex < row.cards.length - 1 ? '12rpx' : '0'
-                }"
-                @click="navigateToTopic(card.topic.id)"
-              >
-                <!-- 汉字编号 -->
-                <view class="card-number">{{card.chineseNumber}}</view>
-                
-                <!-- 卡片内容 -->
-                <view class="card-content">
-                  <text class="card-title">{{card.topic.title}}</text>
+              <!-- 特殊布局：左侧双层+右侧单个 -->
+              <template v-if="row.isSpecialLayout">
+                <view class="special-layout-container">
+                  <!-- 左侧双层容器 -->
+                  <view class="left-double-container">
+                    <view 
+                      class="topic-card half-height-card"
+                      :class="row.cards[0].colorClass"
+                      @click="navigateToTopic(row.cards[0].topic.id)"
+                    >
+                      <view class="card-number">{{row.cards[0].chineseNumber}}</view>
+                      <view class="card-content">
+                        <text class="card-title">{{row.cards[0].topic.title}}</text>
+                      </view>
+                    </view>
+                    
+                    <view 
+                      class="topic-card half-height-card"
+                      :class="row.cards[1].colorClass"
+                      @click="navigateToTopic(row.cards[1].topic.id)"
+                    >
+                      <view class="card-number">{{row.cards[1].chineseNumber}}</view>
+                      <view class="card-content">
+                        <text class="card-title">{{row.cards[1].topic.title}}</text>
+                      </view>
+                    </view>
+                  </view>
+                  
+                  <!-- 右侧单个容器 -->
+                  <view class="right-single-container">
+                    <view 
+                      class="topic-card full-height-card"
+                      :class="row.cards[2].colorClass"
+                      @click="navigateToTopic(row.cards[2].topic.id)"
+                    >
+                      <view class="card-number">{{row.cards[2].chineseNumber}}</view>
+                      <view class="card-content">
+                        <text class="card-title">{{row.cards[2].topic.title}}</text>
+                      </view>
+                    </view>
+                  </view>
                 </view>
-              </view>
+              </template>
+              
+              <!-- 普通布局 -->
+              <template v-else>
+                <view 
+                  class="topic-card"
+                  v-for="(card, cardIndex) in row.cards"
+                  :key="cardIndex"
+                  :class="[card.sizeClass, card.colorClass]"
+                  :style="{ 
+                    width: card.width,
+                    height: '100%',
+                    marginRight: cardIndex < row.cards.length - 1 ? '12rpx' : '0'
+                  }"
+                  @click="navigateToTopic(card.topic.id)"
+                >
+                  <view class="card-number">{{card.chineseNumber}}</view>
+                  <view class="card-content">
+                    <text class="card-title">{{card.topic.title}}</text>
+                  </view>
+                </view>
+              </template>
             </view>
           </view>
         </scroll-view>
@@ -113,70 +155,8 @@ export default {
       const topics = [...this.topicList];
       const layout = [];
       
-      // 固定的不规则布局方案 - 有设计感的尺寸组合
-      const layoutPatterns = [
-        // 方案1: 宽 + 窄 + 窄
-        {
-          cards: [
-            { width: '60%', sizeClass: 'card-wide' },
-            { width: '19%', sizeClass: 'card-narrow' },
-            { width: '19%', sizeClass: 'card-narrow' }
-          ],
-          height: 220
-        },
-        // 方案2: 方 + 方 + 方
-        {
-          cards: [
-            { width: '32%', sizeClass: 'card-square' },
-            { width: '32%', sizeClass: 'card-square' },
-            { width: '32%', sizeClass: 'card-square' }
-          ],
-          height: 180
-        },
-        // 方案3: 超宽
-        {
-          cards: [
-            { width: '100%', sizeClass: 'card-ultra-wide' }
-          ],
-          height: 160
-        },
-        // 方案4: 窄 + 超宽
-        {
-          cards: [
-            { width: '25%', sizeClass: 'card-narrow' },
-            { width: '73%', sizeClass: 'card-wide' }
-          ],
-          height: 200
-        },
-        // 方案5: 中 + 中
-        {
-          cards: [
-            { width: '48%', sizeClass: 'card-medium' },
-            { width: '48%', sizeClass: 'card-medium' }
-          ],
-          height: 190
-        },
-        // 方案6: 窄 + 方 + 窄
-        {
-          cards: [
-            { width: '23%', sizeClass: 'card-narrow' },
-            { width: '46%', sizeClass: 'card-square' },
-            { width: '23%', sizeClass: 'card-narrow' }
-          ],
-          height: 170
-        },
-        // 方案7: 超宽 + 窄
-        {
-          cards: [
-            { width: '75%', sizeClass: 'card-wide' },
-            { width: '23%', sizeClass: 'card-narrow' }
-          ],
-          height: 180
-        }
-      ];
-      
       // 汉字编号
-      const chineseNumbers = ['壹','贰','叁','肆','伍','陆','柒','捌','玖','拾','拾壹', '拾贰', '拾叁'];
+      const chineseNumbers = ['壹','贰','叁','肆','伍','陆','柒','捌','玖','拾'];
       
       // 淡色配色方案
       const colorSchemes = [
@@ -190,37 +170,127 @@ export default {
         'color-vanilla'    // 香草色
       ];
       
-      let topicIndex = 0;
-      let patternIndex = 0;
-      
-      while (topicIndex < topics.length) {
-        const pattern = layoutPatterns[patternIndex % layoutPatterns.length];
-        const rowCards = [];
-        
-        for (let i = 0; i < pattern.cards.length && topicIndex < topics.length; i++) {
-          const topic = topics[topicIndex];
-          const cardConfig = pattern.cards[i];
-          
-          rowCards.push({
-            topic: topic,
-            width: cardConfig.width,
-            sizeClass: cardConfig.sizeClass,
-            colorClass: colorSchemes[topicIndex % colorSchemes.length],
-            chineseNumber: chineseNumbers[topicIndex % chineseNumbers.length]
-          });
-          
-          topicIndex++;
-        }
-        
+      // 专门为4个专题设计的特殊组合布局方案
+      if (topics.length === 4) {
+        // 第一行：左侧双层卡片 + 右侧高卡片
         layout.push({
-          height: pattern.height,
-          cards: rowCards
+          height: 240,
+          isSpecialLayout: true,
+          cards: [
+            // 左侧垂直叠放的两个卡片
+            {
+              topic: topics[0],
+              width: '48%',
+              sizeClass: 'card-half-height-top',
+              colorClass: colorSchemes[0],
+              chineseNumber: chineseNumbers[0],
+              isTopHalf: true
+            },
+            {
+              topic: topics[1], 
+              width: '48%',
+              sizeClass: 'card-half-height-bottom',
+              colorClass: colorSchemes[1],
+              chineseNumber: chineseNumbers[1],
+              isBottomHalf: true
+            },
+            // 右侧正常高度卡片
+            {
+              topic: topics[2],
+              width: '48%',
+              sizeClass: 'card-full-height',
+              colorClass: colorSchemes[2],
+              chineseNumber: chineseNumbers[2],
+              isRightSide: true
+            }
+          ]
         });
         
-        patternIndex++;
+        // 第二行：全宽卡片 (专题4)
+        layout.push({
+          height: 180,
+          cards: [{
+            topic: topics[3],
+            width: '100%',
+            sizeClass: 'card-ultra-wide',
+            colorClass: colorSchemes[3],
+            chineseNumber: chineseNumbers[3]
+          }]
+        });
+      } 
+      // 通用布局方案（适用于其他数量的专题）
+      else {
+        const layoutPatterns = [
+          // 方案1: 宽 + 窄 + 窄
+          {
+            cards: [
+              { width: '60%', sizeClass: 'card-wide' },
+              { width: '19%', sizeClass: 'card-narrow' },
+              { width: '19%', sizeClass: 'card-narrow' }
+            ],
+            height: 220
+          },
+          // 方案2: 方 + 方 + 方
+          {
+            cards: [
+              { width: '32%', sizeClass: 'card-square' },
+              { width: '32%', sizeClass: 'card-square' },
+              { width: '32%', sizeClass: 'card-square' }
+            ],
+            height: 180
+          },
+          // 方案3: 超宽
+          {
+            cards: [
+              { width: '100%', sizeClass: 'card-ultra-wide' }
+            ],
+            height: 160
+          },
+          // 方案4: 中 + 中
+          {
+            cards: [
+              { width: '48%', sizeClass: 'card-medium' },
+              { width: '48%', sizeClass: 'card-medium' }
+            ],
+            height: 190
+          }
+        ];
+        
+        let topicIndex = 0;
+        let patternIndex = 0;
+        
+        while (topicIndex < topics.length) {
+          const pattern = layoutPatterns[patternIndex % layoutPatterns.length];
+          const rowCards = [];
+          
+          for (let i = 0; i < pattern.cards.length && topicIndex < topics.length; i++) {
+            const topic = topics[topicIndex];
+            const cardConfig = pattern.cards[i];
+            
+            rowCards.push({
+              topic: topic,
+              width: cardConfig.width,
+              sizeClass: cardConfig.sizeClass,
+              colorClass: colorSchemes[topicIndex % colorSchemes.length],
+              chineseNumber: chineseNumbers[topicIndex % chineseNumbers.length]
+            });
+            
+            topicIndex++;
+          }
+          
+          layout.push({
+            height: pattern.height,
+            cards: rowCards
+          });
+          
+          patternIndex++;
+        }
       }
       
       this.irregularLayout = layout;
+      
+      // 调试信息
+      console.log('生成的布局数据:', this.irregularLayout);
     },
 
     getTopics() {
@@ -344,58 +414,60 @@ export default {
   color: rgba(255, 255, 255, 0.9);
   letter-spacing: 3rpx;
   font-weight: 300;
-/*  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3); */
   font-family: "ChillKai";
 }
 
-/* ========== 搜索悬浮卡片 ========== */
-.search-floating-card {
-  background: rgba(241, 241, 241, 0.9);
-  border-radius: 24rpx;
-  padding: 30rpx;
-  margin-bottom: 50rpx;
-  backdrop-filter: blur(20rpx);
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
-}
-
+/* ========== 搜索容器 ========== */
 .search-container {
   position: relative;
-  height: 88rpx;
-/*  background: rgba(241, 241, 241, 0.9); */
-  border-radius: 44rpx;
+  height: 80rpx;
+  background: rgba(245, 245, 245, 0.9);
+  border-radius: 10rpx;
+  margin-bottom: 60rpx;
+  margin-top: 40rpx;
   display: flex;
   align-items: center;
+  box-shadow: 0 4rpx 20rpx rgba(46, 139, 87, 0.08);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
 .search-input {
   flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  font-size: 35rpx;
-  color: #a8a8a8;
-  padding: 0 20rpx;
+  height: 65rpx;
+  line-height: 65rpx;
+  font-size: 30rpx;
+  color: #333333;
+  padding: 0 24rpx;
   margin: 0;
+  background: transparent;
 }
 
 .search-placeholder {
-  color: #a8a8a8;
-  font-size: 35rpx;
+  color: #999999;
+  font-size: 30rpx;
 }
 
 .clear-button {
-  width: 60rpx;
-  height: 60rpx;
-  margin-right: 14rpx;
-  background: #E9ECEF;
-  border-radius: 30rpx;
+  width: 45rpx;
+  height: 45rpx;
+  margin-right: 10rpx;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.clear-button:active {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
 }
 
 .clear-icon {
-  font-size: 36rpx;
-  color: #999999;
+  font-size: 32rpx;
+  color: #666666;
   font-weight: normal;
   line-height: 1;
 }
@@ -437,6 +509,73 @@ export default {
 .topics-scroll-content {
   flex: 1;
   overflow: hidden;
+}
+
+/* ========== 特殊布局样式 ========== */
+.special-layout-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  gap: 12rpx;
+}
+
+/* 左侧双层容器 - 关键：垂直排列 */
+.left-double-container {
+  width: calc(50% - 6rpx);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+/* 右侧单个容器 */
+.right-single-container {
+  width: calc(50% - 6rpx);
+  height: 100%;
+}
+
+/* 半高卡片 - 占据左侧容器的一半高度 */
+.half-height-card {
+  height: calc(50% - 6rpx) !important;
+  width: 100% !important;
+}
+
+/* 全高卡片 - 占据右侧容器的全部高度 */
+.full-height-card {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* 半高卡片内容调整 */
+.half-height-card .card-content {
+  padding: 20rpx 20rpx !important;
+}
+
+.half-height-card .card-title {
+  font-size: 32rpx !important;
+  line-height: 1.3 !important;
+}
+
+.half-height-card .card-number {
+  font-size: 40rpx !important;
+  top: 10rpx !important;
+  right: 16rpx !important;
+}
+
+/* 全高卡片内容调整 */
+.full-height-card .card-content {
+  padding: 28rpx 24rpx !important;
+}
+
+.full-height-card .card-title {
+  font-size: 36rpx !important;
+  line-height: 1.4 !important;
+}
+
+.full-height-card .card-number {
+  font-size: 50rpx !important;
+  top: 16rpx !important;
+  right: 20rpx !important;
 }
 
 /* ========== 不规则拼贴布局 ========== */
