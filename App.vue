@@ -24,6 +24,8 @@
 </script>
 
 <style>
+@import '@/static/css/font.css';
+
 	/* 全局CSS样式 */
 	page {
 		font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 
