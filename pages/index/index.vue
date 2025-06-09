@@ -1,32 +1,23 @@
 <template>
   <view class="container">
-    <!-- 渐变背景层 -->
-    <view class="gradient-background">
-      <view class="gradient-layer-1"></view>
-      <view class="gradient-layer-2"></view>
+    <!-- 插画背景层 -->
+    <view class="background-image">
+      <image class="bg-illustration" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <view class="bg-overlay"></view>
     </view>
     
-    <!-- 顶部插画区域 -->
-    <view class="illustration-section">
-      <view class="illustration-container">
-        <image class="header-illustration" src="/static/illustrations/header-bg.png" mode="aspectFill"></image>
-        <view class="illustration-overlay"></view>
-      </view>
-      
-      <view class="header-content">
+    <!-- 主要内容区域 -->
+    <view class="main-content">
+      <!-- 顶部标题区域 -->
+      <view class="header-section">
         <view class="app-title">
           <text class="title-sub">探索荆楚大地·记录自然之美</text>
         </view>
       </view>
-    </view>
-    
-    <!-- 搜索区域 -->
-    <view class="search-section">
-      <view class="search-wrapper">
+      
+      <!-- 搜索悬浮卡片 -->
+      <view class="search-floating-card">
         <view class="search-container">
-          <view class="search-icon-wrapper">
-            <text class="search-icon"></text>
-          </view>
           <input 
             class="search-input" 
             placeholder="搜索地图、专题..." 
@@ -44,52 +35,49 @@
             <text class="clear-icon">×</text>
           </view>
         </view>
-        <view class="search-shadow"></view>
       </view>
-    </view>
-    
-    <!-- 专题探索区域 -->
-    <scroll-view class="topics-scroll" scroll-y :show-scrollbar="false">
-      <view class="topics-section">
-        <view class="section-header">
-          <view class="section-title-wrapper">
-            <text class="section-title">专题探索</text>
-            <view class="section-subtitle">发现湖北自然资源的多样魅力</view>
-          </view>
+      
+      <!-- 专题探索悬浮卡片 -->
+      <view class="topics-floating-card">
+        <view class="card-header">
+          <text class="section-title">专题探索</text>
+          <view class="section-subtitle">发现湖北自然资源的多样魅力</view>
         </view>
         
-        <!-- 固定不规则拼贴布局 -->
-        <view class="irregular-masonry">
-          <view 
-            class="masonry-row" 
-            v-for="(row, rowIndex) in irregularLayout" 
-            :key="rowIndex"
-            :style="{ height: row.height + 'rpx' }"
-          >
+        <!-- 专题内容滚动区域 -->
+        <scroll-view class="topics-scroll-content" scroll-y :show-scrollbar="false">
+          <view class="irregular-masonry">
             <view 
-              class="topic-card"
-              v-for="(card, cardIndex) in row.cards"
-              :key="cardIndex"
-              :class="[card.sizeClass, card.colorClass]"
-              :style="{ 
-                width: card.width,
-                height: '100%',
-                marginRight: cardIndex < row.cards.length - 1 ? '12rpx' : '0'
-              }"
-              @click="navigateToTopic(card.topic.id)"
+              class="masonry-row" 
+              v-for="(row, rowIndex) in irregularLayout" 
+              :key="rowIndex"
+              :style="{ height: row.height + 'rpx' }"
             >
-              <!-- 汉字编号 -->
-              <view class="card-number">{{card.chineseNumber}}</view>
-              
-              <!-- 简洁卡片内容 -->
-              <view class="card-content">
-                <text class="card-title">{{card.topic.title}}</text>
+              <view 
+                class="topic-card"
+                v-for="(card, cardIndex) in row.cards"
+                :key="cardIndex"
+                :class="[card.sizeClass, card.colorClass]"
+                :style="{ 
+                  width: card.width,
+                  height: '100%',
+                  marginRight: cardIndex < row.cards.length - 1 ? '12rpx' : '0'
+                }"
+                @click="navigateToTopic(card.topic.id)"
+              >
+                <!-- 汉字编号 -->
+                <view class="card-number">{{card.chineseNumber}}</view>
+                
+                <!-- 卡片内容 -->
+                <view class="card-content">
+                  <text class="card-title">{{card.topic.title}}</text>
+                </view>
               </view>
             </view>
           </view>
-        </view>
+        </scroll-view>
       </view>
-    </scroll-view>
+    </view>
   </view>
 </template>
 
@@ -103,7 +91,7 @@ export default {
     return {
       searchQuery: '',
       topicList: [],
-      irregularLayout: [], // 不规则布局数据
+      irregularLayout: [], 
     }
   },
   watch: {
@@ -188,7 +176,7 @@ export default {
       ];
       
       // 汉字编号
-      const chineseNumbers = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十'];
+      const chineseNumbers = ['壹','贰','叁','肆','伍','陆','柒','捌','玖','拾','拾壹', '拾贰', '拾叁'];
       
       // 淡色配色方案
       const colorSchemes = [
@@ -305,157 +293,100 @@ export default {
 .container {
   position: relative;
   min-height: 100vh;
-  background: #F8F6F0;
+  background: #F0F2F5;
 }
 
-/* ========== 简洁渐变背景 ========== */
-.gradient-background {
+/* ========== 插画背景层 ========== */
+.background-image {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: -2;
+  z-index: 1;
 }
 
-.gradient-layer-1 {
-  position: absolute;
+.bg-illustration {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #F8F6F0 0%, #F2EFE7 50%, #EDE8DB 100%);
+  object-fit: cover;
 }
 
-.gradient-layer-2 {
-  position: absolute;
-  width: 100%;
-  height: 50%;
-  top: 0;
-  background: linear-gradient(180deg, rgba(220,210,190,0.2) 0%, transparent 100%);
-}
-
-/* ========== 插画区域 ========== */
-.illustration-section {
-  position: relative;
-  height: 360rpx;
-  overflow: hidden;
-}
-
-.illustration-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.header-illustration {
-  width: 100%;
-  height: 100%;
-  opacity: 0.9;
-}
-
-.illustration-overlay {
+.bg-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 50%, transparent 100%);
+  background: rgba(0, 0, 0, 0.15);
 }
 
-.header-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
+/* ========== 主要内容区域 ========== */
+.main-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: 0 30rpx;
+}
+
+/* ========== 顶部标题区域 ========== */
+.header-section {
+  padding: 200rpx 0 100rpx;
+  text-align: center;
 }
 
 .app-title {
-  text-align: center;
-  padding: 0 40rpx;
-}
-
-.title-main {
-  display: block;
-  font-size: 46rpx;
-  font-weight: 800;
-  color: #FFFFFF;
-  text-shadow: 0 3rpx 10rpx rgba(0,0,0,0.4);
-  margin-bottom: 12rpx;
-  letter-spacing: 1rpx;
+  margin-bottom: 20rpx;
 }
 
 .title-sub {
-  display: block;
-  font-size: 28rpx;
-  color: rgba(255,255,255,0.95);
+  font-size: 50rpx;
+  color: rgba(255, 255, 255, 0.9);
   letter-spacing: 3rpx;
   font-weight: 300;
+/*  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3); */
+  font-family: "ChillKai";
 }
 
-/* ========== 搜索区域 ========== */
-.search-section {
-  padding: 40rpx 30rpx 30rpx;
-  position: relative;
-  z-index: 3;
-}
-
-.search-wrapper {
-  position: relative;
+/* ========== 搜索悬浮卡片 ========== */
+.search-floating-card {
+  background: rgba(241, 241, 241, 0.9);
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 50rpx;
+  backdrop-filter: blur(20rpx);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
 }
 
 .search-container {
   position: relative;
   height: 88rpx;
-  background: rgba(255, 255, 255, 0.95);
+/*  background: rgba(241, 241, 241, 0.9); */
   border-radius: 44rpx;
   display: flex;
   align-items: center;
-  border: 2rpx solid rgba(139,115,85,0.15);
-  backdrop-filter: blur(10rpx);
-  z-index: 2;
-}
-
-.search-shadow {
-  position: absolute;
-  top: 8rpx;
-  left: 4rpx;
-  right: 4rpx;
-  height: 88rpx;
-  background: rgba(139,115,85,0.1);
-  border-radius: 44rpx;
-  z-index: 1;
-}
-
-
-.search-icon {
-  font-size: 28rpx;
-  color: #FFFFFF;
 }
 
 .search-input {
   flex: 1;
   height: 88rpx;
   line-height: 88rpx;
-  font-size: 30rpx;
-  color: #333333;
+  font-size: 35rpx;
+  color: #a8a8a8;
   padding: 0 20rpx;
   margin: 0;
 }
 
 .search-placeholder {
-  color: #AAAAAA;
-  font-size: 30rpx;
+  color: #a8a8a8;
+  font-size: 35rpx;
 }
 
 .clear-button {
   width: 60rpx;
   height: 60rpx;
   margin-right: 14rpx;
-  background: #F5F5F5;
+  background: #E9ECEF;
   border-radius: 30rpx;
   display: flex;
   align-items: center;
@@ -469,42 +400,47 @@ export default {
   line-height: 1;
 }
 
-/* ========== 专题区域 ========== */
-.topics-scroll {
-  height: calc(100vh - 518rpx);
-  position: relative;
-  z-index: 2;
+/* ========== 专题探索悬浮卡片 ========== */
+.topics-floating-card {
+  background: #f1f1f1;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 60rpx;
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.15);
+  max-height: calc(100vh - 460rpx);
+  min-height: 500rpx;
+  display: flex;
+  flex-direction: column;
 }
 
-.topics-section {
-  padding: 0 30rpx 80rpx;
-}
-
-.section-header {
-  padding: 20rpx 0 40rpx;
-}
-
-.section-title-wrapper {
-  flex: 1;
+.card-header {
+  margin-bottom: 30rpx;
+  flex-shrink: 0;
 }
 
 .section-title {
   font-size: 38rpx;
   font-weight: 700;
-  color: #8B7355;
+  color: #2D3748;
   margin-bottom: 8rpx;
   letter-spacing: 1rpx;
 }
 
 .section-subtitle {
   font-size: 24rpx;
-  color: #A68B5B;
+  color: #718096;
   opacity: 0.8;
+}
+
+.topics-scroll-content {
+  flex: 1;
+  overflow: hidden;
 }
 
 /* ========== 不规则拼贴布局 ========== */
 .irregular-masonry {
   width: 100%;
+  padding-bottom: 40rpx;
 }
 
 .masonry-row {
@@ -513,7 +449,7 @@ export default {
   width: 100%;
 }
 
-/* ========== 卡片基础样式 ========== */
+/* ========== 专题卡片样式 ========== */
 .topic-card {
   border-radius: 16rpx;
   position: relative;
@@ -530,19 +466,19 @@ export default {
 
 /* ========== 淡色配色方案 ========== */
 .color-mint {
-  background: #dcf9ec;
+  background: #bee2e7;
 }
 
 .color-lavender {
-  background: #F7F3FF;
+  background: #f3f0df;
 }
 
 .color-peach {
-  background: #efd9cf;
+  background: #c7e2cf;
 }
 
 .color-sky {
-  background: #e5eef3;
+  background: #e5e6f3;
 }
 
 .color-cream {
@@ -566,8 +502,8 @@ export default {
   position: absolute;
   top: 16rpx;
   right: 20rpx;
-  font-size: 48rpx;
-  font-weight: 600;
+  font-size: 50rpx;
+  font-weight: normal;
   color: rgba(0,0,0,0.1);
   z-index: 1;
   font-family: "Chillkai","PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
@@ -586,9 +522,9 @@ export default {
 }
 
 .card-title {
-  font-size: 40rpx;
-  font-weight: 900;
-  color: #2D3748;
+  font-size: 36rpx;
+  font-weight: normal;
+  color: #464740;
   line-height: 1.5;
   text-align: center;
   font-family: "ChillKai","PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
@@ -601,26 +537,26 @@ export default {
 }
 
 .card-narrow .card-title {
-  font-size: 40rpx;
-  font-weight: 900;
+  font-size: 36rpx;
+  font-weight: normal;
   line-height: 1.4;
 }
 
 .card-narrow .card-number {
-  font-size: 48rpx;
-  font-weight: 600;
+  font-size: 50rpx;
+  font-weight: normal;
   color: rgba(0,0,0,0.1);
   top: 12rpx;
   right: 14rpx;
 }
 
 .card-ultra-wide .card-title {
-  font-size: 45rpx;
-  font-weight: 900;
+  font-size: 36rpx;
+  font-weight: normal;
 }
 
 .card-wide .card-title {
-  font-size: 40rpx;
-  font-weight: 900;
+  font-size: 36rpx;
+  font-weight: normal;
 }
 </style>
