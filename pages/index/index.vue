@@ -419,12 +419,12 @@ export default {
 }
 
 .section-title {
-  font-size: 38rpx;
-  font-weight: 700;
+  font-size: 35rpx;
+  font-weight: 400;
   font-family: 'ChillKai';
-  color: #2D3748;
+  color: #3a485e;
   margin-bottom: 8rpx;
-  letter-spacing: 1rpx;
+  letter-spacing: 2rpx;
 }
 
 .section-subtitle {
