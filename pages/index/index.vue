@@ -421,6 +421,7 @@ export default {
 .section-title {
   font-size: 38rpx;
   font-weight: 700;
+  font-family: 'ChillKai';
   color: #2D3748;
   margin-bottom: 8rpx;
   letter-spacing: 1rpx;
@@ -428,6 +429,7 @@ export default {
 
 .section-subtitle {
   font-size: 24rpx;
+  font-family: 'ChillKai';
   color: #718096;
   opacity: 0.8;
 }
