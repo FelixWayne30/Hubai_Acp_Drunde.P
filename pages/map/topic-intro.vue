@@ -34,7 +34,7 @@
             </view>
             
             <view class="map-info">
-              <view class="map-description">
+              <view class="map-description" v-if="item.description">
                 <text>{{item.description}}</text>
               </view>
               <view class="action-buttons">
@@ -137,7 +137,7 @@ export default {
               return {
                 id: item.map_id,
                 title: item.title,
-                description: item.description || '暂无描述',
+                description: item.description,
                 thumbnail: thumbnailUrl,
                 width: item.width,
                 height: item.height
@@ -256,7 +256,7 @@ export default {
 
 /* ========== 优化后的地图卡片 ========== */
 .map-item {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.6);
   border-radius: 24rpx;
   margin-bottom: 32rpx;
   overflow: hidden;
@@ -270,19 +270,18 @@ export default {
 }
 
 .map-header {
-  padding: 32rpx 32rpx 24rpx;
+  padding: 32rpx 32rpx 10rpx;
   border-bottom: 2rpx solid #F5F7FA;
 }
 
 .map-name {
   font-size: 36rpx;
   font-weight: 600;
-  color: #2E8B57;
-  line-height: 1.3;
+  color: #3c3c3c;
 }
 
 .map-content {
-  padding: 24rpx 32rpx 32rpx;
+  padding: 10rpx 32rpx 32rpx;
   display: flex;
   flex-direction: column;
   gap: 24rpx;
@@ -322,10 +321,10 @@ export default {
 
 .detail-btn, .browse-btn {
   flex: 1;
-  height: 80rpx;
+  height: 70rpx;
   line-height: 80rpx;
   text-align: center;
-  border-radius: 40rpx;
+  border-radius: 30rpx;
   font-size: 30rpx;
   font-weight: 500;
   transition: all 0.2s;
@@ -334,10 +333,11 @@ export default {
 .detail-btn {
   color: #FFFFFF;
   border: none;
+  background-color: rgba(94, 146, 118);
 }
 
 .detail-btn:active {
-  background-color: #267A4A !important;
+  background-color: rgba(94, 146, 118, 0.6) !important;
 }
 
 .browse-btn {

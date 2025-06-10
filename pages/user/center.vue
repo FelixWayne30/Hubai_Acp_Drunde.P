@@ -1,8 +1,5 @@
 <template>
 	<view class="container">
-		<!-- Base solid color background -->
-		<view class="background-solid"></view>
-		
 		<!-- Top decorative background with gradient fade -->
 		<view class="background-image-container">
 			<image class="background-image-top" src="/static/background/main-bg.png" mode="aspectFill"></image>
@@ -16,7 +13,6 @@
 					class="avatar"
 					:src="userInfo.avatar"
 				></image>
-				<view class="edit-icon" v-if="isLoggedIn">+</view>
 			</view>
 			<view class="user-name" @click="handleUserInfoClick">
 				{{userInfo.nickName}}
@@ -28,22 +24,18 @@
 		<view class="function-list">
 			<view class="function-card" @click="navigateWithLogin('/pages/user/collection')">
 				<view class="function-title">我的收藏</view>
-				<view class="function-arrow">></view>
 			</view>
 			
 			<view class="function-card" @click="navigateWithLogin('/pages/user/custom-lists')">
 				<view class="function-title">自定义列表</view>
-				<view class="function-arrow">></view>
 			</view>
 			
 			<view class="function-card" @click="navigateWithLogin('/pages/user/downloads')">
 				<view class="function-title">下载记录</view>
-				<view class="function-arrow">></view>
 			</view>
 			
 			<view class="function-card" @click="showAbout">
 				<view class="function-title">关于我们</view>
-				<view class="function-arrow">></view>
 			</view>
 			
 		</view>
@@ -253,20 +245,12 @@ export default {
 
 <style>
 	.container {
-		position: relative;
+    position: relative;
+    display: flex;
+    flex-direction: column;
 		min-height: 100vh;
-		padding-bottom: 30rpx;
-	}
-	
-	/* Base solid background color */
-	.background-solid {
-	  position: absolute;
-	  top: 0;
-	  left: 0;
-	  width: 100%;
-	  height: 100%;
-	  background-color: #E8F4F0;
-	  z-index: -2;
+    justify-content: space-between;
+		//padding-bottom: 30rpx;
 	}
 	
 	/* Background image container - now at bottom */
@@ -275,7 +259,7 @@ export default {
 	  bottom: 0;
 	  left: 0;
 	  width: 100%;
-	  height: 45%;
+	  height: 100%;
 	  z-index: -1;
 	  overflow: hidden;
 	}
@@ -300,6 +284,7 @@ export default {
 	
 	/* 用户信息区域 */
 	.user-info-section {
+    margin-top: 50rpx;
 	  padding: 50rpx 30rpx;
 	  display: flex;
 	  flex-direction: column;
@@ -357,10 +342,10 @@ export default {
 	
 	.function-card {
 		display: flex;
-		justify-content: space-between;
+		justify-content: center;
 		align-items: center;
-		padding: 30rpx 20rpx;
-		background-color: rgba(255, 255, 255, 0.9);
+		padding: 50rpx 30rpx;
+		background-color: rgba(255, 255, 255, 0.6);
 		border-radius: 15rpx;
 		margin-bottom: 20rpx;
 		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
@@ -374,7 +359,7 @@ export default {
 	
 	.function-arrow {
 		font-size: 30rpx;
-		color: #999999;
+		color: rgba(51, 51, 51, 0.6);
 	}
 	
 	/* 退出登录特殊样式 */
