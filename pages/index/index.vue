@@ -52,12 +52,13 @@
               :style="{ height: row.height + 'rpx' }"
             >
               <!-- 特殊布局：左侧双层+右侧单个 -->
+              <!-- 特殊布局：左侧单个+右侧双层 -->
               <template v-if="row.isSpecialLayout">
                 <view class="special-layout-container">
-                  <!-- 左侧双层容器 -->
-                  <view class="left-double-container">
+                  <!-- 左侧单个容器 -->
+                  <view class="left-single-container">
                     <view 
-                      class="topic-card half-height-card"
+                      class="topic-card full-height-card"
                       :class="row.cards[0].colorClass"
                       @click="navigateToTopic(row.cards[0].topic.id)"
                     >
@@ -66,7 +67,10 @@
                         <text class="card-title">{{row.cards[0].topic.title}}</text>
                       </view>
                     </view>
-                    
+                  </view>
+                  
+                  <!-- 右侧双层容器 -->
+                  <view class="right-double-container">
                     <view 
                       class="topic-card half-height-card"
                       :class="row.cards[1].colorClass"
@@ -77,12 +81,9 @@
                         <text class="card-title">{{row.cards[1].topic.title}}</text>
                       </view>
                     </view>
-                  </view>
-                  
-                  <!-- 右侧单个容器 -->
-                  <view class="right-single-container">
+                    
                     <view 
-                      class="topic-card full-height-card"
+                      class="topic-card half-height-card"
                       :class="row.cards[2].colorClass"
                       @click="navigateToTopic(row.cards[2].topic.id)"
                     >
@@ -171,53 +172,54 @@ export default {
       ];
       
       // 专门为4个专题设计的特殊组合布局方案
-      if (topics.length === 4) {
-        // 第一行：左侧双层卡片 + 右侧高卡片
-        layout.push({
-          height: 240,
-          isSpecialLayout: true,
-          cards: [
-            // 左侧垂直叠放的两个卡片
-            {
-              topic: topics[0],
-              width: '48%',
-              sizeClass: 'card-half-height-top',
-              colorClass: colorSchemes[0],
-              chineseNumber: chineseNumbers[0],
-              isTopHalf: true
-            },
-            {
-              topic: topics[1], 
-              width: '48%',
-              sizeClass: 'card-half-height-bottom',
-              colorClass: colorSchemes[1],
-              chineseNumber: chineseNumbers[1],
-              isBottomHalf: true
-            },
-            // 右侧正常高度卡片
-            {
-              topic: topics[2],
-              width: '48%',
-              sizeClass: 'card-full-height',
-              colorClass: colorSchemes[2],
-              chineseNumber: chineseNumbers[2],
-              isRightSide: true
-            }
-          ]
-        });
-        
-        // 第二行：全宽卡片 (专题4)
-        layout.push({
-          height: 180,
-          cards: [{
-            topic: topics[3],
-            width: '100%',
-            sizeClass: 'card-ultra-wide',
-            colorClass: colorSchemes[3],
-            chineseNumber: chineseNumbers[3]
-          }]
-        });
-      } 
+     // 专门为4个专题设计的特殊组合布局方案
+     if (topics.length === 4) {
+       // 第一行：左侧高卡片 + 右侧双层卡片
+       layout.push({
+         height: 240,
+         isSpecialLayout: true,
+         cards: [
+           // 左侧正常高度卡片
+           {
+             topic: topics[0],
+             width: '48%',
+             sizeClass: 'card-full-height',
+             colorClass: colorSchemes[0],
+             chineseNumber: chineseNumbers[0],
+             isLeftSide: true
+           },
+           // 右侧垂直叠放的两个卡片
+           {
+             topic: topics[1], 
+             width: '48%',
+             sizeClass: 'card-half-height-top',
+             colorClass: colorSchemes[1],
+             chineseNumber: chineseNumbers[1],
+             isTopHalf: true
+           },
+           {
+             topic: topics[2],
+             width: '48%',
+             sizeClass: 'card-half-height-bottom',
+             colorClass: colorSchemes[2],
+             chineseNumber: chineseNumbers[2],
+             isBottomHalf: true
+           }
+         ]
+       });
+       
+       // 第二行：全宽卡片 (专题4)
+       layout.push({
+         height: 180,
+         cards: [{
+           topic: topics[3],
+           width: '100%',
+           sizeClass: 'card-ultra-wide',
+           colorClass: colorSchemes[3],
+           chineseNumber: chineseNumbers[3]
+         }]
+       });
+     }
       // 通用布局方案（适用于其他数量的专题）
       else {
         const layoutPatterns = [
@@ -699,5 +701,20 @@ export default {
 .card-wide .card-title {
   font-size: 36rpx;
   font-weight: normal;
+}
+
+/* 左侧单个容器 */
+.left-single-container {
+  width: calc(50% - 6rpx);
+  height: 100%;
+}
+
+/* 右侧双层容器 - 关键：垂直排列 */
+.right-double-container {
+  width: calc(50% - 6rpx);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
 }
 </style>
