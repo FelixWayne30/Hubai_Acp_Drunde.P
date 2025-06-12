@@ -7,15 +7,14 @@
     
     <!-- 主要内容区域 -->
     <view class="main-content">
-      <!-- 顶部标题区域 -->
+      <!-- 顶部标题 -->
       <view class="header-section">
         <view class="app-title">
           <text class="title-sub">探索荆楚大地·记录自然之美</text>
-
         </view>
       </view>
       
-      <!-- 搜索容器 -->
+      <!-- 搜索框 -->
       <view class="search-container">
         <input 
           class="search-input" 
@@ -26,96 +25,53 @@
           @input="onSearchInput"
           v-model="searchQuery"
         />
-        <view 
-          v-if="searchQuery" 
-          class="clear-button" 
-          @click="clearSearch"
-        >
+        <view v-if="searchQuery" class="clear-button" @click="clearSearch">
           <text class="clear-icon">×</text>
         </view>
       </view>
       
-      <!-- 专题探索悬浮卡片 -->
-      <view class="topics-floating-card">
+		<!--专题卡片-->
+      <view class="topics-card">
         <view class="card-header">
           <text class="section-title">自然资源专题探索</text>
           <view class="section-subtitle">发现湖北自然资源的多样魅力</view>
         </view>
         
-        <!-- 专题内容滚动区域 -->
-        <scroll-view class="topics-scroll-content" scroll-y :show-scrollbar="false">
-          <view class="irregular-masonry">
-            <view 
-              class="masonry-row" 
-              v-for="(row, rowIndex) in irregularLayout" 
-              :key="rowIndex"
-              :style="{ height: row.height + 'rpx' }"
-            >
-              <!-- 特殊布局：左侧双层+右侧单个 -->
-              <!-- 特殊布局：左侧单个+右侧双层 -->
-              <template v-if="row.isSpecialLayout">
-                <view class="special-layout-container">
-                  <!-- 左侧单个容器 -->
-                  <view class="left-single-container">
-                    <view 
-                      class="topic-card full-height-card"
-                      :class="row.cards[0].colorClass"
-                      @click="navigateToTopic(row.cards[0].topic.id)"
-                    >
-                      <view class="card-number">{{row.cards[0].chineseNumber}}</view>
-                      <view class="card-content">
-                        <text class="card-title">{{row.cards[0].topic.title}}</text>
-                      </view>
-                    </view>
-                  </view>
-                  
-                  <!-- 右侧双层容器 -->
-                  <view class="right-double-container">
-                    <view 
-                      class="topic-card half-height-card"
-                      :class="row.cards[1].colorClass"
-                      @click="navigateToTopic(row.cards[1].topic.id)"
-                    >
-                      <view class="card-number">{{row.cards[1].chineseNumber}}</view>
-                      <view class="card-content">
-                        <text class="card-title">{{row.cards[1].topic.title}}</text>
-                      </view>
-                    </view>
-                    
-                    <view 
-                      class="topic-card half-height-card"
-                      :class="row.cards[2].colorClass"
-                      @click="navigateToTopic(row.cards[2].topic.id)"
-                    >
-                      <view class="card-number">{{row.cards[2].chineseNumber}}</view>
-                      <view class="card-content">
-                        <text class="card-title">{{row.cards[2].topic.title}}</text>
-                      </view>
-                    </view>
-                  </view>
+        <scroll-view class="topics-scroll" scroll-y :show-scrollbar="false">
+          <view class="topics-content">
+
+            <view class="row-1">
+              <view class="topic-card left-big color-mint" @click="navigateToTopic(topicList[0]?.id)" v-if="topicList[0]">
+                <view class="card-number">壹</view>
+                <view class="card-content">
+                  <text class="card-title">{{topicList[0].title}}</text>
                 </view>
-              </template>
+              </view>
               
-              <!-- 普通布局 -->
-              <template v-else>
-                <view 
-                  class="topic-card"
-                  v-for="(card, cardIndex) in row.cards"
-                  :key="cardIndex"
-                  :class="[card.sizeClass, card.colorClass]"
-                  :style="{ 
-                    width: card.width,
-                    height: '100%',
-                    marginRight: cardIndex < row.cards.length - 1 ? '12rpx' : '0'
-                  }"
-                  @click="navigateToTopic(card.topic.id)"
-                >
-                  <view class="card-number">{{card.chineseNumber}}</view>
+              <view class="right-double">
+                <view class="topic-card right-top color-lavender" @click="navigateToTopic(topicList[1]?.id)" v-if="topicList[1]">
+                  <view class="card-number">贰</view>
                   <view class="card-content">
-                    <text class="card-title">{{card.topic.title}}</text>
+                    <text class="card-title">{{topicList[1].title}}</text>
                   </view>
                 </view>
-              </template>
+                
+                <view class="topic-card right-bottom color-peach" @click="navigateToTopic(topicList[2]?.id)" v-if="topicList[2]">
+                  <view class="card-number">叁</view>
+                  <view class="card-content">
+                    <text class="card-title">{{topicList[2].title}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            
+            <view class="row-2">
+              <view class="topic-card full-width color-sky" @click="navigateToTopic(topicList[3]?.id)" v-if="topicList[3]">
+                <view class="card-number">肆</view>
+                <view class="card-content">
+                  <text class="card-title">{{topicList[3].title}}</text>
+                </view>
+              </view>
             </view>
           </view>
         </scroll-view>
@@ -126,179 +82,20 @@
 
 <script>
 import { API } from '@/common/config.js'
-import { generateThumbnailUrl } from '@/common/utils.js' 
-import thumbnailCache from '@/common/cache.js' 
 
 export default {
   data() {
     return {
       searchQuery: '',
-      topicList: [],
-      irregularLayout: [], 
-    }
-  },
-  watch: {
-    topicList: {
-      handler() {
-        this.generateIrregularLayout();
-      },
-      immediate: true
+      topicList: []
     }
   },
   onLoad() {
     this.getTopics()
   },
   methods: {
-    // 生成固定不规则拼贴布局
-    generateIrregularLayout() {
-      if (this.topicList.length === 0) return;
-      
-      const topics = [...this.topicList];
-      const layout = [];
-      
-      // 汉字编号
-      const chineseNumbers = ['壹','贰','叁','肆','伍','陆','柒','捌','玖','拾'];
-      
-      // 淡色配色方案
-      const colorSchemes = [
-        'color-mint',      // 薄荷绿
-        'color-lavender',  // 薰衣草紫
-        'color-peach',     // 桃粉色
-        'color-sky',       // 天空蓝
-        'color-cream',     // 奶油色
-        'color-sage',      // 鼠尾草绿
-        'color-coral',     // 珊瑚色
-        'color-vanilla'    // 香草色
-      ];
-      
-      // 专门为4个专题设计的特殊组合布局方案
-     // 专门为4个专题设计的特殊组合布局方案
-     if (topics.length === 4) {
-       // 第一行：左侧高卡片 + 右侧双层卡片
-       layout.push({
-         height: 240,
-         isSpecialLayout: true,
-         cards: [
-           // 左侧正常高度卡片
-           {
-             topic: topics[0],
-             width: '48%',
-             sizeClass: 'card-full-height',
-             colorClass: colorSchemes[0],
-             chineseNumber: chineseNumbers[0],
-             isLeftSide: true
-           },
-           // 右侧垂直叠放的两个卡片
-           {
-             topic: topics[1], 
-             width: '48%',
-             sizeClass: 'card-half-height-top',
-             colorClass: colorSchemes[1],
-             chineseNumber: chineseNumbers[1],
-             isTopHalf: true
-           },
-           {
-             topic: topics[2],
-             width: '48%',
-             sizeClass: 'card-half-height-bottom',
-             colorClass: colorSchemes[2],
-             chineseNumber: chineseNumbers[2],
-             isBottomHalf: true
-           }
-         ]
-       });
-       
-       // 第二行：全宽卡片 (专题4)
-       layout.push({
-         height: 180,
-         cards: [{
-           topic: topics[3],
-           width: '100%',
-           sizeClass: 'card-ultra-wide',
-           colorClass: colorSchemes[3],
-           chineseNumber: chineseNumbers[3]
-         }]
-       });
-     }
-      // 通用布局方案（适用于其他数量的专题）
-      else {
-        const layoutPatterns = [
-          // 方案1: 宽 + 窄 + 窄
-          {
-            cards: [
-              { width: '60%', sizeClass: 'card-wide' },
-              { width: '19%', sizeClass: 'card-narrow' },
-              { width: '19%', sizeClass: 'card-narrow' }
-            ],
-            height: 220
-          },
-          // 方案2: 方 + 方 + 方
-          {
-            cards: [
-              { width: '32%', sizeClass: 'card-square' },
-              { width: '32%', sizeClass: 'card-square' },
-              { width: '32%', sizeClass: 'card-square' }
-            ],
-            height: 180
-          },
-          // 方案3: 超宽
-          {
-            cards: [
-              { width: '100%', sizeClass: 'card-ultra-wide' }
-            ],
-            height: 160
-          },
-          // 方案4: 中 + 中
-          {
-            cards: [
-              { width: '48%', sizeClass: 'card-medium' },
-              { width: '48%', sizeClass: 'card-medium' }
-            ],
-            height: 190
-          }
-        ];
-        
-        let topicIndex = 0;
-        let patternIndex = 0;
-        
-        while (topicIndex < topics.length) {
-          const pattern = layoutPatterns[patternIndex % layoutPatterns.length];
-          const rowCards = [];
-          
-          for (let i = 0; i < pattern.cards.length && topicIndex < topics.length; i++) {
-            const topic = topics[topicIndex];
-            const cardConfig = pattern.cards[i];
-            
-            rowCards.push({
-              topic: topic,
-              width: cardConfig.width,
-              sizeClass: cardConfig.sizeClass,
-              colorClass: colorSchemes[topicIndex % colorSchemes.length],
-              chineseNumber: chineseNumbers[topicIndex % chineseNumbers.length]
-            });
-            
-            topicIndex++;
-          }
-          
-          layout.push({
-            height: pattern.height,
-            cards: rowCards
-          });
-          
-          patternIndex++;
-        }
-      }
-      
-      this.irregularLayout = layout;
-      
-      // 调试信息
-      console.log('生成的布局数据:', this.irregularLayout);
-    },
-
     getTopics() {
-      uni.showLoading({
-        title: '加载中...'
-      })
+      uni.showLoading({ title: '加载中...' })
       
       uni.request({
         url: API.TOPICS,
@@ -311,17 +108,11 @@ export default {
               image: item.image || "/static/icons/topic-default.png"
             }))
           } else {
-            uni.showToast({
-              title: '获取专题数据失败',
-              icon: 'none'
-            })
+            uni.showToast({ title: '获取专题数据失败', icon: 'none' })
           }
         },
         fail: (err) => {
-          uni.showToast({
-            title: '网络错误，请稍后重试',
-            icon: 'none'
-          })
+          uni.showToast({ title: '网络错误，请稍后重试', icon: 'none' })
         },
         complete: () => {
           uni.hideLoading()
@@ -342,10 +133,7 @@ export default {
     
     performSearch() {
       if (!this.searchQuery.trim()) {
-        uni.showToast({
-          title: '请输入搜索内容',
-          icon: 'none'
-        });
+        uni.showToast({ title: '请输入搜索内容', icon: 'none' });
         return;
       }
       
@@ -368,7 +156,6 @@ export default {
   background: #F0F2F5;
 }
 
-/* ========== 插画背景层 ========== */
 .background-image {
   position: fixed;
   top: 0;
@@ -384,7 +171,6 @@ export default {
   object-fit: cover;
 }
 
-/* ========== 主要内容区域 ========== */
 .main-content {
   position: relative;
   z-index: 1;
@@ -392,7 +178,6 @@ export default {
   padding: 0 30rpx;
 }
 
-/* ========== 顶部标题区域 ========== */
 .header-section {
   padding: 200rpx 0 100rpx;
   text-align: center;
@@ -410,7 +195,7 @@ export default {
   font-family: "ChillKai";
 }
 
-/* ========== 搜索容器 ========== */
+/* 搜索框 */
 .search-container {
   position: relative;
   height: 80rpx;
@@ -463,8 +248,8 @@ export default {
   line-height: 1;
 }
 
-/* ========== 专题探索悬浮卡片 ========== */
-.topics-floating-card {
+/* 专题卡片区域 */
+.topics-card {
   background: rgba(241, 241, 241, 0.6);
   border-radius: 24rpx;
   padding: 30rpx;
@@ -497,21 +282,28 @@ export default {
   opacity: 0.8;
 }
 
-.topics-scroll-content {
+.topics-scroll {
   flex: 1;
   overflow: hidden;
 }
 
-/* ========== 特殊布局样式 ========== */
-.special-layout-container {
-  display: flex;
+.topics-content {
   width: 100%;
-  height: 100%;
+}
+
+.row-1 {
+  display: flex;
+  height: 240rpx;
+  margin-bottom: 12rpx;
   gap: 12rpx;
 }
 
-/* 左侧双层容器 - 关键：垂直排列 */
-.left-double-container {
+.left-big {
+  width: calc(50% - 6rpx);
+  height: 100%;
+}
+
+.right-double {
   width: calc(50% - 6rpx);
   height: 100%;
   display: flex;
@@ -519,68 +311,21 @@ export default {
   gap: 12rpx;
 }
 
-/* 右侧单个容器 */
-.right-single-container {
-  width: calc(50% - 6rpx);
+.right-top,
+.right-bottom {
+  width: 100%;
+  height: calc(50% - 6rpx);
+}
+
+.row-2 {
+  height: 180rpx;
+}
+
+.full-width {
+  width: 100%;
   height: 100%;
 }
 
-/* 半高卡片 - 占据左侧容器的一半高度 */
-.half-height-card {
-  height: calc(50% - 6rpx) !important;
-  width: 100% !important;
-}
-
-/* 全高卡片 - 占据右侧容器的全部高度 */
-.full-height-card {
-  height: 100% !important;
-  width: 100% !important;
-}
-
-/* 半高卡片内容调整 */
-.half-height-card .card-content {
-  padding: 20rpx 20rpx !important;
-}
-
-.half-height-card .card-title {
-  font-size: 32rpx !important;
-  line-height: 1.3 !important;
-}
-
-.half-height-card .card-number {
-  font-size: 40rpx !important;
-  top: 10rpx !important;
-  right: 16rpx !important;
-}
-
-/* 全高卡片内容调整 */
-.full-height-card .card-content {
-  padding: 28rpx 24rpx !important;
-}
-
-.full-height-card .card-title {
-  font-size: 36rpx !important;
-  line-height: 1.4 !important;
-}
-
-.full-height-card .card-number {
-  font-size: 50rpx !important;
-  top: 16rpx !important;
-  right: 20rpx !important;
-}
-
-/* ========== 不规则拼贴布局 ========== */
-.irregular-masonry {
-  width: 100%;
-}
-
-.masonry-row {
-  display: flex;
-  margin-bottom: 12rpx;
-  width: 100%;
-}
-
-/* ========== 专题卡片样式 ========== */
 .topic-card {
   border-radius: 16rpx;
   position: relative;
@@ -595,7 +340,6 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.1);
 }
 
-/* ========== 淡色配色方案 ========== */
 .color-mint {
   background: #bee2e7;
   background-image: url("data:image/svg+xml,%3Csvg t='1749539521214' class='icon' viewBox='0 0 1024 1024' version='1.1' xmlns='http://www.w3.org/2000/svg' p-id='2933' width='200' height='200'%3E%3Cpath d='M390.043632 17.289194s32.466548 78.678475 114.893302 66.190229l86.167088 1.341665s59.945023-5.087054 76.177213-60.03967c0 0-6.242316 96.161296-13.730206 97.409037 0 0-47.452443 7.49367-47.452443 8.743578 0 1.248463-12.499805 49.953704-12.499805 49.953704h-6.235092l-1.253521-69.934174H468.722829l-3.747557 64.939599s-21.236881-38.71609-12.493303-49.952982c0 0-42.455699-4.997466-52.446296-11.24195 0 0-17.487156-88.664014-9.992041-97.409036zM250.175283 53.501132s29.520955 67.000864 101.152982 67.435802h36.845562s9.352637 33.719346 29.341055 28.724771c19.98914-4.996021 29.971789 31.226032 29.971789 31.226032h-33.719347l-64.940321 6.237982s-12.49258-21.231823-6.242316-23.72875c6.249541-2.498372-6.250264 2.496927-6.250264 2.496927l-4.985906 21.231823h-8.745746s-12.482465-32.468716-27.477029-41.212294c0 0 23.738142 38.71609 19.981915 48.706686-3.741055 9.991319 7.495837 0 7.495837 0v53.701262s8.745745 13.739599-32.465103-4.994576c0 0-2.501984-23.73164-19.979748-29.972511 0 0 3.740332-23.730918-6.250264-42.46437' fill='%23a4cbcf' p-id='2934'%3E%3C/path%3E%3Cpath d='M657.914148 130.926808s102.416617 21.827878 128.632179-57.773217c0 0 19.981193 29.051336-19.98047 121.465798l-4.988796 29.976124s-6.248819 16.2293-21.236158 13.730206c-14.985895-2.494759-6.242316 21.231823-6.242317 21.231823h-9.366365v-56.19602s20.603979-36.544284 33.09656-37.0074c12.484633-0.457336-33.09656-7.942336-33.09656 14.53217s-5.618807-14.532171-5.618807-14.53217l-12.493303 20.770152-71.18047 3.74539v-16.232913h-11.23906v13.738876l-27.47703 4.991686s23.729473-41.208681 33.728017-34.966365c0 0 37.453899-25.568933 27.46258-34.967087-9.989874-9.397432 0 7.492947 0 7.492947zM357.572026 198.364056h52.454966v29.968177c-0.000722 0-58.799876-17.287026-52.454966-29.968177zM421.879446 198.364056h26.232179v29.968177h-26.232179zM487.449778 198.364056v-8.743578h61.197822v8.743578l31.929015 4.996021v24.972156h-116.855587v-29.968177zM590.661858 208.978162h31.046132v19.354071h-31.046132z' fill='%23a4cbcf' p-id='2935'%3E%3C/path%3E%3Cpath d='M635.440364 234.578884s7.021884 9.481963 58.695837-25.600722h-58.695837v25.600722zM218.324297 358.215042s0-22.478842 8.745023-22.478841c0 0 22.474507 54.947557 76.17649 58.696559v-53.701984s-9.990596-56.198911-51.207225-72.431823v52.454243s-49.952982-46.203257-43.702717-61.194209l-0.537533-16.24086v33.720069' fill='%23a4cbcf' p-id='2936'%3E%3C/path%3E%3Cpath d='M249.544549 259.558265s48.707408 18.730562 53.701261 59.319346c4.996021 40.583005 7.490057 6.865826 7.490058 6.865826s1.246296-21.227488 11.244839-17.482821c0 0-14.985895 38.714645 68.679931 62.441227v-59.943578S341.954675 223.173652 333.218322 235.744983c-8.743578 12.571332-4.996021 23.812559-4.996021 23.812559l-33.720069 8.740688s-71.18914-51.515728-53.701984-69.934896v23.993904l8.744301 37.201027zM330.71706 208.978162s69.933452 78.054966 69.933452 88.045562c0 9.986984 234.789851 0 234.789852 0s71.18047-69.937787 69.933451-83.673773c0 0-33.718624 36.214105-47.458945 29.968176-13.730929-6.241594-253.514633 0-234.157672 0 0 0-100.528028-14.977225-93.040138-58.065103 7.49656-43.087879 0 23.725138 0 23.725138zM409.395535 313.253024h32.473051v37.464736h-32.473051zM460.603483 313.253024H582.984675v37.464736H460.603483zM596.517642 318.878334l0.206632 31.840149h33.727294v-31.840149z' fill='%23a4cbcf' p-id='2937'%3E%3C/path%3E%3Cpath d='M705.38971 236.116344l-11.253509 17.057274-18.734175 18.862055-17.487878 21.231101-7.488612 13.735264-6.242317 11.876296h74.930195s73.681732-63.33278 72.436881-65.703994c-1.247018-2.370491 7.495115-9.856213 7.495115-9.856213s-46.211927 42.137081-56.201801 34.18174c0 0-23.730195 12.033799-27.478475 7.031999-3.741777-5.004691-9.975424 0-9.975424 0v-48.415522zM779.056992 284.531866s-44.958406 49.333807-49.960929 50.264375c-4.986628 0.930568 0 35.906325 0 35.906324h23.879751l-5.145577 23.730195s62.447007-28.724771 59.945023-43.714277c0 0 21.243383-64.011921 17.495826-73.218616-3.74828-9.208139 0.307781 45.076894-48.96606 58.464641-49.292626 13.391358-10.986188-1.167544-10.986188-1.167545l13.738154-50.265097zM705.38971 340.719217s-8.743578 27.47414-61.206491 41.212293V340.719217h61.206491z' fill='%23a4cbcf' p-id='2938'%3E%3C/path%3E%3Cpath d='M641.058448 318.878334H715.987921v21.840883H641.058448zM321.167183 318.878334h69.492733v21.840883l-60.338058-2.29752z' fill='%23a4cbcf' p-id='2939'%3E%3C/path%3E%3Cpath d='M400.650512 400.675077h269.756216s66.739322-49.335252 56.478515-70.878469c0 0-48.989902 54.532848-62.0966 45.22356-13.108142-9.3129-264.138131 6.91062-264.138131 6.91062s-90.286727-41.192786-79.483329-63.053177c0 0-11.663884 50.582271 57.640279 75.554427 69.304163 24.973601 21.84305 6.243039 21.84305 6.243039zM385.673288 530.557164s-78.947241-23.729473-71.322801-51.20289c0.536088-1.942054 0.94574-3.608117 1.230401-5.024198 3.842926-18.70961-12.335077 5.024198-12.335078 5.024198l-7.487889 66.188785s-64.948269-1.247018-74.936698-48.706686c-9.992041-47.455333-13.022888-2.497649-13.022888-2.497649s-28.18796-91.162385-16.951068-99.905964c0 0-2.493314 41.213016 42.457867 75.552982h7.495837s-18.963204-104.286422-21.969486-119.267982c0 0 33.712844 89.71885 102.337143 68.687156 0 0-5.697559-62.44484-6.817419-68.687156-1.122027-6.242316 81.313397 106.155505 76.310152 116.146824-4.986628 9.989874 0.221082 7.492225 0.221082 7.492225l-69.713815-1.247019v14.98734l69.492733 2.494036v37.464014l-4.988073 2.501984zM409.395535 469.363678h28.724048l3.749003 37.463291h-32.473051zM454.976005 469.363678H582.984675V506.826969H454.976005zM601.72752 474.361866h38.708142v37.466181h-38.708142zM714.118116 381.93151S680.398047 436.889905 657.914148 460.617932l-13.730929 12.492581h83.767697s72.33501-68.687156 71.093771-78.67703c0 0-28.723326 33.720069-38.714644 27.473417 0 0-32.276533 9.979759-32.379127 5.61664-0.093201-4.370344-8.837502 0-8.837502 0l-4.995298-45.59203zM807.774538 395.684114l-23.721525 73.679564s44.964908 0.997037 51.199277-60.695691c0 0 1.254966 78.178512-43.701995 125.633122 0 0-5.003968 11.24484-26.232902 12.489691-21.227488 1.249186 0-13.735986 0-13.735987s19.981915-32.473773 26.232902-44.957683c6.242316-12.493303 0-13.740321 0-13.740321s-33.721514 39.963108-31.21953 32.47016c2.492592-7.492225-18.733452 4.996021-18.733452 4.996021l-13.646397-14.986617 79.823622-101.152259zM644.183219 523.061327h30.602523s49.32297-22.479564 46.828211-36.214828H644.183219v36.214828zM727.951638 685.401293l-1.066395-34.96781H652.926797v28.726216s27.479197 3.74828 28.725493 0c1.247741-3.74539 8.791985 6.242316 8.791985 6.242316l19.925561 6.244484 17.581802-6.245206zM606.17806 630.455903v48.703073h29.262304v-43.711388zM454.976005 630.455903h135.685853v48.703073H454.976005zM400.650512 630.455903v40.585894l37.469071 8.117179v-48.703073zM303.24581 640.445777v56.201078s46.646143 6.245929 52.676771 0c6.01401-6.246651 0-25.605057 0-25.605058l18.267445-1.1083s-7.740039 7.978461 0 9.226202c7.734259 1.250631 16.691694 0 16.691694 0l-0.221082-48.703074-87.414828 9.989152zM179.609652 565.516304s24.967821 124.197533 48.706686 133.904191c23.721525 9.709548 0 9.709548 0 9.709548h18.734897l8.466864-23.729473s-31.762843-81.582164-47.720487-74.926582c0 0-41.935506-66.024779-28.18796-63.613829 13.731651 2.416008 0 18.656145 0 18.656145z' fill='%23a4cbcf' p-id='2940'%3E%3C/path%3E%3Cpath d='M207.797612 529.298586s19.98047 74.930918 30.240556 81.176124c10.259363 6.241594-15.121 0-15.121 0l30.08233 68.684266 36.538503 12.486078v-41.212294s-32.497615-62.436892-48.738475-76.17649c0 0-34.800914-43.71211-33.001914-56.200356 1.783829-12.486078 0 11.242672 0 11.242672z' fill='%23a4cbcf' p-id='2941'%3E%3C/path%3E%3Cpath d='M216.177778 530.544882s25.498129 64.941044 104.989405 48.705963c0 0-15.688155-64.708402-6.817419-64.828335 0 0 23.863133 56.08259 95.045049 46.096328l255.393108 3.74828s79.301984-23.506223 68.063647-49.844608c0 0-13.738876 61.295357-21.228934 67.433635 0 0 82.420252 21.132842 108.650987-57.5478 0 0-6.250264 68.679931-21.228934 83.670161-14.992397 14.985172-408.385494-4.941834-408.385494-4.941834l-16.470612 24.931696-70.944216 2.488257s-32.251969 5.015528-82.315491-83.665103c-50.064245-88.678464-4.751096-16.24664-4.751096-16.24664z' fill='%23a4cbcf' p-id='2942'%3E%3C/path%3E%3Cpath d='M767.187921 614.558948s-26.270471 35.206954-22.522191 42.072779c3.74828 6.869438-0.370638 16.233635-0.370638 16.233636l33.82194-6.101431v47.941569s82.686851-111.490373 68.948698-146.288398c0 0-13.802455 57.442316-50.616951 73.140586l-3.077086-21.755629-26.183772-5.243112zM255.518099 744.086292h112.66731s-29.971789 44.962018-102.400722 8.744301c-72.443383-36.219163-10.266588-8.744301-10.266588-8.744301zM392.444467 731.105309v13.734541h234.779736l8.742856-13.734541z' fill='%23a4cbcf' p-id='2943'%3E%3C/path%3E%3Cpath d='M224.513149 736.545661s12.009234 80.567787 148.376395 78.06797c136.364271-2.498372 336.18559 0.057799 336.185589 0.0578s96.166353 3.659414 109.90523-84.995931c0 0-26.136088 116.159828-38.668405 114.909198-12.546767-1.247018-461.338255 8.744301-461.338256 8.7443s-67.220501-54.95406-89.576519-89.919702c-22.357463-34.964197-4.884035-26.863636-4.884034-26.863635zM50.299777 817.106946s-4.986628 43.714278 87.422053 113.646284V854.747969s-81.267158-13.916609-87.463957-52.62764c-6.193187-38.715367 0.041904 14.986617 0.041904 14.986617zM137.72183 788.094624s9.690763 67.726244 52.303965 98.945773c42.614647 31.223865 23.02071 8.744301 23.02071 8.744301v-59.947913s-76.572416-33.001191-75.324675-67.07817c1.254243-34.079147 0 19.336009 0 19.336009z' fill='%23a4cbcf' p-id='2944'%3E%3C/path%3E%3Cpath d='M221.134061 757.391674s14.678836 45.975672 29.326606 78.445111h-32.450654v43.710665h98.170542l-11.111901-33.716456v-27.359264l-83.934593-61.080056zM240.137725 994.434973V910.76409h76.043552v83.670883h-65.72061M152.715672 930.75323h68.418389v83.665826h-68.418389zM338.780775 889.535156h94.919335v92.413739H338.780775zM453.681303 889.535156l-5.618085 92.413739h156.820862v-97.412649zM607.86652 889.535156h94.288601v92.413739H607.86652zM719.736923 983.372201h79.830125l-8.729129-71.184083h-64.954048zM807.06433 927.17329l4.987351 63.692581s58.69656 6.249541 58.696559 4.999633v-68.692214h-63.68391zM734.628894 846.233421s-8.745023 23.500443 0 22.245477c8.734908-1.249186 38.763051 0.048407 38.763051 0.048407l4.946169 17.435859 60.559862-4.986628s45.581193-44.966353 54.326939-97.417707c0 0-23.707075 41.205069-66.180115 57.446652l-40.624909 1.251353-51.790997 3.976587z' fill='%23a4cbcf' p-id='2945'%3E%3C/path%3E%3Cpath d='M958.169571 812.285045s-29.969622 62.815477-103.652798 50.762171l-21.237604 10.42987 5.618085 12.486801 43.088601 26.224231s74.938142-51.204335 76.182993-86.167809l4.996743-42.46148-4.99602 28.726216z' fill='%23a4cbcf' p-id='2946'%3E%3C/path%3E%3Cpath d='M684.777061 743.415099h81.788796s-16.178004 42.816222-74.300184 8.930703c-58.120735-33.883352-7.488612-8.930703-7.488612-8.930703zM137.72183 854.748692v48.864189l72.206406-2.99111-48.312206-45.873079zM374.987656 407.420969c-3.124048 11.58152 24.116727 28.217582 22.696311 40.583005-1.419694 12.374092 244.560088 0 244.560088 0l58.69656-61.051878-63.684633 20.468873-262.519753-6.729275-20.2095-6.88172 20.460927 13.610995z' fill='%23a4cbcf' p-id='2947'%3E%3C/path%3E%3C/svg%3E");
@@ -624,23 +368,6 @@ export default {
   background-repeat: repeat-x;
 }
 
-.color-cream {
-  background: #f8f8ed;
-}
-
-.color-sage {
-  background: #F6F8F0;
-}
-
-.color-coral {
-  background: #FFF5F5;
-}
-
-.color-vanilla {
-  background: #FFFBF0;
-}
-
-/* ========== 卡片编号 ========== */
 .card-number {
   position: absolute;
   top: 16rpx;
@@ -653,7 +380,6 @@ export default {
   line-height: 1;
 }
 
-/* ========== 卡片内容区域 ========== */
 .card-content {
   position: relative;
   z-index: 2;
@@ -674,47 +400,21 @@ export default {
   letter-spacing: 0.5rpx;
 }
 
-/* ========== 不同尺寸适配 ========== */
-.card-narrow .card-content {
-  padding: 20rpx 16rpx;
+.right-top .card-content,
+.right-bottom .card-content {
+  padding: 20rpx 20rpx;
 }
 
-.card-narrow .card-title {
-  font-size: 36rpx;
-  font-weight: normal;
-  line-height: 1.4;
+.right-top .card-title,
+.right-bottom .card-title {
+  font-size: 32rpx;
+  line-height: 1.3;
 }
 
-.card-narrow .card-number {
-  font-size: 50rpx;
-  font-weight: normal;
-  color: rgba(0,0,0,0.1);
-  top: 12rpx;
-  right: 14rpx;
-}
-
-.card-ultra-wide .card-title {
-  font-size: 36rpx;
-  font-weight: normal;
-}
-
-.card-wide .card-title {
-  font-size: 36rpx;
-  font-weight: normal;
-}
-
-/* 左侧单个容器 */
-.left-single-container {
-  width: calc(50% - 6rpx);
-  height: 100%;
-}
-
-/* 右侧双层容器 - 关键：垂直排列 */
-.right-double-container {
-  width: calc(50% - 6rpx);
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
+.right-top .card-number,
+.right-bottom .card-number {
+  font-size: 40rpx;
+  top: 10rpx;
+  right: 16rpx;
 }
 </style>
