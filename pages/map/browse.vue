@@ -1,264 +1,309 @@
-<!-- pages/map/browse.vue -->
 <template>
   <view class="container">
-    <!-- 美观的加载指示器 -->
+    <!-- 加载指示器 -->
     <view class="loading-overlay" v-if="isLoading">
       <view class="loading-content">
         <view class="loading-spinner"></view>
         <view class="loading-text">{{ loadingText }}</view>
-        <view class="loading-progress" v-if="showProgress">
-          <view class="progress-track">
-            <view class="progress-bar" :style="{ width: progressWidth + '%' }"></view>
-          </view>
-          <view class="progress-text">{{ progressWidth }}%</view>
-        </view>
       </view>
     </view>
     
-    <web-view 
-      :src="webViewUrl" 
-      @message="handleMessage"
-      :webview-styles="webviewStyles"
-    ></web-view>
+    <!-- 地图显示区域 -->
+    <view class="map-display-area">
+      <movable-area class="movable-area">
+        <movable-view 
+          class="movable-view"
+          direction="all"
+          :scale="true"
+          :scale-min="0.5"
+          :scale-max="3"
+          :scale-value="scaleValue"
+          @scale="onScale"
+          @change="onChange"
+        >
+          <image 
+            class="map-image"
+            :src="currentMapUrl"
+            mode="aspectFit"
+            @load="onImageLoad"
+            @error="onImageError"
+            :show-menu-by-longpress="true"
+          />
+        </movable-view>
+      </movable-area>
+    </view>
+    
+    <!-- 底部工具栏 -->
+    <view class="bottom-toolbar">
+      <button 
+        class="nav-btn" 
+        :disabled="currentMapIndex === 0"
+        @click="switchMap('prev')"
+      >
+        ‹ 上一张
+      </button>
+      
+      <view class="center-info">
+        <view class="map-title">{{ currentMap?.title || '加载中...' }}</view>
+        <view class="map-counter">{{ currentMapIndex + 1 }} / {{ allMaps.length }}</view>
+      </view>
+      
+      <button 
+        class="nav-btn" 
+        :disabled="currentMapIndex === allMaps.length - 1"
+        @click="switchMap('next')"
+      >
+        下一张 ›
+      </button>
+      
+      <button class="detail-btn" @click="viewDetail">详情</button>
+      <button class="reset-btn" @click="resetScale">重置</button>
+    </view>
   </view>
 </template>
 
 <script>
 import { API } from '@/common/config.js'
-import { webViewManager } from '@/common/preload.js'
 
 export default {
   data() {
     return {
       topicId: '',
       mapId: '',
-      mapIndex: 0,
-      webViewUrl: '',
+      currentMapIndex: 0,
       allMaps: [],
+      currentMap: null,
+      currentMapUrl: '',
       isLoading: true,
-      loadingText: '准备加载地图...',
-      showProgress: false,
-      progressWidth: 0,
-      webviewStyles: {
-        progress: false // 隐藏默认进度条
-      }
+      loadingText: '加载地图数据...',
+      
+      // 缩放和移动相关
+      scaleValue: 1,
+      
+      // 图片服务器配置
+      imageBaseUrl: 'http://1.92.85.165:8088/image/'
     }
   },
+  
   onLoad(options) {
     this.topicId = options.topic_id || '';
     this.mapId = options.id || '';
-    this.mapIndex = parseInt(options.index || '0');
+    this.currentMapIndex = parseInt(options.index || '0');
     
     console.log('地图浏览页加载参数:', {
       topicId: this.topicId,
       mapId: this.mapId,
-      mapIndex: this.mapIndex
+      mapIndex: this.currentMapIndex
     });
     
-    if (this.mapId && this.topicId) {
-      this.getAllMapsInTopic();
+    if (this.topicId) {
+      this.loadMapsData();
     } else {
-      console.error('缺少必要参数');
-      this.isLoading = false;
-      uni.showToast({
-        title: '参数错误',
-        icon: 'none'
-      });
+      this.showError('缺少专题ID参数');
     }
   },
   
   methods: {
-    // 获取当前专题下的所有地图
-    getAllMapsInTopic() {
-      this.loadingText = '获取地图数据...';
-      
-      uni.request({
-        url: API.MAPS_BY_GROUP + this.topicId,
-        method: 'GET',
-        success: (res) => {
-          if (res.statusCode === 200 && res.data.code === 200) {
-            // 处理地图数据
-            this.allMaps = res.data.data.map(item => ({
-              id: item.map_id,
-              title: item.title,
-              description: item.description || '暂无描述',
-              type: item.type,
-              width: item.width || 6000, // 设置默认值
-              height: item.height || 4000, // 设置默认值
-              create_time: item.create_time
-            }));
-            
-            console.log(`获取到${this.allMaps.length}个地图`);
-            
-            // 验证和修正当前地图索引
-            if (this.mapIndex >= this.allMaps.length) {
-              this.mapIndex = 0;
+    // 加载地图数据
+    async loadMapsData() {
+      try {
+        this.isLoading = true;
+        this.loadingText = '获取地图数据...';
+        
+        const res = await this.requestMapsData();
+        
+        if (res.statusCode === 200 && res.data.code === 200) {
+          this.allMaps = res.data.data || [];
+          
+          // 如果有mapId，找到对应的索引
+          if (this.mapId) {
+            const foundIndex = this.allMaps.findIndex(map => map.map_id === this.mapId);
+            if (foundIndex !== -1) {
+              this.currentMapIndex = foundIndex;
             }
-            
-            // 如果通过mapId进入，需要找到对应的索引
-            if (this.mapId) {
-              const foundIndex = this.allMaps.findIndex(map => map.id === this.mapId);
-              if (foundIndex !== -1) {
-                this.mapIndex = foundIndex;
-              }
-            }
-            
-            this.loadingText = '初始化地图浏览器...';
-            this.initWebView();
-          } else {
-            console.error('获取地图数据失败:', res.data);
-            uni.showToast({
-              title: '获取地图数据失败',
-              icon: 'none'
-            });
-            this.isLoading = false;
           }
-        },
-        fail: (err) => {
-          console.error('网络请求失败:', err);
-          uni.showToast({
-            title: '网络错误，请稍后重试',
-            icon: 'none'
-          });
-          this.isLoading = false;
+          
+          // 确保索引有效
+          if (this.currentMapIndex >= this.allMaps.length) {
+            this.currentMapIndex = 0;
+          }
+          
+          this.loadCurrentMap();
+        } else {
+          this.showError('获取地图数据失败');
         }
+      } catch (error) {
+        console.error('加载地图数据失败:', error);
+        this.showError('网络错误，请稍后重试');
+      }
+    },
+    
+    // 请求地图数据
+    requestMapsData() {
+      return new Promise((resolve, reject) => {
+        uni.request({
+          url: API.MAPS_BY_GROUP + this.topicId,
+          method: 'GET',
+          success: resolve,
+          fail: reject
+        });
       });
     },
     
-    // 初始化WebView
- initWebView() {
-   // 预热WebView
-   webViewManager.init();
-   
-   // 构建WebView数据
-   const webViewData = {
-     currentMap: this.allMaps[this.mapIndex],
-     allMaps: this.allMaps,
-     currentIndex: this.mapIndex,
-     topicId: this.topicId
-   };
-   
-   // 使用新的URL生成方法
-   this.webViewUrl = webViewManager.generateViewerUrl(webViewData);
-   
-   console.log('WebView初始化完成:', this.webViewUrl);
- },
-    
-    // 处理WebView消息
-    handleMessage(event) {
-      console.log('收到WebView消息:', event);
+    // 加载当前地图
+    async loadCurrentMap() {
+      if (!this.allMaps.length) {
+        this.showError('没有可显示的地图');
+        return;
+      }
+      
+      this.currentMap = this.allMaps[this.currentMapIndex];
+      if (!this.currentMap) {
+        this.showError('地图数据错误');
+        return;
+      }
       
       try {
-        const data = event.detail && event.detail.data;
-        if (!data) return;
-        
-        console.log('处理消息:', data.action);
-        
-        switch (data.action) {
-          case 'viewDetail':
-            this.handleViewDetail(data.mapId);
-            break;
-            
-          case 'downloadRequest':
-            this.handleDownloadRequest(data);
-            break;
-            
-          case 'loadingStatus':
-            // 处理加载状态更新
-            this.updateLoadingStatus(data);
-            break;
-            
-          case 'loadingProgress':
-            // 处理加载进度更新
-            this.updateLoadingProgress(data.progress);
-            break;
-            
-          default:
-            console.log('未处理的消息类型:', data.action);
-        }
-        
-      } catch (e) {
-        console.error('处理消息时出错:', e);
-      }
-    },
-    
-    // 更新加载状态
-    updateLoadingStatus(data) {
-      console.log('更新加载状态:', data);
-      
-      if (data.status === 'start') {
         this.isLoading = true;
-        this.loadingText = data.message || '加载中...';
+        this.loadingText = `正在下载: ${this.currentMap.title}`;
         
-        if (data.showProgress) {
-          this.showProgress = true;
-          this.progressWidth = data.progress || 0;
-        }
-      } 
-      else if (data.status === 'progress') {
-        this.showProgress = true;
-        this.progressWidth = data.progress || 0;
-      }
-      else if (data.status === 'complete') {
-        // 完成后延迟关闭加载提示，给用户更好的视觉体验
-        setTimeout(() => {
-          this.isLoading = false;
-          this.showProgress = false;
-        }, 500);
-      }
-      else if (data.status === 'error') {
-        this.loadingText = data.message || '加载失败';
-        // 错误状态保持显示，让用户看到
-        setTimeout(() => {
-          this.isLoading = false;
-          this.showProgress = false;
-        }, 2000);
-      }
-    },
-    
-    // 更新加载进度
-    updateLoadingProgress(progress) {
-      if (typeof progress === 'number') {
-        this.progressWidth = Math.min(Math.round(progress * 100), 100);
-      }
-    },
-    
-    // 处理查看详情
-    handleViewDetail(mapId) {
-      console.log('跳转到详情页', mapId);
-      
-      // 使用实际接收到的mapId
-      const targetMapId = mapId || this.mapId;
-      
-      setTimeout(() => {
-        uni.navigateTo({
-          url: `/pages/map/detail?id=${targetMapId}&from=browse`,
-          success: () => {
-            console.log('跳转成功');
-          },
-          fail: (err) => {
-            console.error('跳转失败:', err);
-          }
+        // 生成图片URL
+        const imageUrl = this.generateImageUrl(this.currentMap.title);
+        console.log('图片URL:', imageUrl);
+        
+        // 下载图片获取本地临时路径
+        const tempFilePath = await this.loadImageWithAuth(imageUrl);
+        
+        // 设置本地临时路径给图片组件
+        this.currentMapUrl = tempFilePath;
+        
+        console.log('当前地图信息:', {
+          title: this.currentMap.title,
+          originalUrl: imageUrl,
+          localPath: tempFilePath,
+          index: this.currentMapIndex
         });
-      }, 100);
+        
+        // 图片路径设置完成，等待图片组件加载
+        this.loadingText = `加载图片: ${this.currentMap.title}`;
+        
+      } catch (error) {
+        console.error('加载地图失败:', error);
+        this.showError(`加载失败: ${error.message || '未知错误'}`);
+      }
     },
     
-    // 处理下载请求
-    handleDownloadRequest(data) {
-      console.log('处理下载请求:', data);
+    // 生成图片URL
+    generateImageUrl(title) {
+      if (!title) {
+        console.error('地图标题为空');
+        return '';
+      }
       
-      uni.showLoading({
-        title: '提交中...'
+      // 直接使用中文标题，不进行编码
+      return `${this.imageBaseUrl}${title}.jpg`;
+    },
+    
+    // 下载并加载图片
+    async loadImageWithAuth(imageUrl) {
+      try {
+        console.log('开始下载图片:', imageUrl);
+        
+        // 使用uni.downloadFile下载图片，显式设置Authorization头
+        const downloadResult = await new Promise((resolve, reject) => {
+          uni.downloadFile({
+            url: imageUrl,
+            header: {
+              'Authorization': 'Telecarto@501502511'
+            },
+            success: resolve,
+            fail: reject
+          });
+        });
+        
+        if (downloadResult.statusCode === 200) {
+          console.log('图片下载成功:', downloadResult.tempFilePath);
+          return downloadResult.tempFilePath;
+        } else {
+          throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
+        }
+      } catch (error) {
+        console.error('图片下载失败:', error);
+        throw error;
+      }
+    },
+    
+    // 图片加载成功
+    onImageLoad() {
+      console.log('图片显示成功');
+      this.isLoading = false;
+      this.resetScale();
+    },
+    
+    // 图片加载失败
+    onImageError(error) {
+      console.error('图片显示失败:', error);
+      this.showError('图片显示失败，请检查网络连接');
+    },
+    
+    // 切换地图
+    switchMap(direction) {
+      let newIndex = this.currentMapIndex;
+      
+      if (direction === 'next' && this.currentMapIndex < this.allMaps.length - 1) {
+        newIndex = this.currentMapIndex + 1;
+      } else if (direction === 'prev' && this.currentMapIndex > 0) {
+        newIndex = this.currentMapIndex - 1;
+      } else {
+        return;
+      }
+      
+      this.currentMapIndex = newIndex;
+      this.isLoading = true;
+      this.loadCurrentMap();
+    },
+    
+    // 查看详情
+    viewDetail() {
+      if (!this.currentMap) return;
+      
+      uni.navigateTo({
+        url: `/pages/map/detail?id=${this.currentMap.map_id}&topic_id=${this.topicId}&from=browse`
+      });
+    },
+    
+    // 重置缩放
+    resetScale() {
+      this.scaleValue = 1;
+    },
+    
+    // 缩放事件
+    onScale(e) {
+      console.log('缩放:', e.detail.scale);
+    },
+    
+    // 移动事件
+    onChange(e) {
+      console.log('移动:', e.detail);
+    },
+    
+    // 显示错误信息
+    showError(message) {
+      this.isLoading = false;
+      this.loadingText = message;
+      
+      uni.showToast({
+        title: message,
+        icon: 'none',
+        duration: 3000
       });
       
-      // 模拟API调用
+      // 3秒后隐藏错误提示
       setTimeout(() => {
-        uni.hideLoading();
-        uni.showToast({
-          title: '申请已提交',
-          icon: 'success'
-        });
-      }, 1000);
+        if (this.loadingText === message) {
+          this.loadingText = '';
+        }
+      }, 3000);
     }
   }
 }
@@ -269,6 +314,7 @@ export default {
   width: 100%;
   height: 100vh;
   position: relative;
+  background-color: #f0f0f0;
 }
 
 .loading-overlay {
@@ -290,8 +336,6 @@ export default {
   border-radius: 16rpx;
   background-color: #fff;
   box-shadow: 0 0 30rpx rgba(0, 0, 0, 0.1);
-  width: 80%;
-  max-width: 600rpx;
 }
 
 .loading-spinner {
@@ -305,33 +349,118 @@ export default {
 }
 
 .loading-text {
-  font-size: 32rpx;
+  font-size: 28rpx;
   color: #333;
-  margin-bottom: 30rpx;
   font-weight: bold;
 }
 
-.loading-progress {
-  margin-top: 20rpx;
+.map-display-area {
+  width: 100%;
+  height: calc(100vh - 120rpx);
+  background-color: #fff;
+  position: relative;
+  z-index: 1;
 }
 
-.progress-track {
-  height: 8rpx;
-  background-color: #f0f0f0;
-  border-radius: 4rpx;
-  margin-bottom: 10rpx;
-  overflow: hidden;
-}
-
-.progress-bar {
+.movable-area {
+  width: 100%;
   height: 100%;
-  background-color: #2E8B57;
-  transition: width 0.3s ease;
 }
 
-.progress-text {
+.movable-view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.map-image {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.bottom-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10rpx);
+  border-top: 1px solid #eee;
+  padding: 20rpx 20rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10rpx;
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.nav-btn {
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 24rpx;
+  font-size: 26rpx;
+  border-radius: 32rpx;
+  color: #7aa26f;
+  border: 1px solid #7aa26f;
+  background-color: #fff;
+  text-align: center;
+  min-width: 120rpx;
+}
+
+.nav-btn:disabled {
+  color: #ccc;
+  border-color: #eee;
+  background-color: #f8f8f8;
+}
+
+.center-info {
+  flex: 1;
+  text-align: center;
+  margin: 0 20rpx;
+  min-width: 0;
+}
+
+.map-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-counter {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.detail-btn, .reset-btn {
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 20rpx;
   font-size: 24rpx;
-  color: #666;
+  border-radius: 32rpx;
+  text-align: center;
+  min-width: 80rpx;
+}
+
+.detail-btn {
+  background-color: #7aa26f;
+  color: #fff;
+  border: 1px solid #7aa26f;
+}
+
+.reset-btn {
+  background-color: #fff;
+  color: #7aa26f;
+  border: 1px solid #7aa26f;
 }
 
 @keyframes spin {
