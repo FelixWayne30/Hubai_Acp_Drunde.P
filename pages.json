@@ -65,12 +65,12 @@
 	"globalStyle": {
 		"navigationBarTextStyle": "white",
 		"navigationBarTitleText": "湖北省自然资源地图集",
-		"navigationBarBackgroundColor": "#2E8B57",
+		"navigationBarBackgroundColor": "#7aa26f",
 		"backgroundColor": "#F8F8F8"
 	},
 	"tabBar": {
 		"color": "#7A7E83",
-		"selectedColor": "#2E8B57",
+		"selectedColor": "#7aa26f",
 		"borderStyle": "black",
 		"backgroundColor": "#ffffff",
 		"list": [

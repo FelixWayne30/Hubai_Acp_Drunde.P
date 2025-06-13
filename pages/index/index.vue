@@ -10,6 +10,7 @@
       <!-- 顶部标题 -->
       <view class="header-section">
         <view class="app-title">
+		    <text class="title-up" >湖北省自然资源地图集</text>
           <text class="title-sub">探索荆楚大地·记录自然之美</text>
         </view>
       </view>
@@ -33,7 +34,7 @@
 		<!--专题卡片-->
       <view class="topics-card">
         <view class="card-header">
-          <text class="section-title">自然资源专题探索</text>
+          <text class="section-title">自然资源专题探索</br></text>
           <view class="section-subtitle">发现湖北自然资源的多样魅力</view>
         </view>
         
@@ -188,11 +189,22 @@ export default {
 }
 
 .title-sub {
-  font-size: 50rpx;
+  display: block;
+  font-size: 40rpx;
   color: rgb(91, 57, 30);
   letter-spacing: 3rpx;
   font-weight: 300;
   font-family: "ChillKai";
+}
+
+.title-up{
+	display: block;
+	font-size: 65rpx;
+	color: rgb(0, 0, 0);
+	letter-spacing: 3rpx;
+	font-weight: 500;
+	font-family: "Kunpeng";
+	margin-bottom: 40rpx;
 }
 
 /* 搜索框 */
