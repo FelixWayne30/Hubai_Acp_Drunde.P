@@ -2,7 +2,14 @@
 	export default {
 		onLaunch: function() {
 			console.log('App Launch');
-			
+			   // 添加统一的请求头
+			uni.addInterceptor('request', {
+			        invoke(args) {
+			            args.header = args.header || {};
+			            args.header['Authorization'] = 'Telecarto@501502511';
+			            return args;
+			        }
+			    });
 			// 添加路由拦截器用于调试
 			uni.addInterceptor('navigateTo', {
 				invoke(e) {
