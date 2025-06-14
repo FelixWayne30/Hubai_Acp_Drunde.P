@@ -28,7 +28,7 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateImageUrl } from '@/common/utils.js';
+import { generateSubimageUrl } from '@/common/utils.js'
 import imageCache from '@/common/cache.js';
 import MapItem from '@/component/map.vue';
 
@@ -42,14 +42,12 @@ export default {
     };
   },
   onLoad(options) {
-    this.topic = options.topic || '';
-    
-    // 设置当前专题ID，用于图片缓存
-    imageCache.setCurrentTopic(this.topic);
-
-    // 获取专题信息和地图列表
-    this.getTopicMaps();
-  },
+      this.topic = options.topic || '';
+      
+      imageCache.setCurrentTopic(this.topic);
+  
+      this.getTopicMaps();
+    },
   
   methods: {
     // 图片加载错误处理
@@ -80,7 +78,7 @@ export default {
               console.log(`处理地图项 ${index}: ${item.title}`);
               
               // 基于中文标题生成图片URL
-              const imageUrl = generateImageUrl(item.title);
+              const imageUrl = generateSubimageUrl(item.title);
               
               // 缓存图片URL，供其他页面使用
               imageCache.setImage(item.title, imageUrl, item);
@@ -118,32 +116,32 @@ export default {
     },
     
     // 导航到地图浏览页
-    navigateToMap(mapId, index = 0) {
-      console.log(`跳转到地图浏览页: ${mapId}, 索引: ${index}`);
-      
-      uni.navigateTo({
-        url: `/pages/map/browse?id=${mapId}&topic_id=${this.topicId}&index=${index}`
-      });
-    },
-    
-    // 导航到地图详情页
-    navigateToDetail(mapId) {
-      console.log(`跳转到地图详情页: ${mapId}`);
-      
-      if (!mapId) {
-        console.error('mapId为空，无法跳转');
-        uni.showToast({
-          title: 'mapId参数错误',
-          icon: 'none'
-        });
-        return;
+        navigateToMap(mapId, index = 0) {
+            console.log(`跳转到地图浏览页: ${mapId}, 索引: ${index}`);
+            
+            uni.navigateTo({
+              url: `/pages/map/browse?id=${mapId}&topic=${this.topic}&index=${index}`
+            });
+          },
+          
+          // 导航到地图详情页 - 修复URL编码
+          navigateToDetail(mapId) {
+            console.log(`跳转到地图详情页: ${mapId}`);
+            
+            if (!mapId) {
+              console.error('mapId为空，无法跳转');
+              uni.showToast({
+                title: 'mapId参数错误',
+                icon: 'none'
+              });
+              return;
+            }
+            
+            uni.navigateTo({
+              url: `/pages/map/detail?id=${mapId}&topic=${this.topic}`
+          });
+        }
       }
-      
-      uni.navigateTo({
-        url: `/pages/map/detail?id=${mapId}&topic_id=${this.topicId}`
-      });
-    }
-  }
 };
 </script>
 

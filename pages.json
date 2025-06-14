@@ -75,10 +75,10 @@
 		"backgroundColor": "#F8F8F8"
 	},
 	"tabBar": {
-		"color": "#7A7E83",
-		"selectedColor": "#7aa26f",
-		"borderStyle": "black",
-		"backgroundColor": "#ffffff",
+		"color": "#dbdbdb",
+		"selectedColor": "#ffffff",
+		"borderStyle": "white",
+		"backgroundColor": "#7aa26f",
 		"list": [
 			{
 				"pagePath": "pages/index/index",
@@ -88,8 +88,8 @@
 			},
 			{
 				"pagePath": "pages/map/topic-intro",
-				"iconPath": "static/icons/user.png",
-				"selectedIconPath": "static/icons/user-active.png",
+				"iconPath": "/static/icons/search.png",
+				"selectedIconPath": "static/icons/search-active.png",
 				"text": "探索"
 			},
 			{

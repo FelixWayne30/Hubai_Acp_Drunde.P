@@ -5,24 +5,24 @@ class ImageCache {
   }
 
   setCurrentTopic(topicId) {
-    console.log('缓存管理：设置当前专题ID:', topicId);
+    console.log('缩略图缓存管理：设置当前专题ID:', topicId);
     // 如果切换了专题，清空之前的缓存
     if (this.currentTopicId && this.currentTopicId !== topicId) {
-      console.log('缓存管理：检测到专题切换，清空缓存');
+      console.log('缩略图缓存管理：检测到专题切换，清空缓存');
       this.clear();
     }
     this.currentTopicId = topicId;
   }
 
   /**
-   * 存储地图图片URL
+   * 存储地图缩略图URL
    * @param {string} title 地图标题
-   * @param {string} imageUrl 图片URL
+   * @param {string} imageUrl 缩略图URL
    * @param {object} mapInfo 地图基础信息
    */
   setImage(title, imageUrl, mapInfo = {}) {
     if (!title || !imageUrl) {
-      console.warn('缓存管理：title或imageUrl为空，跳过缓存');
+      console.warn('缩略图缓存管理：title或imageUrl为空，跳过缓存');
       return;
     }
 
@@ -34,29 +34,29 @@ class ImageCache {
     };
 
     this.cache.set(title, cacheData);
-    console.log(`缓存管理：已缓存地图 ${title} 的图片`);
+    console.log(`缩略图缓存管理：已缓存地图 ${title} 的缩略图`);
     console.log('当前缓存大小:', this.cache.size);
   }
 
   /**
-   * 获取地图图片URL
+   * 获取地图缩略图URL
    * @param {string} title 地图标题
-   * @returns {string|null} 缓存的图片URL或null
+   * @returns {string|null} 缓存的缩略图URL或null
    */
   getImage(title) {
     if (!title) {
-      console.warn('缓存管理：title为空');
+      console.warn('缩略图缓存管理：title为空');
       return null;
     }
 
     const cacheData = this.cache.get(title);
     if (cacheData) {
-      console.log(`缓存管理：命中缓存，地图标题: ${title}`);
-      console.log('缓存的URL:', cacheData.url);
+      console.log(`缩略图缓存管理：命中缓存，地图标题: ${title}`);
+      console.log('缓存的缩略图URL:', cacheData.url);
       return cacheData.url;
     }
 
-    console.log(`缓存管理：未命中缓存，地图标题: ${title}`);
+    console.log(`缩略图缓存管理：未命中缓存，地图标题: ${title}`);
     return null;
   }
 
@@ -77,7 +77,7 @@ class ImageCache {
   clear() {
     const size = this.cache.size;
     this.cache.clear();
-    console.log(`缓存管理：已清空 ${size} 个缓存项`);
+    console.log(`缩略图缓存管理：已清空 ${size} 个缓存项`);
   }
 
   getStats() {
@@ -100,7 +100,7 @@ class ImageCache {
     }
 
     if (cleanedCount > 0) {
-      console.log(`缓存管理：清理了 ${cleanedCount} 个过期缓存项`);
+      console.log(`缩略图缓存管理：清理了 ${cleanedCount} 个过期缓存项`);
     }
   }
 }

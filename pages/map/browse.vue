@@ -1,3 +1,4 @@
+<!-- pages/map/browse.vue -->
 <template>
   <view class="container">
     <!-- 加载指示器 -->
@@ -61,11 +62,13 @@
 
 <script>
 import { API } from '@/common/config.js'
+import { generateImageUrl } from '@/common/utils.js'
 
 export default {
   data() {
     return {
       topicId: '',
+      topic: '', // 专题名称
       mapId: '',
       currentMapIndex: 0,
       allMaps: [],
@@ -81,10 +84,7 @@ export default {
       
       // 手势操作状态
       touching: false,
-      touchStartData: null,
-      
-      // 图片服务器配置
-      imageBaseUrl: 'http://1.92.85.165:8088/image/'
+      touchStartData: null
     }
   },
   
@@ -98,20 +98,23 @@ export default {
   },
   
   onLoad(options) {
+    // 正确解码URL参数
     this.topicId = options.topic_id || '';
+    this.topic = options.topic ? decodeURIComponent(options.topic) : '';
     this.mapId = options.id || '';
     this.currentMapIndex = parseInt(options.index || '0');
     
     console.log('地图浏览页加载参数:', {
       topicId: this.topicId,
+      topic: this.topic,
       mapId: this.mapId,
       mapIndex: this.currentMapIndex
     });
     
-    if (this.topicId) {
+    if (this.topic || this.topicId) {
       this.loadMapsData();
     } else {
-      this.showError('缺少专题ID参数');
+      this.showError('缺少专题参数');
     }
   },
   
@@ -125,7 +128,18 @@ export default {
         const res = await this.requestMapsData();
         
         if (res.statusCode === 200 && res.data.code === 200) {
-          this.allMaps = res.data.data || [];
+          // 处理地图数据
+          this.allMaps = (res.data.data || []).map(item => ({
+            map_id: item.map_id,
+            title: item.title,
+            description: item.description,
+            type: item.type,
+            width: item.width || 6000,
+            height: item.height || 4000,
+            create_time: item.create_time
+          }));
+          
+          console.log('获取到地图数据:', this.allMaps.length, '个地图');
           
           if (this.mapId) {
             const foundIndex = this.allMaps.findIndex(map => map.map_id === this.mapId);
@@ -150,16 +164,34 @@ export default {
     
     requestMapsData() {
       return new Promise((resolve, reject) => {
+        // 根据参数类型选择不同的请求方式
+        let requestData = {};
+        
+        if (this.topic) {
+          // 如果有专题名称，使用 group 参数
+          requestData.group = this.topic;
+          console.log('使用专题名称请求:', this.topic);
+        } else if (this.topicId) {
+          // 如果有专题ID，使用 groupid 参数  
+          requestData.groupid = this.topicId;
+          console.log('使用专题ID请求:', this.topicId);
+        } else {
+          reject(new Error('缺少专题参数'));
+          return;
+        }
+        
         uni.request({
-          url: API.MAPS_BY_GROUP + this.topicId,
+          url: API.MAPS_BY_GROUP,
           method: 'GET',
+          data: requestData,
           success: resolve,
           fail: reject
         });
       });
     },
     
-    async loadCurrentMap() {
+    // 加载当前地图，直接使用原图URL
+    loadCurrentMap() {
       if (!this.allMaps.length) {
         this.showError('没有可显示的地图');
         return;
@@ -171,53 +203,21 @@ export default {
         return;
       }
       
-      try {
-        this.isLoading = true;
-        this.loadingText = '加载中...';
-        
-        const imageUrl = this.generateImageUrl(this.currentMap.title);
-        const tempFilePath = await this.loadImageWithAuth(imageUrl);
-        this.currentMapUrl = tempFilePath;
-        
-        // 重置变换状态
-        this.resetTransform();
-        
-      } catch (error) {
-        console.error('加载地图失败:', error);
-        this.showError(`加载失败: ${error.message || '未知错误'}`);
-      }
-    },
-    
-    generateImageUrl(title) {
-      if (!title) {
-        console.error('地图标题为空');
-        return '';
-      }
-      return `${this.imageBaseUrl}${title}.jpg`;
-    },
-    
-    async loadImageWithAuth(imageUrl) {
-      try {
-        const downloadResult = await new Promise((resolve, reject) => {
-          uni.downloadFile({
-            url: imageUrl,
-            header: {
-              'Authorization': 'Telecarto@501502511'
-            },
-            success: resolve,
-            fail: reject
-          });
-        });
-        
-        if (downloadResult.statusCode === 200) {
-          return downloadResult.tempFilePath;
-        } else {
-          throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
-        }
-      } catch (error) {
-        console.error('图片下载失败:', error);
-        throw error;
-      }
+      console.log('=== 开始加载原图 ===');
+      console.log('当前地图标题:', this.currentMap.title);
+      
+      // 直接生成原图URL
+      const originalImageUrl = generateImageUrl(this.currentMap.title);
+      console.log('生成的原图URL:', originalImageUrl);
+      
+      // 直接设置图片URL，不需要下载
+      this.currentMapUrl = originalImageUrl;
+      
+      // 重置变换状态
+      this.resetTransform();
+      
+      // 由于不需要下载，直接关闭加载状态
+      this.isLoading = false;
     },
     
     // ===== 手势操作相关 =====
@@ -330,19 +330,26 @@ export default {
     viewDetail() {
       if (!this.currentMap) return;
       
-      uni.navigateTo({
-        url: `/pages/map/detail?id=${this.currentMap.map_id}&topic_id=${this.topicId}&from=browse`
-      });
+      let url = `/pages/map/detail?id=${this.currentMap.map_id}&from=browse`;
+      
+      // 根据可用参数添加专题信息
+      if (this.topic) {
+        url += `&topic=${this.topic}`;
+      } else if (this.topicId) {
+        url += `&topic_id=${this.topicId}`;
+      }
+      
+      uni.navigateTo({ url });
     },
     
     // ===== 事件处理 =====
     onImageLoad() {
-      console.log('图片显示成功');
+      console.log('原图显示成功');
       this.isLoading = false;
     },
     
     onImageError(error) {
-      console.error('图片显示失败:', error);
+      console.error('原图显示失败:', error);
       this.showError('图片显示失败，请检查网络连接');
     },
     

@@ -118,7 +118,7 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateImageUrl } from '@/common/utils.js';
+import { generateSubimageUrl } from '@/common/utils.js'
 import imageCache from '@/common/cache.js';
 
 export default {
@@ -270,7 +270,7 @@ export default {
                   
                   // 如果缓存中没有，则生成新的图片URL
                   if (!thumbnail) {
-                    thumbnail = generateImageUrl(item.title);
+                    thumbnail = generateSubimageUrl(item.title);
                     imageCache.setImage(item.title, thumbnail, item);
                     console.log(`生成新图片URL: ${thumbnail}`);
                   } else {
@@ -342,11 +342,118 @@ export default {
     
     // 跳转到详情页
     navigateToDetail(mapId) {
-      uni.navigateTo({
-        url: `/pages/map/detail?id=${mapId}`
-      });
-    },
+        // 找到对应的搜索结果项，获取专题信息
+        const resultItem = this.searchResults.find(item => item.map_id === mapId);
+        
+        let url = `/pages/map/detail?id=${mapId}&from=search`;
+        
+        // 如果有专题信息，添加到URL参数中
+        if (resultItem) {
+          if (resultItem.topic_id) {
+            url += `&topic_id=${resultItem.topic_id}`;
+          }
+          if (resultItem.topic_name) {
+            url += `&topic=${encodeURIComponent(resultItem.topic_name)}`;
+          }
+        }
+        
+        console.log('从搜索页跳转到详情页:', url);
+        
+        uni.navigateTo({
+          url: url
+        });
+      },
     
+      // 从API获取搜索结果 - 保持原有逻辑，确保包含专题信息
+      fetchSearchResults() {
+        const queryParams = {
+          query: this.searchQuery,
+          page: this.page,
+          size: this.pageSize
+        };
+        
+        uni.request({
+          url: API.SEARCH,
+          method: 'GET',
+          data: queryParams,
+          success: (res) => {
+            if (res.statusCode === 200 && res.data.code === 200) {
+              const data = res.data.data;
+              const results = data.results || [];
+              const total = data.total || 0;
+              
+              // 处理结果，生成图片URL，保留专题信息
+              const processedResults = results.map(item => {
+                console.log(`处理搜索结果: ${item.title}`, {
+                  topic_id: item.topic_id,
+                  topic_name: item.topic_name
+                });
+                
+                // 设置图片加载状态
+                this.setImageLoadingState(item.map_id, true);
+                
+                // 检查缓存中是否有图片
+                let thumbnail = imageCache.getImage(item.title);
+                
+                // 如果缓存中没有，则生成新的图片URL
+                if (!thumbnail) {
+                  thumbnail = generateSubimageUrl(item.title);
+                  imageCache.setImage(item.title, thumbnail, item);
+                  console.log(`生成新图片URL: ${thumbnail}`);
+                } else {
+                  console.log(`使用缓存图片URL: ${thumbnail}`);
+                }
+                
+                // 图片加载完成后更新状态
+                setTimeout(() => {
+                  this.setImageLoadingState(item.map_id, false);
+                }, 1000);
+                
+                return {
+                  map_id: item.map_id,
+                  title: item.title,
+                  description: item.description || '暂无描述',
+                  type: item.type || '未分类',
+                  thumbnail: thumbnail || '/static/placeholder.png',
+                  relevance_score: item.relevance_score || 5,
+                  subitem_name: item.subitem_name || '',
+                  // 重要：保留专题信息
+                  topic_id: item.topic_id,
+                  topic_name: item.topic_name
+                };
+              });
+              
+              // 更新结果列表
+              if (this.page === 1) {
+                this.searchResults = processedResults;
+              } else {
+                this.searchResults = [...this.searchResults, ...processedResults];
+              }
+              
+              this.totalResults = total;
+              this.hasMore = results.length === this.pageSize;
+            } else {
+              uni.showToast({
+                title: '搜索失败',
+                icon: 'none'
+              });
+              console.error('搜索API返回错误:', res.data);
+            }
+          },
+          fail: (err) => {
+            uni.showToast({
+              title: '网络错误，请稍后重试',
+              icon: 'none'
+            });
+            console.error('搜索请求失败:', err);
+          },
+          complete: () => {
+            this.isLoading = false;
+            uni.stopPullDownRefresh();
+          }
+        });
+      },
+	
     // 截断描述文本
     truncateDescription(text) {
       if (!text) return '暂无描述';

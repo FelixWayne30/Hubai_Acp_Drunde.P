@@ -51,7 +51,7 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateImageUrl } from '@/common/utils.js';
+import { generateSubimageUrl } from '@/common/utils.js'
 import imageCache from '@/common/cache.js';
 
 export default {
@@ -129,7 +129,7 @@ export default {
               console.log(`处理地图项 ${index}: ${item.title}`);
               
               // 基于中文标题生成图片URL
-              const imageUrl = generateImageUrl(item.title);
+              const imageUrl = generateSubimageUrl(item.title);
               
               // 缓存图片URL，供其他页面使用
               imageCache.setImage(item.title, imageUrl, item);

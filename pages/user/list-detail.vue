@@ -90,7 +90,7 @@
 <script>
 import { API } from '@/common/config.js';
 import authManager from '@/common/auth.js';
-import { generateImageUrl } from '@/common/utils.js';
+import { generateSubimageUrl } from '@/common/utils.js'
 import imageCache from '@/common/cache.js';
 
 export default {
@@ -170,7 +170,7 @@ export default {
 								// 生成缩略图URL
 								let imageUrl = imageCache.getImage(item.title);
 								if (!imageUrl) {
-								    imageUrl = generateImageUrl(item.title);
+								    imageUrl = generateSubimageUrl(item.title);
 								    imageCache.setImage(item.title, imageUrl, item);
 								}
 								
