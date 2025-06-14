@@ -89,8 +89,9 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateThumbnailUrl } from '@/common/utils.js';
 import authManager from '@/common/auth.js';
+import { generateImageUrl } from '@/common/utils.js';
+import imageCache from '@/common/cache.js';
 
 export default {
 	data() {
@@ -167,14 +168,18 @@ export default {
 							const maps = listData.maps || [];
 							this.mapItems = maps.map(item => {
 								// 生成缩略图URL
-								const imageUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
+								let imageUrl = imageCache.getImage(item.title);
+								if (!imageUrl) {
+								    imageUrl = generateImageUrl(item.title);
+								    imageCache.setImage(item.title, imageUrl, item);
+								}
 								
 								return {
-									id: item.map_id,
-									title: item.title,
-									category: item.type || '未分类',
-									image: imageUrl || '/static/placeholder.png',
-									selected: false
+									 id: item.map_id,
+									    title: item.title,
+									    category: item.type || '未分类',
+									    image: imageUrl || '/static/placeholder.png',
+									    selected: false
 								};
 							});
 						}

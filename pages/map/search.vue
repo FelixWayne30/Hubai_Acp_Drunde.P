@@ -72,7 +72,20 @@
           @click="navigateToDetail(item.map_id)"
         >
           <!-- 缩略图 -->
-          <image class="result-thumb" :src="item.thumbnail" mode="aspectFill"></image>
+          <view class="result-thumb-container">
+            <image 
+              class="result-thumb" 
+              :src="item.thumbnail" 
+              mode="aspectFill"
+            ></image>
+            <!-- 加载状态指示器 -->
+            <view 
+              class="image-loading" 
+              v-if="getImageLoadingState(item.map_id).loading"
+            >
+              <view class="loading-spinner-small"></view>
+            </view>
+          </view>
           
           <!-- 地图信息 -->
           <view class="result-info">
@@ -105,8 +118,8 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateThumbnailUrl } from '@/common/utils.js';
-import thumbnailCache from '@/common/cache.js';
+import { generateImageUrl } from '@/common/utils.js';
+import imageCache from '@/common/cache.js';
 
 export default {
   data() {
@@ -209,7 +222,7 @@ export default {
       this.fetchSearchResults();
     },
     
-    // 从API获取搜索结果
+    // 从API获取搜索结果 - 重构图片处理逻辑
     fetchSearchResults() {
       // 构建查询参数
       const queryParams = {
@@ -229,16 +242,21 @@ export default {
             const results = data.results || [];
             const total = data.total || 0;
             
-            // 处理结果，生成缩略图
+            // 处理结果，生成图片URL
             const processedResults = results.map(item => {
-              // 检查缓存中是否有缩略图
-              let thumbnail = thumbnailCache.getThumbnail(item.map_id);
+              console.log(`处理搜索结果: ${item.title}`);
               
-              // 如果缓存中没有，则生成新的缩略图URL
+              // 检查缓存中是否有图片
+              let thumbnail = imageCache.getImage(item.title);
+              
+              // 如果缓存中没有，则生成新的图片URL
               if (!thumbnail) {
-                thumbnail = generateThumbnailUrl(item.map_id, item.width, item.height);
-                // 缓存缩略图
-                thumbnailCache.setThumbnail(item.map_id, thumbnail, item);
+                thumbnail = generateImageUrl(item.title);
+                // 缓存图片URL
+                imageCache.setImage(item.title, thumbnail, item);
+                console.log(`生成新图片URL: ${thumbnail}`);
+              } else {
+                console.log(`使用缓存图片URL: ${thumbnail}`);
               }
               
               return {
@@ -316,7 +334,6 @@ export default {
   }
 };
 </script>
-
 <style>
 .container {
   position: relative;
@@ -479,12 +496,40 @@ export default {
   box-shadow: 0 4rpx 16rpx rgba(46, 139, 87, 0.06);
 }
 
-.result-thumb {
+.result-thumb-container {
+  position: relative;
   width: 200rpx;
   height: 200rpx;
-  border-radius: 12rpx;
   flex-shrink: 0;
+}
+
+.result-thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 12rpx;
   background-color: #f0f0f0;
+}
+
+.image-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner-small {
+  width: 40rpx;
+  height: 40rpx;
+  border: 3rpx solid rgba(46, 139, 87, 0.1);
+  border-top: 3rpx solid #2E8B57;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 .result-info {

@@ -51,8 +51,8 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateThumbnailUrl } from '@/common/utils.js';
-import { thumbnailCache } from '@/common/preload.js';
+import { generateImageUrl } from '@/common/utils.js';
+import imageCache from '@/common/cache.js';
 
 export default {
   data() {
@@ -70,8 +70,8 @@ export default {
     this.topicId = options.topic_id || '';
     console.log('设置的topicId:', this.topicId);
     
-    // 设置当前专题ID，用于缩略图缓存
-    thumbnailCache.setCurrentTopic(this.topicId);
+    // 设置当前专题ID，用于图片缓存
+    imageCache.setCurrentTopic(this.topicId);
     
     // 获取专题信息和地图列表
     this.getTopicInfo();
@@ -81,7 +81,7 @@ export default {
   methods: {
     // 图片加载错误处理
     handleImageError(e) {
-      console.log('缩略图加载失败，使用默认图片');
+      console.log('图片加载失败，使用默认图片');
       e.target.src = '/static/placeholder.png';
     },
     
@@ -128,17 +128,17 @@ export default {
             this.maps = res.data.data.map((item, index) => {
               console.log(`处理地图项 ${index}: ${item.title}`);
               
-              // 生成缩略图URL
-              const thumbnailUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
+              // 基于中文标题生成图片URL
+              const imageUrl = generateImageUrl(item.title);
               
-              // 缓存缩略图URL，供其他页面使用
-              thumbnailCache.setThumbnail(item.map_id, thumbnailUrl, item);
+              // 缓存图片URL，供其他页面使用
+              imageCache.setImage(item.title, imageUrl, item);
               
               return {
                 id: item.map_id,
                 title: item.title,
                 description: item.description,
-                thumbnail: thumbnailUrl,
+                thumbnail: imageUrl,
                 width: item.width,
                 height: item.height
               };
@@ -197,6 +197,7 @@ export default {
 </script>
 
 <style>
+/* 样式保持原样，不需要修改 */
 .container {
   position: relative;
   height: 100vh;
@@ -204,7 +205,6 @@ export default {
   overflow: hidden;
 }
 
-/* ========== 保持原有背景设计不变 ========== */
 .background-solid {
   position: absolute;
   top: 0;
@@ -241,7 +241,6 @@ export default {
   z-index: 1;
 }
 
-/* ========== 优化后的滚动区域 ========== */
 .maps-scroll {
   position: relative;
   z-index: 2;
@@ -254,7 +253,6 @@ export default {
   min-height: calc(100vh + 100rpx);
 }
 
-/* ========== 优化后的地图卡片 ========== */
 .map-item {
   background-color: rgba(255, 255, 255, 0.6);
   border-radius: 24rpx;
@@ -313,7 +311,6 @@ export default {
   text-align: justify;
 }
 
-/* ========== 按钮样式优化 ========== */
 .action-buttons {
   display: flex;
   gap: 20rpx;
@@ -351,7 +348,6 @@ export default {
   transform: scale(0.98);
 }
 
-/* ========== 适配不同屏幕 ========== */
 @media screen and (min-width: 768px) {
   .map-content {
     flex-direction: row;
