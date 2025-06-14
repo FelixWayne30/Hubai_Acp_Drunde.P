@@ -17,17 +17,22 @@
       
       <!-- 搜索框 -->
       <view class="search-container">
-        <input 
-          class="search-input" 
-          placeholder="试试搜索“武汉市降水量”"
-          placeholder-class="search-placeholder"
-          confirm-type="search"
-          @confirm="performSearch"
-          @input="onSearchInput"
-          v-model="searchQuery"
-        />
-        <view v-if="searchQuery" class="clear-button" @click="clearSearch">
-          <text class="clear-icon">×</text>
+        <view class="search-inputbox">
+          <input
+              class="search-input"
+              placeholder="试试搜索“武汉市降水量”"
+              placeholder-class="search-placeholder"
+              confirm-type="search"
+              @confirm="performSearch"
+              @input="onSearchInput"
+              v-model="searchQuery"
+          />
+          <view v-if="searchQuery" class="clear-button" @click="clearSearch">
+            <text class="clear-icon">×</text>
+          </view>
+        </view>
+        <view class="search-tag">
+          已接入阿里巴巴千问大模型
         </view>
       </view>
       
@@ -179,18 +184,25 @@ export default {
 /* 搜索框 */
 .search-container {
   position: relative;
-  height: 80rpx;
+  height: 100rpx;
   background: rgba(245, 245, 245, 0.7);
   border-radius: 10rpx;
   margin-bottom: 20rpx;
   margin-top: 210rpx;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   box-shadow: 0 4rpx 20rpx rgba(46, 139, 87, 0.08);
+  padding: 10rpx;
+}
+
+.search-inputbox{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
 }
 
 .search-input {
-  flex: 1;
   height: 65rpx;
   line-height: 65rpx;
   font-size: 30rpx;
@@ -199,9 +211,11 @@ export default {
   background: transparent;
 }
 
-.search-placeholder {
-  color: #999999;
-  font-size: 30rpx;
+.search-tag{
+  color: rgba(51, 51, 51, 0.7);
+  font-size: 20rpx;
+  padding-left: 32rpx;
+  margin-bottom: 10rpx;
 }
 
 .clear-button {
