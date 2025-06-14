@@ -17,6 +17,9 @@
           :key="index"
           :item="item"
           :index="index"
+          @navigateToMap="navigateToMap"
+          @handleImageError="handleImageError"
+          @navigateToDetail="navigateToDetail"
         />
       </view>
     </scroll-view>

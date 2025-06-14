@@ -53,7 +53,6 @@ export default {
           </view>
           <view class="action-buttons">
             <button class="detail-btn primary-bg" @click="navigateToDetail(item.id)">查看详情</button>
-            <button class="browse-btn" @click="navigateToMap(item.id, index)">浏览地图</button>
           </view>
         </view>
       </view>
