@@ -13,10 +13,11 @@
       <view class="search-container">
         <input 
           class="search-input" 
-          placeholder="搜索地图、专题..." 
+          placeholder="试试智能搜索：武汉市降水量分布" 
           placeholder-class="search-placeholder"
           confirm-type="search"
           @confirm="performSearch"
+          @input="onSearchInput"
           v-model="searchQuery"
           auto-focus
         />
@@ -28,24 +29,39 @@
           <text class="clear-icon">×</text>
         </view>
       </view>
+      
+      <!-- 搜索建议 -->
+      <view class="suggestions-container" v-if="suggestions.length > 0 && searchQuery">
+        <view class="suggestions-title">搜索建议</view>
+        <view class="suggestions-list">
+          <view 
+            class="suggestion-item"
+            v-for="(suggestion, index) in suggestions"
+            :key="index"
+            @click="selectSuggestion(suggestion)"
+          >
+            {{ suggestion }}
+          </view>
+        </view>
+      </view>
     </view>
     
     <!-- 搜索结果 -->
     <scroll-view class="results-scroll" scroll-y :show-scrollbar="false" @scrolltolower="loadMoreResults">
       <view class="results-container">
-        <view class="results-header">
+        <view class="results-header" v-if="hasSearched">
           <text class="results-title">搜索结果</text>
-          <text class="results-count">找到 {{searchResults.length}} 个结果</text>
+          <text class="results-count">找到 {{totalResults}} 个相关结果</text>
         </view>
         
-        <view class="no-results" v-if="searchResults.length === 0 && !isLoading">
+        <view class="no-results" v-if="searchResults.length === 0 && !isLoading && hasSearched">
           <view class="empty-text">未找到相关结果</view>
-          <view class="empty-tips">请尝试其他关键词</view>
+          <view class="empty-tips">请尝试其他关键词或换个描述方式</view>
         </view>
         
         <view class="loading-indicator" v-if="isLoading">
           <view class="loading-spinner"></view>
-          <view class="loading-text">搜索中...</view>
+          <view class="loading-text">AI分析中...</view>
         </view>
         
         <!-- 搜索结果列表 -->
@@ -53,7 +69,7 @@
           class="result-item"
           v-for="(item, index) in searchResults"
           :key="index"
-          @click="navigateToDetail(item.id)"
+          @click="navigateToDetail(item.map_id)"
         >
           <!-- 缩略图 -->
           <image class="result-thumb" :src="item.thumbnail" mode="aspectFill"></image>
@@ -65,7 +81,10 @@
             
             <view class="result-meta">
               <text class="result-type">{{item.type}}</text>
-              <text class="result-date">{{formatDate(item.create_time)}}</text>
+              <view class="result-badges">
+                <text class="relevance-score">匹配度 {{item.relevance_score}}/10</text>
+                <text class="subitem-badge" v-if="item.subitem_name">{{item.subitem_name}}</text>
+              </view>
             </view>
           </view>
         </view>
@@ -95,9 +114,13 @@ export default {
       searchQuery: '',
       isLoading: false,
       searchResults: [],
+      suggestions: [],
       page: 1,
       pageSize: 10,
-      hasMore: true
+      hasMore: true,
+      hasSearched: false,
+      totalResults: 0,
+      suggestionTimer: null
     };
   },
   
@@ -118,6 +141,54 @@ export default {
   },
   
   methods: {
+    // 输入监听，获取搜索建议
+    onSearchInput(e) {
+      this.searchQuery = e.detail.value;
+      
+      // 清除之前的定时器
+      if (this.suggestionTimer) {
+        clearTimeout(this.suggestionTimer);
+      }
+      
+      // 设置新的定时器，防抖处理
+      if (this.searchQuery.trim() && this.searchQuery.length >= 2) {
+        this.suggestionTimer = setTimeout(() => {
+          this.getSearchSuggestions();
+        }, 300);
+      } else {
+        this.suggestions = [];
+      }
+    },
+    
+    // 获取搜索建议
+    getSearchSuggestions() {
+      if (!this.searchQuery.trim()) return;
+      
+      uni.request({
+        url: API.SEARCH_SUGGESTIONS,
+        method: 'GET',
+        data: {
+          query: this.searchQuery,
+          limit: 5
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            this.suggestions = res.data.data || [];
+          }
+        },
+        fail: (err) => {
+          console.error('获取搜索建议失败:', err);
+        }
+      });
+    },
+    
+    // 选择搜索建议
+    selectSuggestion(suggestion) {
+      this.searchQuery = suggestion;
+      this.suggestions = [];
+      this.performSearch();
+    },
+    
     // 执行搜索
     performSearch() {
       if (!this.searchQuery.trim()) {
@@ -130,8 +201,10 @@ export default {
       
       this.isLoading = true;
       this.searchResults = [];
+      this.suggestions = [];
       this.page = 1;
       this.hasMore = true;
+      this.hasSearched = true;
       
       this.fetchSearchResults();
     },
@@ -145,14 +218,16 @@ export default {
         size: this.pageSize
       };
       
-      // 调用搜索API
+      // 调用AI搜索API
       uni.request({
         url: API.SEARCH,
         method: 'GET',
         data: queryParams,
         success: (res) => {
           if (res.statusCode === 200 && res.data.code === 200) {
-            const results = res.data.data || [];
+            const data = res.data.data;
+            const results = data.results || [];
+            const total = data.total || 0;
             
             // 处理结果，生成缩略图
             const processedResults = results.map(item => {
@@ -167,12 +242,13 @@ export default {
               }
               
               return {
-                id: item.map_id,
+                map_id: item.map_id,
                 title: item.title,
                 description: item.description || '暂无描述',
                 type: item.type || '未分类',
-                create_time: item.create_time,
-                thumbnail: thumbnail || '/static/placeholder.png'
+                thumbnail: thumbnail || '/static/placeholder.png',
+                relevance_score: item.relevance_score || 5,
+                subitem_name: item.subitem_name || ''
               };
             });
             
@@ -182,6 +258,8 @@ export default {
             } else {
               this.searchResults = [...this.searchResults, ...processedResults];
             }
+            
+            this.totalResults = total;
             
             // 判断是否还有更多结果
             this.hasMore = results.length === this.pageSize;
@@ -219,6 +297,8 @@ export default {
     clearSearch() {
       this.searchQuery = '';
       this.searchResults = [];
+      this.suggestions = [];
+      this.hasSearched = false;
     },
     
     // 跳转到详情页
@@ -232,18 +312,6 @@ export default {
     truncateDescription(text) {
       if (!text) return '暂无描述';
       return text.length > 60 ? text.substring(0, 60) + '...' : text;
-    },
-    
-    // 格式化日期
-    formatDate(dateStr) {
-      if (!dateStr) return '';
-      
-      try {
-        const date = new Date(dateStr);
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      } catch (e) {
-        return dateStr;
-      }
     }
   }
 };
@@ -295,7 +363,7 @@ export default {
 
 /* 搜索区域 */
 .search-section {
-  padding: 30rpx 30rpx;
+  padding: 30rpx 30rpx 20rpx;
   position: relative;
   z-index: 2;
 }
@@ -309,6 +377,7 @@ export default {
   align-items: center;
   box-shadow: 0 2rpx 16rpx rgba(46, 139, 87, 0.08);
   border: 2rpx solid rgba(255, 255, 255, 0.3);
+  margin-bottom: 20rpx;
 }
 
 .search-input {
@@ -345,9 +414,34 @@ export default {
   line-height: 1;
 }
 
+/* 搜索建议 */
+.suggestions-container {
+  margin-bottom: 20rpx;
+}
+
+.suggestions-title {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.suggestion-item {
+  padding: 8rpx 16rpx;
+  background-color: rgba(46, 139, 87, 0.1);
+  color: #2E8B57;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
 /* 搜索结果区域 */
 .results-scroll {
-  height: calc(100vh - 150rpx);
+  height: calc(100vh - 180rpx);
   position: relative;
   z-index: 2;
 }
@@ -357,11 +451,11 @@ export default {
 }
 
 .results-header {
+  padding: 20rpx 0;
+  margin-bottom: 20rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20rpx 0;
-  margin-bottom: 20rpx;
 }
 
 .results-title {
@@ -412,12 +506,13 @@ export default {
   color: #666666;
   line-height: 1.5;
   flex: 1;
+  margin-bottom: 16rpx;
 }
 
 .result-meta {
   display: flex;
   justify-content: space-between;
-  margin-top: 20rpx;
+  align-items: flex-end;
 }
 
 .result-type {
@@ -428,9 +523,27 @@ export default {
   border-radius: 20rpx;
 }
 
-.result-date {
-  font-size: 24rpx;
-  color: #999999;
+.result-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+.relevance-score {
+  font-size: 20rpx;
+  padding: 4rpx 10rpx;
+  border-radius: 10rpx;
+  color: #fff;
+  background-color: #ff6b6b;
+}
+
+.subitem-badge {
+  font-size: 20rpx;
+  color: #666;
+  background-color: #f0f0f0;
+  padding: 4rpx 10rpx;
+  border-radius: 10rpx;
 }
 
 /* 空结果 */
@@ -440,12 +553,6 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 120rpx 0;
-}
-
-.empty-icon {
-  width: 200rpx;
-  height: 200rpx;
-  margin-bottom: 30rpx;
 }
 
 .empty-text {
