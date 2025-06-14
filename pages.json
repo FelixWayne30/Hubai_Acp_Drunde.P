@@ -13,6 +13,12 @@
 			}
 		},
 		{
+			"path": "pages/map/topic-static",
+			"style": {
+				"navigationBarTitleText": "专题介绍"
+			}
+		},
+		{
 			"path": "pages/map/browse",
 			"style": {
 				"navigationBarTitleText": "图幅浏览"
@@ -79,6 +85,12 @@
 				"iconPath": "static/icons/home.png",
 				"selectedIconPath": "static/icons/home-active.png",
 				"text": "首页"
+			},
+			{
+				"pagePath": "pages/map/topic-intro",
+				"iconPath": "static/icons/user.png",
+				"selectedIconPath": "static/icons/user-active.png",
+				"text": "探索"
 			},
 			{
 				"pagePath": "pages/user/center",

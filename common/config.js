@@ -28,7 +28,7 @@ export const API = {
 
   // 地图信息API
   TOPICS: `${envConfig.API_BASE_URL}/mapinfo/topics`,
-  MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/maps/`,
+  MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/getMapsByTopic`,
   MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
   ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
   SEARCH: `${envConfig.API_BASE_URL}/mapinfo/search`,

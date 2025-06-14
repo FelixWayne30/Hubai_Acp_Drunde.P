@@ -34,7 +34,7 @@
 		<!--专题卡片-->
       <view class="topics-card">
         <view class="card-header">
-          <text class="section-title">自然资源专题探索</br></text>
+          <text class="section-title">自然资源专题探索<br/></text>
           <view class="section-subtitle">发现湖北自然资源的多样魅力</view>
         </view>
         
@@ -42,35 +42,35 @@
           <view class="topics-content">
 
             <view class="row-1">
-              <view class="topic-card left-big color-mint" @click="navigateToTopic(topicList[0]?.id)" v-if="topicList[0]">
+              <view class="topic-card left-big color-mint" @click="navigateToTopic(topicList[0])">
                 <view class="card-number">壹</view>
                 <view class="card-content">
-                  <text class="card-title">{{topicList[0].title}}</text>
+                  <text class="card-title">{{topicList[0]}}</text>
                 </view>
               </view>
               
               <view class="right-double">
-                <view class="topic-card right-top color-lavender" @click="navigateToTopic(topicList[1]?.id)" v-if="topicList[1]">
+                <view class="topic-card right-top color-lavender" @click="navigateToTopic(topicList[1])">
                   <view class="card-number">贰</view>
                   <view class="card-content">
-                    <text class="card-title">{{topicList[1].title}}</text>
+                    <text class="card-title">{{topicList[1]}}</text>
                   </view>
                 </view>
                 
-                <view class="topic-card right-bottom color-peach" @click="navigateToTopic(topicList[2]?.id)" v-if="topicList[2]">
+                <view class="topic-card right-bottom color-peach" @click="navigateToTopic(topicList[2])">
                   <view class="card-number">叁</view>
                   <view class="card-content">
-                    <text class="card-title">{{topicList[2].title}}</text>
+                    <text class="card-title">{{topicList[2]}}</text>
                   </view>
                 </view>
               </view>
             </view>
             
             <view class="row-2">
-              <view class="topic-card full-width color-sky" @click="navigateToTopic(topicList[3]?.id)" v-if="topicList[3]">
+              <view class="topic-card full-width color-sky" @click="navigateToTopic(topicList[3])">
                 <view class="card-number">肆</view>
                 <view class="card-content">
-                  <text class="card-title">{{topicList[3].title}}</text>
+                  <text class="card-title">{{topicList[3]}}</text>
                 </view>
               </view>
             </view>
@@ -82,53 +82,22 @@
 </template>
 
 <script>
-import { API } from '@/common/config.js'
-
 export default {
   data() {
     return {
       searchQuery: '',
-      topicList: []
+      topicList: ["极目楚天","富饶资源","绿色发展","城市新篇"]
     }
   },
-  onLoad() {
-    this.getTopics()
-  },
   methods: {
-    getTopics() {
-      uni.showLoading({ title: '加载中...' })
-      
-      uni.request({
-        url: API.TOPICS,
-        method: 'GET',
-        success: (res) => {
-          if (res.statusCode === 200 && res.data.code === 200) {
-            this.topicList = res.data.data.map(item => ({
-              id: item.topic_id,
-              title: item.title,
-              image: item.image || "/static/icons/topic-default.png"
-            }))
-          } else {
-            uni.showToast({ title: '获取专题数据失败', icon: 'none' })
-          }
-        },
-        fail: (err) => {
-          uni.showToast({ title: '网络错误，请稍后重试', icon: 'none' })
-        },
-        complete: () => {
-          uni.hideLoading()
-        }
-      })
-    },
-
     onSearchInput(e) {
       this.searchQuery = e.detail.value;
     },
        
-    navigateToTopic(topicId) {
-      if (!topicId) return;
+    navigateToTopic(topic) {
+      if (!topic) return;
       uni.navigateTo({
-        url: '/pages/map/topic-intro?topic_id=' + topicId
+        url: '/pages/map/topic-static?topic=' + topic
       });
     },
     
