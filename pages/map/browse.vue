@@ -8,56 +8,53 @@
       </view>
     </view>
     
-    <!-- 地图显示区域 -->
-    <view class="map-display-area">
-      <movable-area class="movable-area">
-        <movable-view 
-          class="movable-view"
-          direction="all"
-          :scale="true"
-          :scale-min="0.5"
-          :scale-max="3"
-          :scale-value="scaleValue"
-          @scale="onScale"
-          @change="onChange"
-        >
-          <image 
-            class="map-image"
-            :src="currentMapUrl"
-            mode="aspectFit"
-            @load="onImageLoad"
-            @error="onImageError"
-            :show-menu-by-longpress="true"
-          />
-        </movable-view>
-      </movable-area>
-    </view>
-    
-    <!-- 底部工具栏 -->
-    <view class="bottom-toolbar">
-      <button 
-        class="nav-btn" 
-        :disabled="currentMapIndex === 0"
-        @click="switchMap('prev')"
-      >
-        ‹ 上一张
-      </button>
-      
-      <view class="center-info">
+    <!-- 顶部信息栏 -->
+    <view class="top-header">
+      <view class="map-info">
         <view class="map-title">{{ currentMap?.title || '加载中...' }}</view>
         <view class="map-counter">{{ currentMapIndex + 1 }} / {{ allMaps.length }}</view>
       </view>
+    </view>
+    
+    <!-- 地图显示区域 -->
+    <view class="map-display-area" 
+          @touchstart="handleTouchStart"
+          @touchmove="handleTouchMove" 
+          @touchend="handleTouchEnd">
+      <view class="map-container" 
+            :style="mapTransformStyle">
+        <image 
+          class="map-image"
+          :src="currentMapUrl"
+          mode="aspectFit"
+          @load="onImageLoad"
+          @error="onImageError"
+          :show-menu-by-longpress="false"
+        />
+      </view>
+    </view>
+    
+    <!-- 底部控制栏 -->
+    <view class="bottom-controls">
+      <button 
+        class="nav-btn prev-btn" 
+        :disabled="currentMapIndex === 0"
+        @click="switchMap('prev')"
+      >
+        <text class="nav-icon">‹</text>
+      </button>
+      
+      <button class="detail-btn" @click="viewDetail">
+        <text class="detail-text">查看详情</text>
+      </button>
       
       <button 
-        class="nav-btn" 
+        class="nav-btn next-btn" 
         :disabled="currentMapIndex === allMaps.length - 1"
         @click="switchMap('next')"
       >
-        下一张 ›
+        <text class="nav-icon">›</text>
       </button>
-      
-      <button class="detail-btn" @click="viewDetail">详情</button>
-      <button class="reset-btn" @click="resetScale">重置</button>
     </view>
   </view>
 </template>
@@ -75,13 +72,28 @@ export default {
       currentMap: null,
       currentMapUrl: '',
       isLoading: true,
-      loadingText: '加载地图数据...',
+      loadingText: '加载中...',
       
-      // 缩放和移动相关
-      scaleValue: 1,
+      // Transform 相关状态
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
+      
+      // 手势操作状态
+      touching: false,
+      touchStartData: null,
       
       // 图片服务器配置
       imageBaseUrl: 'http://1.92.85.165:8088/image/'
+    }
+  },
+  
+  computed: {
+    mapTransformStyle() {
+      return {
+        transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`,
+        transition: this.touching ? 'none' : 'transform 0.3s ease-out'
+      }
     }
   },
   
@@ -104,7 +116,7 @@ export default {
   },
   
   methods: {
-    // 加载地图数据
+    // ===== 数据加载相关 =====
     async loadMapsData() {
       try {
         this.isLoading = true;
@@ -115,7 +127,6 @@ export default {
         if (res.statusCode === 200 && res.data.code === 200) {
           this.allMaps = res.data.data || [];
           
-          // 如果有mapId，找到对应的索引
           if (this.mapId) {
             const foundIndex = this.allMaps.findIndex(map => map.map_id === this.mapId);
             if (foundIndex !== -1) {
@@ -123,7 +134,6 @@ export default {
             }
           }
           
-          // 确保索引有效
           if (this.currentMapIndex >= this.allMaps.length) {
             this.currentMapIndex = 0;
           }
@@ -138,7 +148,6 @@ export default {
       }
     },
     
-    // 请求地图数据
     requestMapsData() {
       return new Promise((resolve, reject) => {
         uni.request({
@@ -150,7 +159,6 @@ export default {
       });
     },
     
-    // 加载当前地图
     async loadCurrentMap() {
       if (!this.allMaps.length) {
         this.showError('没有可显示的地图');
@@ -165,27 +173,14 @@ export default {
       
       try {
         this.isLoading = true;
-        this.loadingText = `正在下载: ${this.currentMap.title}`;
+        this.loadingText = '加载中...';
         
-        // 生成图片URL
         const imageUrl = this.generateImageUrl(this.currentMap.title);
-        console.log('图片URL:', imageUrl);
-        
-        // 下载图片获取本地临时路径
         const tempFilePath = await this.loadImageWithAuth(imageUrl);
-        
-        // 设置本地临时路径给图片组件
         this.currentMapUrl = tempFilePath;
         
-        console.log('当前地图信息:', {
-          title: this.currentMap.title,
-          originalUrl: imageUrl,
-          localPath: tempFilePath,
-          index: this.currentMapIndex
-        });
-        
-        // 图片路径设置完成，等待图片组件加载
-        this.loadingText = `加载图片: ${this.currentMap.title}`;
+        // 重置变换状态
+        this.resetTransform();
         
       } catch (error) {
         console.error('加载地图失败:', error);
@@ -193,23 +188,16 @@ export default {
       }
     },
     
-    // 生成图片URL
     generateImageUrl(title) {
       if (!title) {
         console.error('地图标题为空');
         return '';
       }
-      
-      // 直接使用中文标题，不进行编码
       return `${this.imageBaseUrl}${title}.jpg`;
     },
     
-    // 下载并加载图片
     async loadImageWithAuth(imageUrl) {
       try {
-        console.log('开始下载图片:', imageUrl);
-        
-        // 使用uni.downloadFile下载图片，显式设置Authorization头
         const downloadResult = await new Promise((resolve, reject) => {
           uni.downloadFile({
             url: imageUrl,
@@ -222,7 +210,6 @@ export default {
         });
         
         if (downloadResult.statusCode === 200) {
-          console.log('图片下载成功:', downloadResult.tempFilePath);
           return downloadResult.tempFilePath;
         } else {
           throw new Error(`下载失败，状态码: ${downloadResult.statusCode}`);
@@ -233,20 +220,98 @@ export default {
       }
     },
     
-    // 图片加载成功
-    onImageLoad() {
-      console.log('图片显示成功');
-      this.isLoading = false;
-      this.resetScale();
+    // ===== 手势操作相关 =====
+    handleTouchStart(e) {
+      this.touching = true;
+      const touches = e.touches;
+      
+      if (touches.length === 1) {
+        // 单指拖拽
+        this.touchStartData = {
+          type: 'pan',
+          startX: touches[0].clientX,
+          startY: touches[0].clientY,
+          startTranslateX: this.translateX,
+          startTranslateY: this.translateY
+        };
+      } else if (touches.length === 2) {
+        // 双指缩放
+        const touch1 = touches[0];
+        const touch2 = touches[1];
+        const distance = this.getDistance(touch1, touch2);
+        const center = this.getCenter(touch1, touch2);
+        
+        this.touchStartData = {
+          type: 'zoom',
+          startDistance: distance,
+          startScale: this.scale,
+          centerX: center.x,
+          centerY: center.y,
+          startTranslateX: this.translateX,
+          startTranslateY: this.translateY
+        };
+      }
     },
     
-    // 图片加载失败
-    onImageError(error) {
-      console.error('图片显示失败:', error);
-      this.showError('图片显示失败，请检查网络连接');
+    handleTouchMove(e) {
+      if (!this.touching || !this.touchStartData) return;
+      
+      e.preventDefault();
+      const touches = e.touches;
+      
+      if (this.touchStartData.type === 'pan' && touches.length === 1) {
+        // 单指拖拽
+        const deltaX = touches[0].clientX - this.touchStartData.startX;
+        const deltaY = touches[0].clientY - this.touchStartData.startY;
+        
+        this.translateX = this.touchStartData.startTranslateX + deltaX;
+        this.translateY = this.touchStartData.startTranslateY + deltaY;
+        
+      } else if (this.touchStartData.type === 'zoom' && touches.length === 2) {
+        // 双指缩放
+        const touch1 = touches[0];
+        const touch2 = touches[1];
+        const distance = this.getDistance(touch1, touch2);
+        const scaleRatio = distance / this.touchStartData.startDistance;
+        
+        let newScale = this.touchStartData.startScale * scaleRatio;
+        newScale = Math.max(0.5, Math.min(3, newScale)); // 限制缩放范围
+        
+        // 以触摸中心点为基准进行缩放
+        const scaleDiff = newScale - this.scale;
+        const center = this.getCenter(touch1, touch2);
+        
+        this.scale = newScale;
+        this.translateX = this.touchStartData.startTranslateX - (center.x - this.touchStartData.centerX) * scaleDiff;
+        this.translateY = this.touchStartData.startTranslateY - (center.y - this.touchStartData.centerY) * scaleDiff;
+      }
     },
     
-    // 切换地图
+    handleTouchEnd(e) {
+      this.touching = false;
+      this.touchStartData = null;
+    },
+    
+    getDistance(touch1, touch2) {
+      const dx = touch1.clientX - touch2.clientX;
+      const dy = touch1.clientY - touch2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    },
+    
+    getCenter(touch1, touch2) {
+      return {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2
+      };
+    },
+    
+    resetTransform() {
+      this.scale = 1;
+      this.translateX = 0;
+      this.translateY = 0;
+    },
+    
+    // ===== 导航相关 =====
     switchMap(direction) {
       let newIndex = this.currentMapIndex;
       
@@ -259,11 +324,9 @@ export default {
       }
       
       this.currentMapIndex = newIndex;
-      this.isLoading = true;
       this.loadCurrentMap();
     },
     
-    // 查看详情
     viewDetail() {
       if (!this.currentMap) return;
       
@@ -272,22 +335,17 @@ export default {
       });
     },
     
-    // 重置缩放
-    resetScale() {
-      this.scaleValue = 1;
+    // ===== 事件处理 =====
+    onImageLoad() {
+      console.log('图片显示成功');
+      this.isLoading = false;
     },
     
-    // 缩放事件
-    onScale(e) {
-      console.log('缩放:', e.detail.scale);
+    onImageError(error) {
+      console.error('图片显示失败:', error);
+      this.showError('图片显示失败，请检查网络连接');
     },
     
-    // 移动事件
-    onChange(e) {
-      console.log('移动:', e.detail);
-    },
-    
-    // 显示错误信息
     showError(message) {
       this.isLoading = false;
       this.loadingText = message;
@@ -298,7 +356,6 @@ export default {
         duration: 3000
       });
       
-      // 3秒后隐藏错误提示
       setTimeout(() => {
         if (this.loadingText === message) {
           this.loadingText = '';
@@ -313,10 +370,12 @@ export default {
 .container {
   width: 100%;
   height: 100vh;
-  position: relative;
-  background-color: #f0f0f0;
+  background-color: #f8f8f8;
+  display: flex;
+  flex-direction: column;
 }
 
+/* ===== 加载指示器 ===== */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -335,136 +394,170 @@ export default {
   padding: 40rpx;
   border-radius: 16rpx;
   background-color: #fff;
-  box-shadow: 0 0 30rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
 }
 
 .loading-spinner {
-  width: 80rpx;
-  height: 80rpx;
-  margin: 0 auto 30rpx;
-  border: 6rpx solid rgba(46, 139, 87, 0.2);
-  border-top: 6rpx solid #2E8B57;
+  width: 60rpx;
+  height: 60rpx;
+  margin: 0 auto 20rpx;
+  border: 4rpx solid #e8e8e8;
+  border-top: 4rpx solid #7aa26f;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 .loading-text {
   font-size: 28rpx;
-  color: #333;
-  font-weight: bold;
+  color: #666;
+  font-weight: 500;
 }
 
+/* ===== 顶部信息栏 ===== */
+.top-header {
+  background-color: #7aa26f;
+  padding: 20rpx 30rpx;
+  border-bottom: 1px solid #689963;
+  height: 55rpx;
+}
+
+.map-info {
+  text-align: center;
+}
+
+.map-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 8rpx;
+  line-height: 1.4;
+}
+
+.map-counter {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
+}
+
+/* ===== 地图显示区域 ===== */
 .map-display-area {
-  width: 100%;
-  height: calc(100vh - 120rpx);
-  background-color: #fff;
+  flex: 1;
+  background-color: #ffffff;
+  margin: 20rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
   position: relative;
-  z-index: 1;
 }
 
-.movable-area {
-  width: 100%;
-  height: 100%;
-}
-
-.movable-view {
+.map-container {
   width: 100%;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  transform-origin: center;
 }
 
 .map-image {
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  max-height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
-.bottom-toolbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10rpx);
-  border-top: 1px solid #eee;
-  padding: 20rpx 20rpx;
-  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+/* ===== 底部控制栏 ===== */
+.bottom-controls {
+  background-color: #ffffff;
+  padding: 25rpx 30rpx;
+  padding-bottom: calc(25rpx + env(safe-area-inset-bottom));
+  border-top: 1px solid #e8e8e8;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10rpx;
-  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.1);
-  z-index: 1000;
 }
 
 .nav-btn {
-  height: 64rpx;
-  line-height: 64rpx;
-  padding: 0 24rpx;
-  font-size: 26rpx;
-  border-radius: 32rpx;
-  color: #7aa26f;
-  border: 1px solid #7aa26f;
-  background-color: #fff;
-  text-align: center;
-  min-width: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50rpx;
+  background-color: #7aa26f;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2rpx 8rpx rgba(122, 162, 111, 0.3);
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 1rpx 4rpx rgba(122, 162, 111, 0.4);
 }
 
 .nav-btn:disabled {
-  color: #ccc;
-  border-color: #eee;
-  background-color: #f8f8f8;
+  background-color: #e8e8e8;
+  box-shadow: none;
 }
 
-.center-info {
-  flex: 1;
-  text-align: center;
-  margin: 0 20rpx;
-  min-width: 0;
+.nav-btn:disabled .nav-icon {
+  color: #bbb;
 }
 
-.map-title {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 4rpx;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.map-counter {
-  font-size: 22rpx;
-  color: #999;
-}
-
-.detail-btn, .reset-btn {
-  height: 64rpx;
-  line-height: 64rpx;
-  padding: 0 20rpx;
-  font-size: 24rpx;
-  border-radius: 32rpx;
-  text-align: center;
-  min-width: 80rpx;
+.nav-icon {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #ffffff;
+  line-height: 1;
 }
 
 .detail-btn {
-  background-color: #7aa26f;
-  color: #fff;
-  border: 1px solid #7aa26f;
+  flex: 1;
+  height: 80rpx;
+  background-color: #ffffff;
+  border: 2rpx solid #7aa26f;
+  border-radius: 40rpx;
+  margin: 0 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.reset-btn {
-  background-color: #fff;
+.detail-btn:active {
+  transform: scale(0.98);
+  background-color: #f8f9fa;
+}
+
+.detail-text {
+  font-size: 30rpx;
+  font-weight: 500;
   color: #7aa26f;
-  border: 1px solid #7aa26f;
 }
 
+/* ===== 动画 ===== */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* ===== 响应式适配 ===== */
+@media screen and (max-width: 480px) {
+  .map-display-area {
+    margin: 15rpx;
+  }
+  
+  .nav-btn {
+    width: 90rpx;
+    height: 90rpx;
+  }
+  
+  .nav-icon {
+    font-size: 44rpx;
+  }
+  
+  .detail-btn {
+    margin: 0 25rpx;
+  }
 }
 </style>
