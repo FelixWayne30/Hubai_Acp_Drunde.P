@@ -11,17 +11,12 @@ export default {
       required:true
     }
   },
-  data(){
-    return {
-
-    }
-  },
   methods:{
     navigateToMap(id, index) {
-      this.$emit("navigateToMap", { id, index });
+      this.$emit("navigateToMap", id, index);
     },
     navigateToDetail(id) {
-      this.$emit("navigateToDetail", { id });
+      this.$emit("navigateToDetail", id);
     },
     handleImageError(e) {
       this.$emit("handleImageError", e);
