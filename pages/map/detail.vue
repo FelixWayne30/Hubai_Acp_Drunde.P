@@ -3,7 +3,6 @@
 		<!-- 图幅预览区域 -->
 		<view class="preview-container">
 			<image class="preview-image placeholder-image" :src="mapInfo.image"></image>
-			
 			<!-- 图幅标题 -->
 			<view class="map-title">{{mapInfo.title}}</view>
 		</view>
@@ -11,17 +10,23 @@
 		<!-- 交互区域 -->
 		<view class="interaction-bar">
 			<view class="action-btn" @click="likeMap">
-				<text class="iconfont" :class="{'active': isLiked}">♥</text>
+				<image 
+					class="action-icon" 
+					:src="isLiked ? '/static/icons/like-active.png' : '/static/icons/like.png'"
+				></image>
 				<text class="count">{{likeCount}}</text>
 			</view>
 			
 			<view class="action-btn" @click="collectMap">
-				<text class="iconfont" :class="{'active': isCollected}">★</text>
+				<image 
+					class="action-icon" 
+					:src="isCollected ? '/static/icons/collect-active.png' : '/static/icons/collect.png'"
+				></image>
 				<text class="count">收藏</text>
 			</view>
 					
 			<view class="action-btn" @click="showListsModal">
-				<text class="iconfont">+</text>
+				<image class="action-icon" src="/static/icons/add.png"></image>
 				<text class="count">添加至</text>
 			</view>
 		</view>
@@ -77,15 +82,15 @@
 					</view>
 					<view v-else class="lists-scroll">
 						<view 
-						  class="list-item"
-						  v-for="(item, index) in customLists"
-						  :key="item.list_id" 
+							class="list-item"
+							v-for="(item, index) in customLists"
+							:key="item.list_id" 
 						>
-						  <checkbox 
-						    :checked="isMapInList(item.list_id)" 
-						    @click="toggleListSelection(item.list_id)"
-						  ></checkbox>
-						  <text class="list-name">{{item.name}}</text>
+							<checkbox 
+								:checked="isMapInList(item.list_id)" 
+								@click="toggleListSelection(item.list_id)"
+							></checkbox>
+							<text class="list-name">{{item.name}}</text>
 						</view>
 					</view>
 				</view>
@@ -98,7 +103,7 @@
 		
 		<!-- 进入浏览按钮 -->
 		<view class="back-to-browse" @click="backToBrowse">
-			<text>进入浏览页</text>
+			<text>进入浏览页 →</text>
 		</view>
 	</view>
 </template>
@@ -776,8 +781,14 @@ export default {
 }
 </script>
 <style>
+	/* 全局绿色主题类 */
+	.primary-bg {
+		background-color: #7AA26F; /* 浅绿，用于按钮 */
+	}
+	
 	.container {
 		padding-bottom: 100rpx;
+		background: linear-gradient(to bottom, #D9E8D9, #F5F8F5); /* 保持现有背景 */
 	}
 	
 	/* 图幅预览区域 */
@@ -785,7 +796,7 @@ export default {
 		position: relative;
 		width: 100%;
 		height: 450rpx;
-		margin-bottom: 20rpx;
+		margin-bottom: 30rpx; /* 统一间距 */
 	}
 	
 	.preview-image {
@@ -808,47 +819,48 @@ export default {
 	/* 交互区域 */
 	.interaction-bar {
 		display: flex;
+		justify-content: space-around; /* 按钮均匀分布 */
 		padding: 20rpx;
-		background-color: #FFFFFF;
-		border-bottom: 1px solid #EEEEEE;
+		background-color: #FFFFFF; /* 纯白背景 */
+		border: 1rpx solid #D9E8D9; /* 浅绿色边框 */
+		border-radius: 10rpx; /* 圆角 */
+		box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05); /* 轻微阴影 */
+		margin: 0 20rpx 30rpx 20rpx; /* 统一间距，左右边距 */
 	}
 	
 	.action-btn {
-		flex: 1;
 		display: flex;
-		flex-direction: column;
+		flex-direction: row; /* 水平排列 */
 		align-items: center;
-		justify-content: center;
+		padding: 10rpx 15rpx; /* 紧凑内边距 */
 	}
 	
-	.iconfont {
-		font-size: 48rpx;
-		line-height: 1;
-		color: #999999;
-	}
-	
-	.iconfont.active {
-		color: #2E8B57;
+	.action-icon {
+		width: 48rpx;
+		height: 48rpx;
+		margin-right: 10rpx; /* 图标与文字间距 */
 	}
 	
 	.count {
 		font-size: 24rpx;
 		color: #666666;
-		margin-top: 10rpx;
 	}
 	
 	/* 描述区域 */
 	.description-section {
-		background-color: #FFFFFF;
-		padding: 20rpx;
-		margin-bottom: 20rpx;
+		background-color: #FFFFFF; /* 纯白背景 */
+		padding: 25rpx 20rpx; /* 优化内边距 */
+		margin: 0 20rpx 30rpx 20rpx; /* 统一间距，左右边距 */
+		border: 1rpx solid #D9E8D9; /* 浅绿色边框 */
+		border-radius: 10rpx; /* 圆角 */
+		box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05); /* 轻微阴影 */
 	}
 	
 	.section-title {
 		font-size: 32rpx;
 		font-weight: bold;
 		margin-bottom: 20rpx;
-		color: #333333;
+		color: #7AA26F; /* 浅绿标题 */
 	}
 	
 	.description-content {
@@ -859,18 +871,21 @@ export default {
 	
 	/* 评论区 */
 	.comment-section {
-		background-color: #FFFFFF;
-		padding: 20rpx;
-		margin-bottom: 20rpx;
+		background-color: #FFFFFF; /* 纯白背景 */
+		padding: 25rpx 20rpx; /* 优化内边距 */
+		margin: 0 20rpx 30rpx 20rpx; /* 统一间距，左右边距 */
+		border: 1rpx solid #D9E8D9; /* 浅绿色边框 */
+		border-radius: 10rpx; /* 圆角 */
+		box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05); /* 轻微阴影 */
 	}
 	
 	.comment-list {
-		padding-bottom: 30rpx;
+		padding-bottom: 20rpx; /* 减少底部填充 */
 	}
 	
 	.comment-item {
-		padding: 20rpx 0;
-		border-bottom: 1px solid #EEEEEE;
+		padding: 15rpx 0; /* 优化评论项内边距 */
+		border-bottom: 1rpx solid #D9E8D9; /* 浅绿色分隔线 */
 	}
 	
 	.comment-user {
@@ -904,9 +919,9 @@ export default {
 		bottom: 0;
 		left: 0;
 		width: 100%;
-		padding: 20rpx;
-		background-color: #FFFFFF;
-		border-top: 1px solid #EEEEEE;
+		padding: 10rpx;
+		background-color: #E6F3E6;
+		border-top: 1rpx solid #D9E8D9;
 		display: flex;
 		align-items: center;
 	}
@@ -914,11 +929,12 @@ export default {
 	.comment-input {
 		flex: 1;
 		height: 80rpx;
-		border: 1px solid #EEEEEE;
+		border: 1rpx solid #D9E8D9;
 		border-radius: 40rpx;
 		padding: 0 20rpx;
 		font-size: 28rpx;
-		background-color: #F8F8F8;
+		background-color: #F8FAF8;
+		max-width: 550rpx;
 	}
 	
 	.send-btn {
@@ -950,12 +966,13 @@ export default {
 		background-color: #FFFFFF;
 		border-radius: 15rpx;
 		padding: 40rpx 30rpx;
+		border: 1rpx solid #D9E8D9;
 	}
 	
 	.modal-title {
 		font-size: 36rpx;
 		font-weight: bold;
-		color: #333333;
+		color: #7AA26F;
 		text-align: center;
 		margin-bottom: 40rpx;
 	}
@@ -985,7 +1002,7 @@ export default {
 		display: flex;
 		align-items: center;
 		padding: 20rpx 0;
-		border-bottom: 1px solid #EEEEEE;
+		border-bottom: 1rpx solid #D9E8D9;
 	}
 	
 	.list-name {
@@ -1009,8 +1026,9 @@ export default {
 	}
 	
 	.cancel-btn {
-		background-color: #F5F5F5;
+		background-color: #F8FAF8;
 		color: #666666;
+		border: 1rpx solid #D9E8D9;
 	}
 	
 	.confirm-btn {
@@ -1023,11 +1041,12 @@ export default {
 		right: 30rpx;
 		bottom: 130rpx;
 		padding: 15rpx 30rpx;
-		background-color: rgba(46, 139, 87, 0.8);
-		color: #FFFFFF;
+		background-color: #FFFFFF;
+		border: 2rpx solid #7AA26F;
+		color: #7AA26F;
 		border-radius: 50rpx;
 		font-size: 28rpx;
 		z-index: 99;
-		box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.2);
+		box-shadow: 0 4rpx 12rpx rgba(122, 162, 111, 0.2);
 	}
 </style>
