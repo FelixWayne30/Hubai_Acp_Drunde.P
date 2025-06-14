@@ -10,6 +10,13 @@
 			            return args;
 			        }
 			    });
+      uni.addInterceptor('downloadFile', {
+        invoke(args) {
+          args.header = args.header || {};
+          args.header['Authorization'] = 'Telecarto@501502511';
+          return args;
+        }
+      });
 			// 添加路由拦截器用于调试
 			uni.addInterceptor('navigateTo', {
 				invoke(e) {
@@ -20,6 +27,7 @@
 					console.error('路由跳转失败:', err);
 				}
 			});
+
 		},
 		onShow: function() {
 			console.log('App Show');

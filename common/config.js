@@ -32,13 +32,11 @@ export const API = {
   COLLECTION_CHECK: `${envConfig.API_BASE_URL}/interaction/collection/check`,
   COLLECTION_LIST: `${envConfig.API_BASE_URL}/interaction/collection/list`,
   LIKE_TOGGLE: `${envConfig.API_BASE_URL}/interaction/like/toggle`,
-  LIKE_CHECK: `${envConfig.API_BASE_URL}/interaction/like/check`
-};
+  LIKE_CHECK: `${envConfig.API_BASE_URL}/interaction/like/check`,
 
-// 图片服务配置
-export const IMAGE_CONFIG = {
-  BASE_URL: 'http://1.92.85.165:8088/image/',
-  AUTH_HEADER: 'Telecarto@501502511'
+  // 地图图片API
+  ORIGIN_MAP: `${envConfig.API_BASE_URL}/image`,
+  THUMBNAIL_MAP: `${envConfig.API_BASE_URL}/image/thumbnail`
 };
 
 // 应用配置
