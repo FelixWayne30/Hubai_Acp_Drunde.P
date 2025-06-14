@@ -1,12 +1,4 @@
-// common/config.js - 统一配置管理
 import { envConfig } from '../env.config.js';
-
-// GeoServer配置
-export const GEOSERVER_CONFIG = {
-  BASE_URL: envConfig.GEOSERVER_BASE_URL,
-  WORKSPACE: 'hubei'
-};
-
 // API路径常量
 export const API = {
   // 用户相关API
@@ -27,29 +19,26 @@ export const API = {
   CUSTOM_LIST_CHECK_MAP: `${envConfig.API_BASE_URL}/customlist/checkMap`,
 
   // 地图信息API
-   TOPICS: `${envConfig.API_BASE_URL}/mapinfo/topics`,
-   MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/getMapsByTopic`,
-   MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
-   ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
-   SEARCH: `${envConfig.API_BASE_URL}/mapinfo/search`, 
-   SEARCH_SUGGESTIONS: `${envConfig.API_BASE_URL}/mapinfo/search-suggestions`,
-   BANNER_MAPS: `${envConfig.API_BASE_URL}/mapinfo/bannerMaps`,
+  TOPICS: `${envConfig.API_BASE_URL}/mapinfo/topics`,
+  MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/getMapsByTopic`,
+  MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
+  ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
+  SEARCH: `${envConfig.API_BASE_URL}/mapinfo/search`, 
+  SEARCH_SUGGESTIONS: `${envConfig.API_BASE_URL}/mapinfo/search-suggestions`,
+  BANNER_MAPS: `${envConfig.API_BASE_URL}/mapinfo/bannerMaps`,
   
   // 交互相关API
   COLLECTION_TOGGLE: `${envConfig.API_BASE_URL}/interaction/collection/toggle`,
   COLLECTION_CHECK: `${envConfig.API_BASE_URL}/interaction/collection/check`,
   COLLECTION_LIST: `${envConfig.API_BASE_URL}/interaction/collection/list`,
   LIKE_TOGGLE: `${envConfig.API_BASE_URL}/interaction/like/toggle`,
-  LIKE_CHECK: `${envConfig.API_BASE_URL}/interaction/like/check`,
-  
-  // GeoServer WMS服务地址
-  WMS_URL: `${GEOSERVER_CONFIG.BASE_URL}/${GEOSERVER_CONFIG.WORKSPACE}/wms`
+  LIKE_CHECK: `${envConfig.API_BASE_URL}/interaction/like/check`
 };
 
-// WebView相关配置
-export const WEBVIEW_CONFIG = {
-  BASE_URL: envConfig.WEBVIEW_BASE_URL,
-  MAP_VIEWER_PATH: '/frontend/map-viewer.html'
+// 图片服务配置
+export const IMAGE_CONFIG = {
+  BASE_URL: 'http://1.92.85.165:8088/image/',
+  AUTH_HEADER: 'Telecarto@501502511'
 };
 
 // 应用配置
@@ -65,7 +54,6 @@ export function debugLog(message, data = null) {
   }
 }
 
-// 错误日志功能
 export function errorLog(message, error = null) {
   if (APP_CONFIG.LOG_LEVEL === 'debug' || APP_CONFIG.LOG_LEVEL === 'info' || APP_CONFIG.LOG_LEVEL === 'error') {
     console.error(`[ERROR] ${message}`, error);

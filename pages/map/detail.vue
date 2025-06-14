@@ -103,733 +103,738 @@
 	</view>
 </template>
 
+<!-- 专题详情页的关键部分更新 -->
 <script>
-	import { API } from '@/common/config.js'
-	import thumbnailCache from '@/common/cache.js'
-	
-	export default {
-		data() {
-			return {
-				mapId: '',
-				topicId: '',
-				//自定义列表有关
-				showListsSelector: false,
-				customLists: [],
-				selectedLists: [],
-				// 地图信息
-				mapInfo: {
-					id: '',
-					title: '加载中...',
-					image: '',
-					description: '正在加载地图描述...',
-					type: '',
-					width: 0,
-					height: 0,
-					createTime: '',
-					viewCount: 0,
-					likeCount: 0,
-					commentCount: 0
-				},
-				// 交互数据
-				isLiked: false,
-				isCollected: false,
-				likeCount: 0,
-				commentCount: 0,
-				userId: null,
-				// 评论相关
-				comments: [],
-				commentContent: '',
-				inputFocus: false,
-				// 自定义列表相关
-				showListsSelector: false,
-				customLists: [],
-				selectedLists: [],
-				// 来源页面
-				fromBrowse: false
-			}
-		},
-	
-		onLoad(options) {
-		  console.log('详情页接收到的参数:', options);
-		  console.log('options.id:', options.id);
-		  console.log('options.id类型:', typeof options.id);
-		  console.log('options.topic_id:', options.topic_id);
-		  
-		  this.mapId = options.id || '';
-		  this.topicId = options.topic_id || '';
-		  console.log('设置后的mapId:', this.mapId);
-		  console.log('设置后的topicId:', this.topicId);
-		  
-		  // 检查是否从浏览页跳转过来
-		  if (options.from === 'browse') {
-		    this.fromBrowse = true;
-		  }
-		  
-		  if (this.mapId) {
-		    this.getMapDetail();
-		    this.getComments(); // 获取评论列表
-		  } else {
-		    console.error('mapId为空，无法获取详情');
-		    uni.showToast({
-		      title: '参数错误',
-		      icon: 'none'
-		    });
-		  }
-		  
-		  // 获取用户ID
-		  const userInfo = uni.getStorageSync('userInfo');
-		  if (userInfo) {
-		    try {
-		      const userObj = JSON.parse(userInfo);
-		      this.userId = userObj.user_id;
-		      // 获取是否已点赞和收藏
-		      if(this.userId && this.mapId) {
-		        this.checkLikeStatus();
-		        this.checkCollectionStatus();
-		      }
-		    } catch (e) {
-		      console.error('解析用户信息失败', e);
-		    }
-		  }
-		},
-		
-		onShareAppMessage() {
-			return {
-				title: this.mapInfo.title,
-				path: `/pages/map/detail?id=${this.mapId}`
-			}
-		},
-		methods: {
-			
-			// 根据mapId查找topicId
-			findTopicIdByMapId(mapId) {
-			  uni.showLoading({
-			    title: '查询专题信息...'
-			  });
-			  
-			  // 首先获取所有专题
-			  uni.request({
-			    url: API.TOPICS,
-			    method: 'GET',
-			    success: async (res) => {
-			      if (res.statusCode === 200 && res.data.code === 200) {
-			        const topics = res.data.data;
-			        
-			        // 依次查询每个专题，找到包含当前地图的专题就停止
-			        for (const topic of topics) {
-			          const topicId = topic.topic_id;
-			          
-			          try {
-			            const result = await new Promise((resolve, reject) => {
-			              uni.request({
-			                url: API.MAPS_BY_GROUP + topicId,
-			                method: 'GET',
-			                success: (mapRes) => {
-			                  if (mapRes.statusCode === 200 && mapRes.data.code === 200) {
-			                    const maps = mapRes.data.data;
-			                    // 检查当前地图是否在这个专题中
-			                    const foundMap = maps.find(m => m.map_id === mapId);
-			                    resolve(foundMap ? { found: true, topicId } : { found: false });
-			                  } else {
-			                    resolve({ found: false });
-			                  }
-			                },
-			                fail: (err) => {
-			                  reject(err);
-			                }
-			              });
-			            });
-			            
-			            if (result.found) {
-			              // 找到了专题，设置topicId并跳转
-			              uni.hideLoading();
-			              this.topicId = result.topicId;
-			              this.navigateToBrowsePage();
-			              return; // 找到了就停止查询
-			            }
-			          } catch (err) {
-			            console.error('查询专题地图失败:', err);
-			            // 继续查询下一个专题
-			          }
-			        }
-			        
-			        // 所有专题都查询完了，还没找到
-			        uni.hideLoading();
-			        uni.showToast({
-			          title: '未找到相关专题信息',
-			          icon: 'none'
-			        });
-			      } else {
-			        uni.hideLoading();
-			        uni.showToast({
-			          title: '获取专题信息失败',
-			          icon: 'none'
-			        });
-			      }
-			    },
-			    fail: () => {
-			      uni.hideLoading();
-			      uni.showToast({
-			        title: '网络错误，请稍后重试',
-			        icon: 'none'
-			      });
-			    }
-			  });
-			},
-			
-			// 获取地图详情
-			getMapDetail() {
-				// 显示加载状态
-				uni.showLoading({
-					title: '加载中...'
-				});
-				
-				console.log('=== 地图详情获取开始 ===');
-				console.log('请求地图ID:', this.mapId);
-				console.log('请求URL:', API.MAP_DETAIL + this.mapId);
-				
-				// 调用后端API获取地图详情
-				uni.request({
-					url: API.MAP_DETAIL + this.mapId,
-					method: 'GET',
-					success: (res) => {
-						console.log('API响应成功:', res);
-						if (res.statusCode === 200 && res.data.code === 200) {
-							const mapData = res.data.data[0]; // 后端返回的是数组，取第一个元素
-							console.log('原始地图数据:', mapData);
-							
-							if (mapData) {
-								console.log('=== 开始处理详情页地图图片 ===');
-								console.log('地图ID:', mapData.map_id);
-								
-								// 直接使用缓存的缩略图
-								let imageUrl = thumbnailCache.getThumbnail(mapData.map_id);
-								
-								if (imageUrl) {
-									console.log('缓存命中！使用缓存的缩略图:', imageUrl);
-								} else {
-									console.log('缓存未命中');
-								}
-								
-								// 更新地图信息
-								const newMapInfo = {
-									id: mapData.map_id,
-									title: mapData.title,
-									description: mapData.description || '暂无描述',
-									image: imageUrl, // 直接使用缓存的缩略图
-									type: mapData.type,
-									width: mapData.width,
-									height: mapData.height,
-									createTime: mapData.create_time,
-									viewCount: mapData.view_count || 0,
-									likeCount: mapData.like_count || 0,
-									commentCount: mapData.comment_count || 0
-								};
-								
-								console.log('新的地图信息:', newMapInfo);
-								console.log('使用的图片URL:', imageUrl);
-								
-								// 直接赋值更新数据
-								this.mapInfo = newMapInfo;
-								
-								// 更新相关统计数据
-								this.likeCount = mapData.like_count || 0;
-								this.commentCount = mapData.comment_count || 0;
-								
-								console.log('=== 详情页地图图片处理完成 ===');
-								
-								// 强制重新渲染（Vue2兼容）
-								this.$forceUpdate();
-								
-							} else {
-								console.error('地图数据为空');
-								uni.showToast({
-									title: '地图数据不存在',
-									icon: 'none'
-								});
-							}
-						} else {
-							console.error('API返回错误:', res.data);
-							uni.showToast({
-								title: '获取地图详情失败',
-								icon: 'none'
-							});
-						}
-					},
-					fail: (err) => {
-						console.error('网络请求失败:', err);
-						uni.showToast({
-							title: '网络错误，请稍后重试',
-							icon: 'none'
-						});
-					},
-					complete: () => {
-						uni.hideLoading();
-						console.log('=== 地图详情获取结束 ===');
-					}
-				});
-			},
-			
-			// 获取评论列表
-			getComments() {
-			  if (!this.mapId) return;
-			  
-			  uni.showLoading({
-			    title: '加载评论...'
-			  });
-			  
-			  uni.request({
-			    url: API.COMMENT_LIST,
-			    method: 'GET',
-			    success: (res) => {
-			      if (res.statusCode === 200 && res.data.code === 200) {
-			        // 筛选当前地图的评论
-			        const allComments = res.data.data || [];
-			        this.comments = allComments.filter(item => {
-			          return item.mapid === this.mapId && item.status === 1; // 只显示审核通过的评论
-			        }).map(item => {
-			          return {
-			            id: item.comment_id,
-			            userName: item.username || '匿名用户',
-			            content: item.content,
-			            time: item.commentTime || new Date(item.create_time).toLocaleString()
-			          };
-			        });
-			        
-			        // 更新评论计数
-			        this.commentCount = this.comments.length;
-			      } else {
-			        console.error('获取评论失败:', res.data);
-			      }
-			    },
-			    fail: (err) => {
-			      console.error('请求评论接口失败:', err);
-			    },
-			    complete: () => {
-			      uni.hideLoading();
-			    }
-			  });
-			},
-			
-			// 检查点赞状态
-			checkLikeStatus() {
-			  if (!this.userId || !this.mapId) return;
-			  
-			  uni.request({
-			    url: API.LIKE_CHECK,
-			    method: 'GET',
-			    data: {
-			      userId: this.userId,
-			      mapId: this.mapId
-			    },
-			    header: {
-			      'content-type': 'application/x-www-form-urlencoded'
-			    },
-			    success: (res) => {
-			      if (res.statusCode === 200 && res.data.code === 200) {
-			        this.isLiked = res.data.data.liked;
-			      }
-			    }
-			  });
-			},
-			
-			// 检查收藏状态
-			checkCollectionStatus() {
-			  if (!this.userId || !this.mapId) return;
-			  
-			  uni.request({
-			    url: API.COLLECTION_CHECK,
-			    method: 'GET',
-			    data: {
-			      userId: this.userId,
-			      mapId: this.mapId
-			    },
-			    header: {
-			      'content-type': 'application/x-www-form-urlencoded'
-			    },
-			    success: (res) => {
-			      if (res.statusCode === 200 && res.data.code === 200) {
-			        this.isCollected = res.data.data.collected;
-			      }
-			    }
-			  });
-			},
-			
-			// 点赞地图
-			likeMap() {
-			  if (!this.userId) {
-			    uni.showToast({
-			      title: '请先登录',
-			      icon: 'none'
-			    });
-			    return;
-			  }
-			  
-			  uni.request({
-			    url: API.LIKE_TOGGLE,
-			    method: 'POST',
-			    data: {
-			      userId: this.userId,
-			      mapId: this.mapId
-			    },
-			    header: {
-			      'content-type': 'application/x-www-form-urlencoded'
-			    },
-			    success: (res) => {
-			      if (res.statusCode === 200 && res.data.code === 200) {
-			        this.isLiked = res.data.data.liked;
-			        // 更新点赞数
-			        this.likeCount += this.isLiked ? 1 : -1;
-			        
-			        uni.showToast({
-			          title: this.isLiked ? '点赞成功' : '已取消点赞',
-			          icon: 'none'
-			        });
-			      }
-			    }
-			  });
-			},
-			
-			// 收藏地图
-			collectMap() {
-			  if (!this.userId) {
-			    uni.showToast({
-			      title: '请先登录',
-			      icon: 'none'
-			    });
-			    return;
-			  }
-			  
-			  uni.request({
-			    url: API.COLLECTION_TOGGLE,
-			    method: 'POST',
-			    data: {
-			      userId: this.userId,
-			      mapId: this.mapId
-			    },
-			    header: {
-			      'content-type': 'application/x-www-form-urlencoded'
-			    },
-			    success: (res) => {
-			      if (res.statusCode === 200 && res.data.code === 200) {
-			        this.isCollected = res.data.data.collected;
-			        
-			        uni.showToast({
-			          title: this.isCollected ? '收藏成功' : '已取消收藏',
-			          icon: 'none'
-			        });
-			      }
-			    }
-			  });
-			},
-			
-			// 聚焦评论输入框
-			focusCommentInput() {
-				this.inputFocus = true;
-			},
-			
-			// 提交评论
-			submitComment() {
-			  if (!this.commentContent.trim()) {
-			    uni.showToast({
-			      title: '评论内容不能为空',
-			      icon: 'none'
-			    });
-			    return;
-			  }
-			  
-			  // 检查用户是否登录
-			  if (!this.userId) {
-			    uni.showToast({
-			      title: '请先登录',
-			      icon: 'none'
-			    });
-			    return;
-			  }
-			  
-			  uni.showLoading({
-			    title: '提交中...'
-			  });
-			  
-			  uni.request({
-			    url: API.COMMENT_ADD,
-			    method: 'GET', // 
-			    data: {
-			      userId: this.userId,
-			      mapId: this.mapId,
-			      comment: this.commentContent
-			    },
-			    success: (res) => {
-			      if (res.statusCode === 200 && res.data.code === 200) {
-			        uni.showToast({
-			          title: '评论已提交，等待审核',
-			          icon: 'success'
-			        });
-			        
-			        // 清空评论内容
-			        this.commentContent = '';
-			        this.inputFocus = false;
-			        
-			        // 由于评论需要审核，暂不立即添加到列表,但可以显示一个临时的评论提示
-			        uni.showModal({
-			          title: '提示',
-			          content: '您的评论已提交，将在审核通过后显示',
-			          showCancel: false
-			        });
-			      } else {
-			        uni.showToast({
-			          title: '评论提交失败',
-			          icon: 'none'
-			        });
-			      }
-			    },
-			    fail: (err) => {
-			      console.error('评论提交失败:', err);
-			      uni.showToast({
-			        title: '网络错误，请稍后重试',
-			        icon: 'none'
-			      });
-			    },
-			    complete: () => {
-			      uni.hideLoading();
-			    }
-			  });
-			},
-			
-			// 显示自定义列表选择器
-			showListsModal() {
-			  if (!this.userId) {
-			    uni.showToast({
-			      title: '请先登录',
-			      icon: 'none'
-			    });
-			    return;
-			  }
-			  
-			  // 获取用户的自定义列表
-			  this.fetchCustomLists();
-			  this.showListsSelector = true;
-			},
-			
-			// 获取用户的自定义列表
-			fetchCustomLists() {
-			  uni.showLoading({
-			    title: '加载中...'
-			  });
-			  
-			  try {
-			    uni.request({
-			      url: API.CUSTOM_LIST_GET,
-			      method: 'GET',
-			      data: {
-			        userId: this.userId
-			      },
-			      success: (res) => {
-			        uni.hideLoading();
-			        if (res.statusCode === 200 && res.data.code === 200) {
-			          // 确保数据结构是正确的
-			          this.customLists = (res.data.data || []).map(list => {
-			            return {
-			              list_id: list.list_id,
-			              name: list.name,
-			              description: list.description
-			            };
-			          });
-			          
-			          // 重置选择状态
-			          this.selectedLists = [];
-			          
-			          // 如果有列表，检查当前地图是否已在列表中
-			          if (this.customLists.length > 0) {
-			            this.checkMapInLists();
-			          }
-			        } else {
-			          uni.showToast({
-			            title: '获取列表失败',
-			            icon: 'none'
-			          });
-			        }
-			      },
-			      fail: (err) => {
-			        uni.hideLoading();
-			        console.error('请求失败', err);
-			        uni.showToast({
-			          title: '网络错误，请稍后重试',
-			          icon: 'none'
-			        });
-			      }
-			    });
-			  } catch (e) {
-			    uni.hideLoading();
-			    console.error('获取列表异常', e);
-			  }
-			},
-			
-			// 检查地图是否已在列表中
-			checkMapInLists() {
-			  const promises = this.customLists.map(list => {
-			    return new Promise((resolve) => {
-			      uni.request({
-			        url: API.CUSTOM_LIST_CHECK_MAP,
-			        method: 'GET',
-			        data: {
-			          listId: list.list_id,
-			          mapId: this.mapId
-			        },
-			        success: (res) => {
-			          if (res.statusCode === 200 && res.data.code === 200) {
-			            if (res.data.data.inList) {
-			              // 如果地图在列表中，添加到已选择列表
-			              this.selectedLists.push(list.list_id);
-			            }
-			          }
-			          resolve();
-			        },
-			        fail: () => {
-			          resolve();
-			        }
-			      });
-			    });
-			  });
-			  
-			  // 等待所有检查完成
-			  Promise.all(promises).then(() => {
-			    // 更新UI状态
-			    this.$forceUpdate();
-			  });
-			},
-			
-			// 检查地图是否已在列表中
-		isMapInList(listId) {
-		  return this.selectedLists.includes(listId);
-		},
+import { API } from '@/common/config.js'
+import { generateImageUrl } from '@/common/utils.js'
+import imageCache from '@/common/cache.js'
 
-			// 切换列表选择状态
-			toggleListSelection(listId) {
-			  console.log('Toggle list:', listId); // 调试用
-			  const index = this.selectedLists.indexOf(listId);
-			  if (index > -1) {
-			    this.selectedLists.splice(index, 1);
-			  } else {
-			    this.selectedLists.push(listId);
-			  }
-			  console.log('Selected lists:', this.selectedLists); // 调试用
-			},
-			
-			// 添加到已选择的列表
-			addToSelectedLists() {
-			  if (this.selectedLists.length === 0) {
-			    uni.showToast({
-			      title: '请选择至少一个列表',
-			      icon: 'none'
-			    });
-			    return;
-			  }
-			  
-			  uni.showLoading({
-			    title: '添加中...'
-			  });
-			  
-			  // 对每个选中的列表，添加当前地图
-			  const promises = this.selectedLists.map(listId => {
-			    return new Promise((resolve) => {
-			      uni.request({
-			        url: API.CUSTOM_LIST_ADD_MAP,
-			        method: 'POST',
-			        data: {
-			          listId: listId,
-			          mapId: this.mapId,
-			          userId: this.userId
-			        },
-			        header: {
-			          'content-type': 'application/x-www-form-urlencoded'
-			        },
-			        success: () => {
-			          resolve(true);
-			        },
-			        fail: () => {
-			          resolve(false);
-			        }
-			      });
-			    });
-			  });
-			  
-			  // 等待所有请求完成
-			  Promise.all(promises).then((results) => {
-			    uni.hideLoading();
-			    
-			    const successCount = results.filter(r => r).length;
-			    if (successCount > 0) {
-			      uni.showToast({
-			        title: `成功添加到${successCount}个列表`,
-			        icon: 'success'
-			      });
-			      this.hideListsModal();
-			    } else {
-			      uni.showToast({
-			        title: '添加失败',
-			        icon: 'none'
-			      });
-			    }
-			  });
-			},
-			
-			hideListsModal() {
-			  console.log('隐藏列表选择器');
-			  this.showListsSelector = false;
-			  this.selectedLists = [];
-			},
-			
-			// 显示自定义列表选择器
-			showListsModal() {
-			  if (!this.userId) {
-			    uni.showToast({
-			      title: '请先登录',
-			      icon: 'none'
-			    });
-			    return;
-			  }
-			  
-			  console.log('显示列表选择器');
-			  // 获取用户的自定义列表
-			  this.fetchCustomLists();
-			  this.showListsSelector = true;
-			},
-			
-			// 跳转到创建列表页面
-			navigateToCreateList() {
-			  this.hideListsModal();
-			  uni.navigateTo({
-			    url: '/pages/user/custom-lists'
-			  });
-			},
-			
-			// 跳转到浏览页
-			navigateToBrowsePage() {
-			  uni.navigateTo({
-			    url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
-			  });
-			},
-			
-			// 返回浏览页
-			backToBrowse() {
-			  if (this.fromBrowse) {
-			    uni.navigateBack();
-			  } else {
-			    // 检查topicId是否存在
-			    if (!this.topicId) {
-			      // 没有topicId，需要查询
-			      this.findTopicIdByMapId(this.mapId);
-			    } else {
-			      // 有topicId，直接跳转
-			      this.navigateToBrowsePage();
-			    }
-			  }
-			},
-		}
-	}
+export default {
+  data() {
+    return {
+      mapId: '',
+      topicId: '',
+      //自定义列表有关
+      showListsSelector: false,
+      customLists: [],
+      selectedLists: [],
+      // 地图信息
+      mapInfo: {
+        id: '',
+        title: '加载中...',
+        image: '',
+        description: '正在加载地图描述...',
+        type: '',
+        width: 0,
+        height: 0,
+        createTime: '',
+        viewCount: 0,
+        likeCount: 0,
+        commentCount: 0
+      },
+      // 交互数据
+      isLiked: false,
+      isCollected: false,
+      likeCount: 0,
+      commentCount: 0,
+      userId: null,
+      // 评论相关
+      comments: [],
+      commentContent: '',
+      inputFocus: false,
+      // 自定义列表相关
+      showListsSelector: false,
+      customLists: [],
+      selectedLists: [],
+      // 来源页面
+      fromBrowse: false
+    }
+  },
+
+  onLoad(options) {
+    console.log('详情页接收到的参数:', options);
+    console.log('options.id:', options.id);
+    console.log('options.id类型:', typeof options.id);
+    console.log('options.topic_id:', options.topic_id);
+    
+    this.mapId = options.id || '';
+    this.topicId = options.topic_id || '';
+    console.log('设置后的mapId:', this.mapId);
+    console.log('设置后的topicId:', this.topicId);
+    
+    // 检查是否从浏览页跳转过来
+    if (options.from === 'browse') {
+      this.fromBrowse = true;
+    }
+    
+    if (this.mapId) {
+      this.getMapDetail();
+      this.getComments(); // 获取评论列表
+    } else {
+      console.error('mapId为空，无法获取详情');
+      uni.showToast({
+        title: '参数错误',
+        icon: 'none'
+      });
+    }
+    
+    // 获取用户ID
+    const userInfo = uni.getStorageSync('userInfo');
+    if (userInfo) {
+      try {
+        const userObj = JSON.parse(userInfo);
+        this.userId = userObj.user_id;
+        // 获取是否已点赞和收藏
+        if(this.userId && this.mapId) {
+          this.checkLikeStatus();
+          this.checkCollectionStatus();
+        }
+      } catch (e) {
+        console.error('解析用户信息失败', e);
+      }
+    }
+  },
+  
+  onShareAppMessage() {
+    return {
+      title: this.mapInfo.title,
+      path: `/pages/map/detail?id=${this.mapId}`
+    }
+  },
+  
+  methods: {
+    
+    // 根据mapId查找topicId
+    findTopicIdByMapId(mapId) {
+      uni.showLoading({
+        title: '查询专题信息...'
+      });
+      
+      // 首先获取所有专题
+      uni.request({
+        url: API.TOPICS,
+        method: 'GET',
+        success: async (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            const topics = res.data.data;
+            
+            // 依次查询每个专题，找到包含当前地图的专题就停止
+            for (const topic of topics) {
+              const topicId = topic.topic_id;
+              
+              try {
+                const result = await new Promise((resolve, reject) => {
+                  uni.request({
+                    url: API.MAPS_BY_GROUP + topicId,
+                    method: 'GET',
+                    success: (mapRes) => {
+                      if (mapRes.statusCode === 200 && mapRes.data.code === 200) {
+                        const maps = mapRes.data.data;
+                        // 检查当前地图是否在这个专题中
+                        const foundMap = maps.find(m => m.map_id === mapId);
+                        resolve(foundMap ? { found: true, topicId } : { found: false });
+                      } else {
+                        resolve({ found: false });
+                      }
+                    },
+                    fail: (err) => {
+                      reject(err);
+                    }
+                  });
+                });
+                
+                if (result.found) {
+                  // 找到了专题，设置topicId并跳转
+                  uni.hideLoading();
+                  this.topicId = result.topicId;
+                  this.navigateToBrowsePage();
+                  return; // 找到了就停止查询
+                }
+              } catch (err) {
+                console.error('查询专题地图失败:', err);
+                // 继续查询下一个专题
+              }
+            }
+            
+            // 所有专题都查询完了，还没找到
+            uni.hideLoading();
+            uni.showToast({
+              title: '未找到相关专题信息',
+              icon: 'none'
+            });
+          } else {
+            uni.hideLoading();
+            uni.showToast({
+              title: '获取专题信息失败',
+              icon: 'none'
+            });
+          }
+        },
+        fail: () => {
+          uni.hideLoading();
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        }
+      });
+    },
+    
+    // 获取地图详情
+    getMapDetail() {
+      // 显示加载状态
+      uni.showLoading({
+        title: '加载中...'
+      });
+      
+      console.log('=== 地图详情获取开始 ===');
+      console.log('请求地图ID:', this.mapId);
+      console.log('请求URL:', API.MAP_DETAIL + this.mapId);
+      
+      // 调用后端API获取地图详情
+      uni.request({
+        url: API.MAP_DETAIL + this.mapId,
+        method: 'GET',
+        success: (res) => {
+          console.log('API响应成功:', res);
+          if (res.statusCode === 200 && res.data.code === 200) {
+            const mapData = res.data.data[0]; // 后端返回的是数组，取第一个元素
+            console.log('原始地图数据:', mapData);
+            
+            if (mapData) {
+              console.log('=== 开始处理详情页地图图片 ===');
+              console.log('地图标题:', mapData.title);
+              
+              // 基于title获取或生成图片URL
+              let imageUrl = imageCache.getImage(mapData.title);
+              
+              if (imageUrl) {
+                console.log('缓存命中！使用缓存的图片:', imageUrl);
+              } else {
+                console.log('缓存未命中，生成新的图片URL');
+                imageUrl = generateImageUrl(mapData.title);
+                imageCache.setImage(mapData.title, imageUrl, mapData);
+                console.log('生成的图片URL:', imageUrl);
+              }
+              
+              // 更新地图信息
+              const newMapInfo = {
+                id: mapData.map_id,
+                title: mapData.title,
+                description: mapData.description || '暂无描述',
+                image: imageUrl,
+                type: mapData.type,
+                width: mapData.width,
+                height: mapData.height,
+                createTime: mapData.create_time,
+                viewCount: mapData.view_count || 0,
+                likeCount: mapData.like_count || 0,
+                commentCount: mapData.comment_count || 0
+              };
+              
+              console.log('新的地图信息:', newMapInfo);
+              console.log('使用的图片URL:', imageUrl);
+              
+              // 直接赋值更新数据
+              this.mapInfo = newMapInfo;
+              
+              // 更新相关统计数据
+              this.likeCount = mapData.like_count || 0;
+              this.commentCount = mapData.comment_count || 0;
+              
+              console.log('=== 详情页地图图片处理完成 ===');
+              
+              // 强制重新渲染（Vue2兼容）
+              this.$forceUpdate();
+              
+            } else {
+              console.error('地图数据为空');
+              uni.showToast({
+                title: '地图数据不存在',
+                icon: 'none'
+              });
+            }
+          } else {
+            console.error('API返回错误:', res.data);
+            uni.showToast({
+              title: '获取地图详情失败',
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('网络请求失败:', err);
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        },
+        complete: () => {
+          uni.hideLoading();
+          console.log('=== 地图详情获取结束 ===');
+        }
+      });
+    },
+    
+    // 获取评论列表
+    getComments() {
+      if (!this.mapId) return;
+      
+      uni.showLoading({
+        title: '加载评论...'
+      });
+      
+      uni.request({
+        url: API.COMMENT_LIST,
+        method: 'GET',
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            // 筛选当前地图的评论
+            const allComments = res.data.data || [];
+            this.comments = allComments.filter(item => {
+              return item.mapid === this.mapId && item.status === 1; // 只显示审核通过的评论
+            }).map(item => {
+              return {
+                id: item.comment_id,
+                userName: item.username || '匿名用户',
+                content: item.content,
+                time: item.commentTime || new Date(item.create_time).toLocaleString()
+              };
+            });
+            
+            // 更新评论计数
+            this.commentCount = this.comments.length;
+          } else {
+            console.error('获取评论失败:', res.data);
+          }
+        },
+        fail: (err) => {
+          console.error('请求评论接口失败:', err);
+        },
+        complete: () => {
+          uni.hideLoading();
+        }
+      });
+    },
+    
+    // 检查点赞状态
+    checkLikeStatus() {
+      if (!this.userId || !this.mapId) return;
+      
+      uni.request({
+        url: API.LIKE_CHECK,
+        method: 'GET',
+        data: {
+          userId: this.userId,
+          mapId: this.mapId
+        },
+        header: {
+          'content-type': 'application/x-www-form-urlencoded'
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            this.isLiked = res.data.data.liked;
+          }
+        }
+      });
+    },
+    
+    // 检查收藏状态
+    checkCollectionStatus() {
+      if (!this.userId || !this.mapId) return;
+      
+      uni.request({
+        url: API.COLLECTION_CHECK,
+        method: 'GET',
+        data: {
+          userId: this.userId,
+          mapId: this.mapId
+        },
+        header: {
+          'content-type': 'application/x-www-form-urlencoded'
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            this.isCollected = res.data.data.collected;
+          }
+        }
+      });
+    },
+    
+    // 点赞地图
+    likeMap() {
+      if (!this.userId) {
+        uni.showToast({
+          title: '请先登录',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      uni.request({
+        url: API.LIKE_TOGGLE,
+        method: 'POST',
+        data: {
+          userId: this.userId,
+          mapId: this.mapId
+        },
+        header: {
+          'content-type': 'application/x-www-form-urlencoded'
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            this.isLiked = res.data.data.liked;
+            // 更新点赞数
+            this.likeCount += this.isLiked ? 1 : -1;
+            
+            uni.showToast({
+              title: this.isLiked ? '点赞成功' : '已取消点赞',
+              icon: 'none'
+            });
+          }
+        }
+      });
+    },
+    
+    // 收藏地图
+    collectMap() {
+      if (!this.userId) {
+        uni.showToast({
+          title: '请先登录',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      uni.request({
+        url: API.COLLECTION_TOGGLE,
+        method: 'POST',
+        data: {
+          userId: this.userId,
+          mapId: this.mapId
+        },
+        header: {
+          'content-type': 'application/x-www-form-urlencoded'
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            this.isCollected = res.data.data.collected;
+            
+            uni.showToast({
+              title: this.isCollected ? '收藏成功' : '已取消收藏',
+              icon: 'none'
+            });
+          }
+        }
+      });
+    },
+    
+    // 聚焦评论输入框
+    focusCommentInput() {
+      this.inputFocus = true;
+    },
+    
+    // 提交评论
+    submitComment() {
+      if (!this.commentContent.trim()) {
+        uni.showToast({
+          title: '评论内容不能为空',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 检查用户是否登录
+      if (!this.userId) {
+        uni.showToast({
+          title: '请先登录',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      uni.showLoading({
+        title: '提交中...'
+      });
+      
+      uni.request({
+        url: API.COMMENT_ADD,
+        method: 'GET', // 
+        data: {
+          userId: this.userId,
+          mapId: this.mapId,
+          comment: this.commentContent
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            uni.showToast({
+              title: '评论已提交，等待审核',
+              icon: 'success'
+            });
+            
+            // 清空评论内容
+            this.commentContent = '';
+            this.inputFocus = false;
+            
+            // 由于评论需要审核，暂不立即添加到列表,但可以显示一个临时的评论提示
+            uni.showModal({
+              title: '提示',
+              content: '您的评论已提交，将在审核通过后显示',
+              showCancel: false
+            });
+          } else {
+            uni.showToast({
+              title: '评论提交失败',
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('评论提交失败:', err);
+          uni.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        },
+        complete: () => {
+          uni.hideLoading();
+        }
+      });
+    },
+    
+    // 显示自定义列表选择器
+    showListsModal() {
+      if (!this.userId) {
+        uni.showToast({
+          title: '请先登录',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 获取用户的自定义列表
+      this.fetchCustomLists();
+      this.showListsSelector = true;
+    },
+    
+    // 获取用户的自定义列表
+    fetchCustomLists() {
+      uni.showLoading({
+        title: '加载中...'
+      });
+      
+      try {
+        uni.request({
+          url: API.CUSTOM_LIST_GET,
+          method: 'GET',
+          data: {
+            userId: this.userId
+          },
+          success: (res) => {
+            uni.hideLoading();
+            if (res.statusCode === 200 && res.data.code === 200) {
+              // 确保数据结构是正确的
+              this.customLists = (res.data.data || []).map(list => {
+                return {
+                  list_id: list.list_id,
+                  name: list.name,
+                  description: list.description
+                };
+              });
+              
+              // 重置选择状态
+              this.selectedLists = [];
+              
+              // 如果有列表，检查当前地图是否已在列表中
+              if (this.customLists.length > 0) {
+                this.checkMapInLists();
+              }
+            } else {
+              uni.showToast({
+                title: '获取列表失败',
+                icon: 'none'
+              });
+            }
+          },
+          fail: (err) => {
+            uni.hideLoading();
+            console.error('请求失败', err);
+            uni.showToast({
+              title: '网络错误，请稍后重试',
+              icon: 'none'
+            });
+          }
+        });
+      } catch (e) {
+        uni.hideLoading();
+        console.error('获取列表异常', e);
+      }
+    },
+    
+    // 检查地图是否已在列表中
+    checkMapInLists() {
+      const promises = this.customLists.map(list => {
+        return new Promise((resolve) => {
+          uni.request({
+            url: API.CUSTOM_LIST_CHECK_MAP,
+            method: 'GET',
+            data: {
+              listId: list.list_id,
+              mapId: this.mapId
+            },
+            success: (res) => {
+              if (res.statusCode === 200 && res.data.code === 200) {
+                if (res.data.data.inList) {
+                  // 如果地图在列表中，添加到已选择列表
+                  this.selectedLists.push(list.list_id);
+                }
+              }
+              resolve();
+            },
+            fail: () => {
+              resolve();
+            }
+          });
+        });
+      });
+      
+      // 等待所有检查完成
+      Promise.all(promises).then(() => {
+        // 更新UI状态
+        this.$forceUpdate();
+      });
+    },
+    
+    // 检查地图是否已在列表中
+    isMapInList(listId) {
+      return this.selectedLists.includes(listId);
+    },
+
+    // 切换列表选择状态
+    toggleListSelection(listId) {
+      console.log('Toggle list:', listId); // 调试用
+      const index = this.selectedLists.indexOf(listId);
+      if (index > -1) {
+        this.selectedLists.splice(index, 1);
+      } else {
+        this.selectedLists.push(listId);
+      }
+      console.log('Selected lists:', this.selectedLists); // 调试用
+    },
+    
+    // 添加到已选择的列表
+    addToSelectedLists() {
+      if (this.selectedLists.length === 0) {
+        uni.showToast({
+          title: '请选择至少一个列表',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      uni.showLoading({
+        title: '添加中...'
+      });
+      
+      // 对每个选中的列表，添加当前地图
+      const promises = this.selectedLists.map(listId => {
+        return new Promise((resolve) => {
+          uni.request({
+            url: API.CUSTOM_LIST_ADD_MAP,
+            method: 'POST',
+            data: {
+              listId: listId,
+              mapId: this.mapId,
+              userId: this.userId
+            },
+            header: {
+              'content-type': 'application/x-www-form-urlencoded'
+            },
+            success: () => {
+              resolve(true);
+            },
+            fail: () => {
+              resolve(false);
+            }
+          });
+        });
+      });
+      
+      // 等待所有请求完成
+      Promise.all(promises).then((results) => {
+        uni.hideLoading();
+        
+        const successCount = results.filter(r => r).length;
+        if (successCount > 0) {
+          uni.showToast({
+            title: `成功添加到${successCount}个列表`,
+            icon: 'success'
+          });
+          this.hideListsModal();
+        } else {
+          uni.showToast({
+            title: '添加失败',
+            icon: 'none'
+          });
+        }
+      });
+    },
+    
+    hideListsModal() {
+      console.log('隐藏列表选择器');
+      this.showListsSelector = false;
+      this.selectedLists = [];
+    },
+    
+    // 显示自定义列表选择器
+    showListsModal() {
+      if (!this.userId) {
+        uni.showToast({
+          title: '请先登录',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      console.log('显示列表选择器');
+      // 获取用户的自定义列表
+      this.fetchCustomLists();
+      this.showListsSelector = true;
+    },
+    
+    // 跳转到创建列表页面
+    navigateToCreateList() {
+      this.hideListsModal();
+      uni.navigateTo({
+        url: '/pages/user/custom-lists'
+      });
+    },
+    
+    // 跳转到浏览页
+    navigateToBrowsePage() {
+      uni.navigateTo({
+        url: `/pages/map/browse?id=${this.mapId}&topic_id=${this.topicId}`
+      });
+    },
+    
+    // 返回浏览页
+    backToBrowse() {
+      if (this.fromBrowse) {
+        uni.navigateBack();
+      } else {
+        // 检查topicId是否存在
+        if (!this.topicId) {
+          // 没有topicId，需要查询
+          this.findTopicIdByMapId(this.mapId);
+        } else {
+          // 有topicId，直接跳转
+          this.navigateToBrowsePage();
+        }
+      }
+    },
+  }
+}
 </script>
-
 <style>
 	.container {
 		padding-bottom: 100rpx;

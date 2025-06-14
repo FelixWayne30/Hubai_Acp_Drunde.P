@@ -25,8 +25,8 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateThumbnailUrl } from '@/common/utils.js';
-import { thumbnailCache } from '@/common/preload.js';
+import { generateImageUrl } from '@/common/utils.js';
+import imageCache from '@/common/cache.js';
 import MapItem from "../../component/map.vue";
 
 export default {
@@ -39,6 +39,9 @@ export default {
   },
   onLoad(options) {
     this.topic = options.topic || '';
+    
+    // 设置当前专题ID，用于图片缓存
+    imageCache.setCurrentTopic(this.topic);
 
     // 获取专题信息和地图列表
     this.getTopicMaps();
@@ -47,7 +50,7 @@ export default {
   methods: {
     // 图片加载错误处理
     handleImageError(e) {
-      console.log('缩略图加载失败，使用默认图片');
+      console.log('图片加载失败，使用默认图片');
       e.target.src = '/static/placeholder.png';
     },
     
@@ -66,23 +69,23 @@ export default {
           group: this.topic
         },
         success: (res) => {
-          console.log(res);
+          console.log('获取地图数据响应:', res);
           if (res.statusCode === 200 && res.data.code === 200) {
             // 处理地图数据
             this.maps = res.data.data.map((item, index) => {
               console.log(`处理地图项 ${index}: ${item.title}`);
               
-              // 生成缩略图URL
-              const thumbnailUrl = generateThumbnailUrl(item.map_id, item.width, item.height);
+              // 基于中文标题生成图片URL
+              const imageUrl = generateImageUrl(item.title);
               
-              // 缓存缩略图URL，供其他页面使用
-              thumbnailCache.setThumbnail(item.map_id, thumbnailUrl, item);
+              // 缓存图片URL，供其他页面使用
+              imageCache.setImage(item.title, imageUrl, item);
               
               return {
                 id: item.map_id,
                 title: item.title,
                 description: item.description,
-                thumbnail: thumbnailUrl,
+                thumbnail: imageUrl,
                 width: item.width,
                 height: item.height
               };
@@ -141,6 +144,7 @@ export default {
 </script>
 
 <style>
+/* 样式保持不变 */
 .container {
   position: relative;
   height: 100vh;
@@ -148,7 +152,6 @@ export default {
   overflow: hidden;
 }
 
-/* ========== 保持原有背景设计不变 ========== */
 .background-solid {
   position: absolute;
   top: 0;
@@ -185,7 +188,6 @@ export default {
   z-index: 1;
 }
 
-/* ========== 优化后的滚动区域 ========== */
 .maps-scroll {
   position: relative;
   z-index: 2;
