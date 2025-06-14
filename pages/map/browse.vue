@@ -1,3 +1,4 @@
+<!-- pages/map/browse.vue -->
 <template>
   <view class="container">
     <!-- 加载指示器 -->
@@ -61,8 +62,7 @@
 
 <script>
 import { API } from '@/common/config.js'
-import { generateImageUrl, loadImageWithAuth } from '@/common/utils.js'
-import imageCache from '@/common/cache.js'
+import { generateImageUrl } from '@/common/utils.js'
 
 export default {
   data() {
@@ -84,10 +84,7 @@ export default {
       
       // 手势操作状态
       touching: false,
-      touchStartData: null,
-      
-      // 图片服务器配置
-      imageBaseUrl: 'http://1.92.85.165:8088/image/'
+      touchStartData: null
     }
   },
   
@@ -193,8 +190,8 @@ export default {
       });
     },
     
-    // 加载当前地图，使用title构建图片URL
-    async loadCurrentMap() {
+    // 加载当前地图，直接使用原图URL
+    loadCurrentMap() {
       if (!this.allMaps.length) {
         this.showError('没有可显示的地图');
         return;
@@ -206,44 +203,21 @@ export default {
         return;
       }
       
-      try {
-        this.isLoading = true;
-        this.loadingText = '加载中...';
-        
-        console.log('=== 开始加载地图图片 ===');
-        console.log('当前地图标题:', this.currentMap.title);
-        
-        // 检查缓存
-        let imageUrl = imageCache.getImage(this.currentMap.title);
-        
-        if (imageUrl) {
-          console.log('缓存命中，使用缓存图片:', imageUrl);
-          this.currentMapUrl = imageUrl;
-          this.isLoading = false;
-        } else {
-          console.log('缓存未命中，生成新的图片URL');
-          // 基于title生成图片URL
-          const generatedUrl = generateImageUrl(this.currentMap.title);
-          
-          // 使用认证方式加载图片
-          const tempFilePath = await loadImageWithAuth(generatedUrl);
-          
-          // 缓存图片URL
-          imageCache.setImage(this.currentMap.title, tempFilePath, this.currentMap);
-          
-          this.currentMapUrl = tempFilePath;
-          console.log('图片加载成功:', tempFilePath);
-        }
-        
-        // 重置变换状态
-        this.resetTransform();
-        
-      } catch (error) {
-        console.error('加载地图失败:', error);
-        this.showError(`加载失败: ${error.message || '未知错误'}`);
-      } finally {
-        this.isLoading = false;
-      }
+      console.log('=== 开始加载原图 ===');
+      console.log('当前地图标题:', this.currentMap.title);
+      
+      // 直接生成原图URL
+      const originalImageUrl = generateImageUrl(this.currentMap.title);
+      console.log('生成的原图URL:', originalImageUrl);
+      
+      // 直接设置图片URL，不需要下载
+      this.currentMapUrl = originalImageUrl;
+      
+      // 重置变换状态
+      this.resetTransform();
+      
+      // 由于不需要下载，直接关闭加载状态
+      this.isLoading = false;
     },
     
     // ===== 手势操作相关 =====
@@ -370,12 +344,12 @@ export default {
     
     // ===== 事件处理 =====
     onImageLoad() {
-      console.log('图片显示成功');
+      console.log('原图显示成功');
       this.isLoading = false;
     },
     
     onImageError(error) {
-      console.error('图片显示失败:', error);
+      console.error('原图显示失败:', error);
       this.showError('图片显示失败，请检查网络连接');
     },
     
@@ -398,6 +372,7 @@ export default {
   }
 }
 </script>
+
 <style>
 .container {
   width: 100%;
