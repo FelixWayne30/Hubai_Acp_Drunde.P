@@ -49,7 +49,7 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateImageUrl } from '@/common/utils.js';
+import { generateSubimageUrl } from '@/common/utils.js'
 import imageCache from '@/common/cache.js';
 
 export default {
@@ -127,7 +127,7 @@ export default {
                 console.log(`缓存命中，使用缓存图片: ${imageUrl}`);
               } else {
                 console.log('缓存未命中，生成新的图片URL');
-                imageUrl = generateImageUrl(item.title);
+                imageUrl = generateSubimageUrl(item.title);
                 imageCache.setImage(item.title, imageUrl, item);
                 console.log(`生成新图片URL: ${imageUrl}`);
               }

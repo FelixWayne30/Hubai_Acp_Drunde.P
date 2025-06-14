@@ -106,7 +106,7 @@
 <!-- 专题详情页的关键部分更新 -->
 <script>
 import { API } from '@/common/config.js'
-import { generateImageUrl } from '@/common/utils.js'
+import { generateSubimageUrl } from '@/common/utils.js'
 import imageCache from '@/common/cache.js'
 
 export default {
@@ -236,7 +236,7 @@ export default {
                 console.log('缓存命中！使用缓存的图片:', imageUrl);
               } else {
                 console.log('缓存未命中，生成新的图片URL');
-                imageUrl = generateImageUrl(mapData.title);
+                imageUrl = generateSubimageUrl(mapData.title);
                 imageCache.setImage(mapData.title, imageUrl, mapData);
                 console.log('生成的图片URL:', imageUrl);
               }

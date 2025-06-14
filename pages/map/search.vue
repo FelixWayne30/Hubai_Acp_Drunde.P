@@ -118,7 +118,7 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateImageUrl } from '@/common/utils.js';
+import { generateSubimageUrl } from '@/common/utils.js'
 import imageCache from '@/common/cache.js';
 
 export default {
@@ -270,7 +270,7 @@ export default {
                   
                   // 如果缓存中没有，则生成新的图片URL
                   if (!thumbnail) {
-                    thumbnail = generateImageUrl(item.title);
+                    thumbnail = generateSubimageUrl(item.title);
                     imageCache.setImage(item.title, thumbnail, item);
                     console.log(`生成新图片URL: ${thumbnail}`);
                   } else {
