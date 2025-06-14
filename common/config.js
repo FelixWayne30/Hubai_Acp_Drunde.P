@@ -27,12 +27,13 @@ export const API = {
   CUSTOM_LIST_CHECK_MAP: `${envConfig.API_BASE_URL}/customlist/checkMap`,
 
   // 地图信息API
-  TOPICS: `${envConfig.API_BASE_URL}/mapinfo/topics`,
-  MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/maps/`,
-  MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
-  ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
-  SEARCH: `${envConfig.API_BASE_URL}/mapinfo/search`,
-  BANNER_MAPS: `${envConfig.API_BASE_URL}/mapinfo/bannerMaps`,
+   TOPICS: `${envConfig.API_BASE_URL}/mapinfo/topics`,
+   MAPS_BY_GROUP: `${envConfig.API_BASE_URL}/mapinfo/maps/`,
+   MAP_DETAIL: `${envConfig.API_BASE_URL}/mapinfo/map/`,
+   ALL_MAPS: `${envConfig.API_BASE_URL}/mapinfo/maps`,
+   SEARCH: `${envConfig.API_BASE_URL}/mapinfo/search`, 
+   SEARCH_SUGGESTIONS: `${envConfig.API_BASE_URL}/mapinfo/search-suggestions`,
+   BANNER_MAPS: `${envConfig.API_BASE_URL}/mapinfo/bannerMaps`,
   
   // 交互相关API
   COLLECTION_TOGGLE: `${envConfig.API_BASE_URL}/interaction/collection/toggle`,
