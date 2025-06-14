@@ -27,7 +27,7 @@
 import { API } from '@/common/config.js';
 import { generateThumbnailUrl } from '@/common/utils.js';
 import { thumbnailCache } from '@/common/preload.js';
-import MapItem from "../../component/map.vue";
+import MapItem from '@/component/map.vue';
 
 export default {
   components: {MapItem},

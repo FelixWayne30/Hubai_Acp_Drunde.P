@@ -14,73 +14,75 @@
           <text class="title-sub">探索荆楚大地·记录自然之美</text>
         </view>
       </view>
-      
-      <!-- 搜索框 -->
-      <view class="search-container">
-        <view class="search-inputbox">
-          <input
-              class="search-input"
-              placeholder="试试搜索“武汉市降水量”"
-              placeholder-class="search-placeholder"
-              confirm-type="search"
-              @confirm="performSearch"
-              @input="onSearchInput"
-              v-model="searchQuery"
-          />
-          <view v-if="searchQuery" class="clear-button" @click="clearSearch">
-            <text class="clear-icon">×</text>
-          </view>
-        </view>
-        <view class="search-tag">
-          已接入阿里巴巴千问大模型
-        </view>
-      </view>
-      
-		<!--专题卡片-->
-      <view class="topics-card">
-        <view class="card-header">
-          <text class="section-title">自然资源专题探索<br/></text>
-          <view class="section-subtitle">发现湖北自然资源的多样魅力</view>
-        </view>
-        
-        <scroll-view class="topics-scroll" scroll-y :show-scrollbar="false">
-          <view class="topics-content">
 
-            <view class="row-1">
-              <view class="topic-card left-big color-mint" @click="navigateToTopic(topicList[0])">
-                <view class="card-number">壹</view>
-                <view class="card-content">
-                  <text class="card-title">{{topicList[0]}}</text>
-                </view>
-              </view>
-              
-              <view class="right-double">
-                <view class="topic-card right-top color-lavender" @click="navigateToTopic(topicList[1])">
-                  <view class="card-number">贰</view>
-                  <view class="card-content">
-                    <text class="card-title">{{topicList[1]}}</text>
-                  </view>
-                </view>
-                
-                <view class="topic-card right-bottom color-peach" @click="navigateToTopic(topicList[2])">
-                  <view class="card-number">叁</view>
-                  <view class="card-content">
-                    <text class="card-title">{{topicList[2]}}</text>
-                  </view>
-                </view>
-              </view>
-            </view>
-            
-            <view class="row-2">
-              <view class="topic-card full-width color-sky" @click="navigateToTopic(topicList[3])">
-                <view class="card-number">肆</view>
-                <view class="card-content">
-                  <text class="card-title">{{topicList[3]}}</text>
-                </view>
-              </view>
+      <view class="bottom-section">
+        <!-- 搜索框 -->
+        <view class="search-container">
+          <view class="search-inputbox">
+            <input
+                class="search-input"
+                placeholder="试试搜索“武汉市降水量”"
+                placeholder-class="search-placeholder"
+                confirm-type="search"
+                @confirm="performSearch"
+                @input="onSearchInput"
+                v-model="searchQuery"
+            />
+            <view v-if="searchQuery" class="clear-button" @click="clearSearch">
+              <text class="clear-icon">×</text>
             </view>
           </view>
-        </scroll-view>
+          <view class="search-tag">
+            已接入阿里巴巴千问大模型
+          </view>
+        </view>
+
+        <!--专题卡片-->
+        <view class="topics-card">
+          <view class="card-header">
+            <text class="section-title">自然资源专题探索<br/></text>
+            <view class="section-subtitle">发现湖北自然资源的多样魅力</view>
+          </view>
+
+          <scroll-view class="topics-scroll" scroll-y :show-scrollbar="false">
+            <view class="topics-content">
+
+              <view class="row-1">
+                <view class="topic-card left-big color-mint" @click="navigateToTopic(topicList[0])">
+                  <view class="card-number">壹</view>
+                  <view class="card-content">
+                    <text class="card-title">{{topicList[0]}}</text>
+                  </view>
+                </view>
+
+                <view class="right-double">
+                  <view class="topic-card right-top color-lavender" @click="navigateToTopic(topicList[1])">
+                    <view class="card-number">贰</view>
+                    <view class="card-content">
+                      <text class="card-title">{{topicList[1]}}</text>
+                    </view>
+                  </view>
+
+                  <view class="topic-card right-bottom color-peach" @click="navigateToTopic(topicList[2])">
+                    <view class="card-number">叁</view>
+                    <view class="card-content">
+                      <text class="card-title">{{topicList[2]}}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+
+              <view class="row-2">
+                <view class="topic-card full-width color-sky" @click="navigateToTopic(topicList[3])">
+                  <view class="card-number">肆</view>
+                  <view class="card-content">
+                    <text class="card-title">{{topicList[3]}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </scroll-view>
+        </view>
       </view>
     </view>
   </view>
@@ -149,12 +151,15 @@ export default {
 .main-content {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+  height: 100vh;
   padding: 0 30rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .header-section {
-  padding: 200rpx 0 100rpx;
+  padding: 10vh 0 0;
   text-align: center;
 }
 
@@ -183,12 +188,10 @@ export default {
 
 /* 搜索框 */
 .search-container {
-  position: relative;
-  height: 100rpx;
+  height: 120rpx;
   background: rgba(245, 245, 245, 0.7);
   border-radius: 10rpx;
-  margin-bottom: 20rpx;
-  margin-top: 210rpx;
+  margin-bottom: 1vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 4rpx 20rpx rgba(46, 139, 87, 0.08);
@@ -200,6 +203,9 @@ export default {
   flex-direction: row;
   justify-content: space-between;
   align-items: baseline;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 8rpx;
+  margin-bottom: 10rpx;
 }
 
 .search-input {
@@ -214,8 +220,8 @@ export default {
 .search-tag{
   color: rgba(51, 51, 51, 0.7);
   font-size: 20rpx;
-  padding-left: 32rpx;
   margin-bottom: 10rpx;
+  padding: 10rpx;
 }
 
 .clear-button {
@@ -248,7 +254,7 @@ export default {
   background: rgba(241, 241, 241, 0.6);
   border-radius: 24rpx;
   padding: 30rpx;
-  margin-bottom: 60rpx;
+  margin-bottom: 2vh;
   box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.15);
   max-height: calc(100vh - 460rpx);
   min-height: 500rpx;
