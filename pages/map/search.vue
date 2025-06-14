@@ -133,7 +133,8 @@ export default {
       hasMore: true,
       hasSearched: false,
       totalResults: 0,
-      suggestionTimer: null
+      suggestionTimer: null,
+      imageLoadingStates: new Map()
     };
   },
   
@@ -154,6 +155,23 @@ export default {
   },
   
   methods: {
+	 
+	  getImageLoadingState(mapId) {
+	       if (!this.imageLoadingStates.has(mapId)) {
+	         this.imageLoadingStates.set(mapId, { loading: false });
+	       }
+	       return this.imageLoadingStates.get(mapId);
+	     },
+	     
+	     // 设置图片加载状态
+	     setImageLoadingState(mapId, loading) {
+	       if (!this.imageLoadingStates.has(mapId)) {
+	         this.imageLoadingStates.set(mapId, {});
+	       }
+	       this.imageLoadingStates.get(mapId).loading = loading;
+	     }, 
+	  
+	  
     // 输入监听，获取搜索建议
     onSearchInput(e) {
       this.searchQuery = e.detail.value;
@@ -224,85 +242,88 @@ export default {
     
     // 从API获取搜索结果 - 重构图片处理逻辑
     fetchSearchResults() {
-      // 构建查询参数
-      const queryParams = {
-        query: this.searchQuery,
-        page: this.page,
-        size: this.pageSize
-      };
-      
-      // 调用AI搜索API
-      uni.request({
-        url: API.SEARCH,
-        method: 'GET',
-        data: queryParams,
-        success: (res) => {
-          if (res.statusCode === 200 && res.data.code === 200) {
-            const data = res.data.data;
-            const results = data.results || [];
-            const total = data.total || 0;
-            
-            // 处理结果，生成图片URL
-            const processedResults = results.map(item => {
-              console.log(`处理搜索结果: ${item.title}`);
-              
-              // 检查缓存中是否有图片
-              let thumbnail = imageCache.getImage(item.title);
-              
-              // 如果缓存中没有，则生成新的图片URL
-              if (!thumbnail) {
-                thumbnail = generateImageUrl(item.title);
-                // 缓存图片URL
-                imageCache.setImage(item.title, thumbnail, item);
-                console.log(`生成新图片URL: ${thumbnail}`);
+          const queryParams = {
+            query: this.searchQuery,
+            page: this.page,
+            size: this.pageSize
+          };
+          
+          uni.request({
+            url: API.SEARCH,
+            method: 'GET',
+            data: queryParams,
+            success: (res) => {
+              if (res.statusCode === 200 && res.data.code === 200) {
+                const data = res.data.data;
+                const results = data.results || [];
+                const total = data.total || 0;
+                
+                // 处理结果，生成图片URL
+                const processedResults = results.map(item => {
+                  console.log(`处理搜索结果: ${item.title}`);
+                  
+                  // 设置图片加载状态
+                  this.setImageLoadingState(item.map_id, true);
+                  
+                  // 检查缓存中是否有图片
+                  let thumbnail = imageCache.getImage(item.title);
+                  
+                  // 如果缓存中没有，则生成新的图片URL
+                  if (!thumbnail) {
+                    thumbnail = generateImageUrl(item.title);
+                    imageCache.setImage(item.title, thumbnail, item);
+                    console.log(`生成新图片URL: ${thumbnail}`);
+                  } else {
+                    console.log(`使用缓存图片URL: ${thumbnail}`);
+                  }
+                  
+                  // 图片加载完成后更新状态
+                  setTimeout(() => {
+                    this.setImageLoadingState(item.map_id, false);
+                  }, 1000);
+                  
+                  return {
+                    map_id: item.map_id,
+                    title: item.title,
+                    description: item.description || '暂无描述',
+                    type: item.type || '未分类',
+                    thumbnail: thumbnail || '/static/placeholder.png',
+                    relevance_score: item.relevance_score || 5,
+                    subitem_name: item.subitem_name || ''
+                  };
+                });
+                
+                // 更新结果列表
+                if (this.page === 1) {
+                  this.searchResults = processedResults;
+                } else {
+                  this.searchResults = [...this.searchResults, ...processedResults];
+                }
+                
+                this.totalResults = total;
+                this.hasMore = results.length === this.pageSize;
               } else {
-                console.log(`使用缓存图片URL: ${thumbnail}`);
+                uni.showToast({
+                  title: '搜索失败',
+                  icon: 'none'
+                });
+                console.error('搜索API返回错误:', res.data);
               }
-              
-              return {
-                map_id: item.map_id,
-                title: item.title,
-                description: item.description || '暂无描述',
-                type: item.type || '未分类',
-                thumbnail: thumbnail || '/static/placeholder.png',
-                relevance_score: item.relevance_score || 5,
-                subitem_name: item.subitem_name || ''
-              };
-            });
-            
-            // 更新结果列表
-            if (this.page === 1) {
-              this.searchResults = processedResults;
-            } else {
-              this.searchResults = [...this.searchResults, ...processedResults];
+            },
+            fail: (err) => {
+              uni.showToast({
+                title: '网络错误，请稍后重试',
+                icon: 'none'
+              });
+              console.error('搜索请求失败:', err);
+            },
+            complete: () => {
+              this.isLoading = false;
+              uni.stopPullDownRefresh();
             }
-            
-            this.totalResults = total;
-            
-            // 判断是否还有更多结果
-            this.hasMore = results.length === this.pageSize;
-          } else {
-            uni.showToast({
-              title: '搜索失败',
-              icon: 'none'
-            });
-            console.error('搜索API返回错误:', res.data);
-          }
-        },
-        fail: (err) => {
-          uni.showToast({
-            title: '网络错误，请稍后重试',
-            icon: 'none'
           });
-          console.error('搜索请求失败:', err);
         },
-        complete: () => {
-          this.isLoading = false;
-          uni.stopPullDownRefresh();
-        }
-      });
-    },
-    
+		
     // 加载更多结果
     loadMoreResults() {
       if (!this.hasMore || this.isLoading) return;
