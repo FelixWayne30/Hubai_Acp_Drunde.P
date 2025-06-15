@@ -36,8 +36,8 @@ export const API = {
   LIKE_CHECK: `${envConfig.API_BASE_URL}/interaction/like/check`,
 
   // 地图图片API
-  ORIGIN_MAP: `${envConfig.API_BASE_URL}/image`,
-  THUMBNAIL_MAP: `${envConfig.API_BASE_URL}/image/thumbnail`
+  ORIGIN_MAP: `${envConfig.API_BASE_URL}/image/`,
+  THUMBNAIL_MAP: `${envConfig.API_BASE_URL}/subimage/`
 };
 
 // 应用配置

@@ -62,7 +62,6 @@
 
 <script>
 import { API } from '@/common/config.js'
-import { generateImageUrl } from '@/common/utils.js'
 
 export default {
   data() {
@@ -205,7 +204,7 @@ export default {
       console.log('当前地图标题:', this.currentMap.title);
       
       // 直接生成原图URL
-      const originalImageUrl = generateImageUrl(this.currentMap.title);
+      const originalImageUrl = API.ORIGIN_MAP + this.currentMap.title + ".jpg";
       console.log('生成的原图URL:', originalImageUrl);
       
       // 直接设置图片URL，不需要下载
@@ -304,7 +303,7 @@ export default {
     },
     
     resetTransform() {
-      this.scale = 1.5;
+      this.scale = 2;
       this.translateX = 0;
       this.translateY = 0;
     },

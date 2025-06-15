@@ -1,4 +1,5 @@
 <script>
+import {clearMapCache, getMapintoCache} from "./common/uniStorage";
 	export default {
 		onLaunch: function() {
 			console.log('App Launch');
@@ -27,13 +28,14 @@
 					console.error('路由跳转失败:', err);
 				}
 			});
-
+      getMapintoCache()
 		},
 		onShow: function() {
 			console.log('App Show');
 		},
 		onHide: function() {
 			console.log('App Hide');
+      clearMapCache()
 		}
 	}
 </script>

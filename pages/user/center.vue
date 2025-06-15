@@ -33,6 +33,10 @@
 			<view class="function-card" @click="navigateWithLogin('/pages/user/downloads')">
 				<view class="function-title">下载记录</view>
 			</view>
+
+      <view class="function-card" @click="manageCache">
+        <view class="function-title">本地缓存</view>
+      </view>
 			
 			<view class="function-card" @click="showAbout">
 				<view class="function-title">关于我们</view>
@@ -238,7 +242,32 @@ export default {
 				content: '《湖北省自然资源地图集》小程序由湖北省自然资源厅与远图实验室提供支持。版本：0.0.0',
 				showCancel: false
 			});
-		}
+		},
+
+    manageCache(){
+      uni.getStorageInfo({
+        success:(res)=>{
+          uni.showModal({
+            title:'缓存管理',
+            content:`本地缓存大小为：${res.currentSize}KB/${res.limitSize}KB`,
+            confirmText:'清除',
+            success:(res)=>{
+              if (res.confirm) {
+                console.log("清除地图缓存")
+                uni.removeStorage({key:"maps"})
+              }
+            }
+          })
+        },
+        fail:()=>{
+          uni.showModal({
+            title: '缓存管理',
+            content:'获取缓存失败'
+          })
+        }
+      })
+
+    }
 	}
 }
 </script>
@@ -250,7 +279,6 @@ export default {
     flex-direction: column;
 		min-height: 100vh;
     justify-content: space-between;
-		//padding-bottom: 30rpx;
 	}
 	
 	/* Background image container - now at bottom */
@@ -344,7 +372,7 @@ export default {
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		padding: 50rpx 30rpx;
+		padding: 30rpx 30rpx;
 		background-color: rgba(255, 255, 255, 0.6);
 		border-radius: 15rpx;
 		margin-bottom: 20rpx;

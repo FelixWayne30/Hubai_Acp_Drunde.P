@@ -28,7 +28,6 @@
 
 <script>
 import { API } from '@/common/config.js';
-import { generateSubimageUrl } from '@/common/utils.js'
 import imageCache from '@/common/cache.js';
 import MapItem from '@/component/map.vue';
 
@@ -78,7 +77,7 @@ export default {
               console.log(`处理地图项 ${index}: ${item.title}`);
               
               // 基于中文标题生成图片URL
-              const imageUrl = generateSubimageUrl(item.title);
+              const imageUrl = API.THUMBNAIL_MAP+item.title+".jpg";
               
               // 缓存图片URL，供其他页面使用
               imageCache.setImage(item.title, imageUrl, item);
