@@ -134,8 +134,6 @@ export default {
             title: item.title,
             description: item.description,
             type: item.type,
-            width: item.width || 6000,
-            height: item.height || 4000,
             create_time: item.create_time
           }));
           
@@ -306,7 +304,7 @@ export default {
     },
     
     resetTransform() {
-      this.scale = 1;
+      this.scale = 1.5;
       this.translateX = 0;
       this.translateY = 0;
     },
@@ -471,6 +469,7 @@ export default {
   height: 100%;
   object-fit: contain;
   display: block;
+  transform: rotate(90deg);
 }
 
 /* ===== 底部控制栏 ===== */

@@ -11,7 +11,7 @@
 		<view class="interaction-bar">
 			<view class="action-btn" @click="likeMap">
 				<image 
-					class="action-icon" 
+					class="action-icon"
 					:src="isLiked ? '/static/icons/like-active.png' : '/static/icons/like.png'"
 				></image>
 				<text class="count">{{likeCount}}</text>
@@ -147,10 +147,6 @@ export default {
       comments: [],
       commentContent: '',
       inputFocus: false,
-      // 自定义列表相关
-      showListsSelector: false,
-      customLists: [],
-      selectedLists: [],
       // 来源页面
       fromBrowse: false
     }
@@ -794,15 +790,20 @@ export default {
 	/* 图幅预览区域 */
 	.preview-container {
 		position: relative;
-		width: 100%;
-		height: 450rpx;
+		width: 100vw;
+		height: 70vw;
 		margin-bottom: 30rpx; /* 统一间距 */
+    background-color: #f1f1f1;
 	}
 	
 	.preview-image {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 	}
 	
 	.map-title {
