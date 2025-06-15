@@ -9,7 +9,8 @@ export function getMapintoCache(){
                     key: "maps",
                     data: [...res.data.data]
                 })
-            }
+            },
+            fail: getMapintoCache
         })
 }
 export function clearMapCache(){
