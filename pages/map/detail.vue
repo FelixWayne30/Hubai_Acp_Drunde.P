@@ -204,6 +204,51 @@ export default {
   
   methods: {
       
+	  getTopicInfo() {
+	    if (!this.mapId) {
+	      uni.hideLoading();
+	      return;
+	    }
+	    
+	    console.log('=== 开始获取专题信息 ===');
+	    console.log('地图ID:', this.mapId);
+	    
+	    uni.request({
+	      url: API.GET_MAP_TOPIC + this.mapId,
+	      method: 'GET',
+	      success: (res) => {
+	        console.log('专题信息API响应:', res);
+	        
+	        if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
+	          const topicData = res.data.data;
+	          console.log('获取到专题信息:', topicData);
+	          
+	          // 设置专题信息
+	          this.topicId = topicData.topic_id;
+	          this.topic = topicData.title;
+	          
+	          // 设置缓存的当前专题
+	          imageCache.setCurrentTopic(this.topicId);
+	          
+	          console.log('专题信息设置成功:', {
+	            topicId: this.topicId,
+	            topic: this.topic
+	          });
+	        } else {
+	          console.log('该地图没有关联专题信息');
+	        }
+	      },
+	      fail: (err) => {
+	        console.error('获取专题信息失败:', err);
+	      },
+	      complete: () => {
+	        uni.hideLoading();
+	        console.log('=== 专题信息查询完成 ===');
+	      }
+	    });
+	  },
+	  
+	  
     // 获取地图详情
     getMapDetail() {
       // 显示加载状态
@@ -222,7 +267,7 @@ export default {
         success: (res) => {
           console.log('API响应成功:', res);
           if (res.statusCode === 200 && res.data.code === 200) {
-            const mapData = res.data.data[0]; // 后端返回的是数组，取第一个元素
+            const mapData = res.data.data[0];
             console.log('原始地图数据:', mapData);
             
             if (mapData) {
@@ -253,23 +298,26 @@ export default {
                 createTime: mapData.create_time,
                 viewCount: mapData.view_count || 0,
                 likeCount: mapData.like_count || 0,
-                commentCount: mapData.comment_count || 0
+                commentCount: mapData.comment_count || 0,
+                origin_topic: mapData.origin_topic 
               };
               
-              console.log('新的地图信息:', newMapInfo);
-              console.log('使用的图片URL:', imageUrl);
-              
-              // 直接赋值更新数据
               this.mapInfo = newMapInfo;
-              
-              // 更新相关统计数据
               this.likeCount = mapData.like_count || 0;
               this.commentCount = mapData.comment_count || 0;
               
               console.log('=== 详情页地图图片处理完成 ===');
               
-              // 强制重新渲染（Vue2兼容）
               this.$forceUpdate();
+              
+              // 如果没有专题信息，主动查询
+              if (!this.topic && !this.topicId) {
+                console.log('缺少专题信息，开始主动查询...');
+                this.getTopicInfo();
+              } else {
+                console.log('已有专题信息，无需查询');
+                uni.hideLoading();
+              }
               
             } else {
               console.error('地图数据为空');
@@ -277,6 +325,7 @@ export default {
                 title: '地图数据不存在',
                 icon: 'none'
               });
+              uni.hideLoading();
             }
           } else {
             console.error('API返回错误:', res.data);
@@ -284,6 +333,7 @@ export default {
               title: '获取地图详情失败',
               icon: 'none'
             });
+            uni.hideLoading();
           }
         },
         fail: (err) => {
@@ -292,14 +342,11 @@ export default {
             title: '网络错误，请稍后重试',
             icon: 'none'
           });
-        },
-        complete: () => {
           uni.hideLoading();
-          console.log('=== 地图详情获取结束 ===');
         }
       });
     },
-    
+	
     // 获取评论列表
     getComments() {
       if (!this.mapId) return;
@@ -340,6 +387,43 @@ export default {
         }
       });
     },
+	
+	backToBrowse() {
+	  if (this.fromBrowse) {
+	
+	    uni.navigateBack();
+	  } else {
+
+	    if (this.topic || this.topicId) {
+
+	      this.navigateToBrowsePage();
+	    } else if (this.mapInfo && this.mapInfo.origin_topic) {
+	      // 没有专题关联，但有原始专题信息，使用origin_topic
+	      console.log('使用原始专题信息:', this.mapInfo.origin_topic);
+	      this.topic = this.mapInfo.origin_topic;
+	      this.navigateToBrowsePage();
+	    } else {
+
+	      uni.showModal({
+	        title: '提示',
+	        content: '该地图暂无专题分类，是否返回搜索页继续浏览？',
+	        confirmText: '返回搜索',
+	        cancelText: '返回首页',
+	        success: (res) => {
+	          if (res.confirm) {
+	            uni.navigateTo({
+	              url: '/pages/map/search'
+	            });
+	          } else {
+	            uni.switchTab({
+	              url: '/pages/index/index'
+	            });
+	          }
+	        }
+	      });
+	    }
+	  }
+	},
     
     // 检查点赞状态
     checkLikeStatus() {
@@ -735,45 +819,27 @@ export default {
     },
     
 
-    navigateToBrowsePage() {
-          // 构建跳转URL
-          let url = `/pages/map/browse?id=${this.mapId}`;
-          
-          // 根据可用参数添加专题信息
-          if (this.topic) {
-            url += `&topic=${encodeURIComponent(this.topic)}`;
-          } else if (this.topicId) {
-            url += `&topic_id=${this.topicId}`;
-          }
-          
-          console.log('跳转到浏览页URL:', url);
-          
-          uni.navigateTo({
-            url: url
-          });
-        },
-        
+   navigateToBrowsePage() {
+     // 构建跳转URL
+     let url = `/pages/map/browse?id=${this.mapId}`;
+     
+     // 根据可用参数添加专题信息，优先使用专题名称
+     if (this.topic) {
+       url += `&topic=${encodeURIComponent(this.topic)}`;
+       console.log('使用专题名称跳转到浏览页:', this.topic);
+     } else if (this.topicId) {
+       url += `&topic_id=${this.topicId}`;
+       console.log('使用专题ID跳转到浏览页:', this.topicId);
+     }
+     
+     console.log('跳转到浏览页URL:', url);
+     
+     uni.navigateTo({
+       url: url
+     });
+   },
 
-        backToBrowse() {
-          if (this.fromBrowse) {
-            // 如果是从浏览页跳转过来的，直接返回
-            uni.navigateBack();
-          } else {
-            // 如果是直接进入详情页，跳转到浏览页
-            if (this.topic || this.topicId) {
-              // 有专题信息，直接跳转
-              this.navigateToBrowsePage();
-            } else {
-              // 没有专题信息，提示用户
-              uni.showToast({
-                title: '缺少专题信息，无法跳转',
-                icon: 'none'
-              });
-            }
-          }
-        },
-  }
-}
+}}
 </script>
 <style>
 	/* 全局绿色主题类 */
