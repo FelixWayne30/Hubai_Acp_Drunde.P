@@ -9,11 +9,15 @@
     </view>
     
     <!-- 优化后的地图列表区域 -->
-    <scroll-view class="maps-scroll" scroll-y enhanced :show-scrollbar="false">
+    <scroll-view
+        class="maps-scroll"
+        scroll-y
+        enhanced
+        :show-scrollbar="false">
       <view class="maps-container">
         <MapItem
           class="map-item" 
-          v-for="(item, index) in maps" 
+          v-for="(item, index) in maps"
           :key="index"
           :item="item"
           :index="index"
@@ -37,14 +41,12 @@ export default {
   data() {
     return {
       topic: '',
-      maps: []
+      maps: [],
     };
   },
   onLoad(options) {
       this.topic = options.topic || '';
-      
       imageCache.setCurrentTopic(this.topic);
-  
       this.getTopicMaps();
     },
   
@@ -62,85 +64,62 @@ export default {
       uni.showLoading({
         title: '加载地图数据...'
       });
-      
-      uni.request({
-        url: API.MAPS_BY_GROUP,
-        method: 'GET',
-        data:{
-          group: this.topic
-        },
-        success: (res) => {
-          console.log('获取地图数据响应:', res);
-          if (res.statusCode === 200 && res.data.code === 200) {
-            // 处理地图数据
-            this.maps = res.data.data.map((item, index) => {
-              console.log(`处理地图项 ${index}: ${item.title}`);
-              
-              // 基于中文标题生成图片URL
-              const imageUrl = API.THUMBNAIL_MAP+item.title+".jpg";
-              
-              // 缓存图片URL，供其他页面使用
-              imageCache.setImage(item.title, imageUrl, item);
-              
-              return {
-                id: item.map_id,
-                title: item.title,
-                description: item.description,
-                thumbnail: imageUrl,
-                width: item.width,
-                height: item.height
-              };
-            });
-            
-            console.log(`地图数据处理完成，共${this.maps.length}个地图`);
-          } else {
-            console.error('获取地图数据失败:', res.data);
-            uni.showToast({
-              title: '获取地图数据失败',
-              icon: 'none'
-            });
+
+      uni.getStorage({
+        key:"maps",
+        success:(res)=>{
+          for(let i = 0; i<res.data.length;i++){
+            let map = {...(res.data[i])}
+            if(map.origin_topic===this.topic){
+              map.thumbnail = API.THUMBNAIL_MAP + map.title + ".jpg"
+              map.id = map.map_id
+              imageCache.setImage(map.title, map.thumbnail, map);
+              this.maps.push(map)
+            }
           }
+          console.log(`地图数据处理完成，共${this.maps.length}个地图`);
         },
         fail: (err) => {
           console.error('获取地图数据失败:', err);
           uni.showToast({
-            title: '网络错误，请稍后重试',
+            title: '未找到数据请稍后重试',
             icon: 'none'
           });
         },
         complete: () => {
           uni.hideLoading();
-        }
-      });
+      }
+      })
     },
     
     // 导航到地图浏览页
-        navigateToMap(mapId, index = 0) {
-            console.log(`跳转到地图浏览页: ${mapId}, 索引: ${index}`);
-            
-            uni.navigateTo({
-              url: `/pages/map/browse?id=${mapId}&topic=${this.topic}&index=${index}`
-            });
-          },
-          
-          // 导航到地图详情页 - 修复URL编码
-          navigateToDetail(mapId) {
-            console.log(`跳转到地图详情页: ${mapId}`);
-            
-            if (!mapId) {
-              console.error('mapId为空，无法跳转');
-              uni.showToast({
-                title: 'mapId参数错误',
-                icon: 'none'
-              });
-              return;
-            }
-            
-            uni.navigateTo({
-              url: `/pages/map/detail?id=${mapId}&topic=${this.topic}`
-          });
-        }
+    navigateToMap(mapId, index = 0) {
+        console.log(`跳转到地图浏览页: ${mapId}, 索引: ${index}`);
+
+        uni.navigateTo({
+          url: `/pages/map/browse?id=${mapId}&topic=${this.topic}&index=${index}`
+        });
+      },
+
+    // 导航到地图详情页 - 修复URL编码
+    navigateToDetail(mapId) {
+      console.log(`跳转到地图详情页: ${mapId}`);
+
+      if (!mapId) {
+        console.error('mapId为空，无法跳转');
+        uni.showToast({
+          title: 'mapId参数错误',
+          icon: 'none'
+        });
+        return;
       }
+
+      uni.navigateTo({
+        url: `/pages/map/detail?id=${mapId}&topic=${this.topic}`
+    });
+  },
+
+  }
 };
 </script>
 

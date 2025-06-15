@@ -29,6 +29,12 @@ import {clearMapCache, getMapintoCache} from "./common/uniStorage";
 				}
 			});
       getMapintoCache()
+      setInterval(()=>{
+        uni.removeStorage({
+          key:"maps",
+          success:getMapintoCache
+        })
+      },1000*60*5)
 		},
 		onShow: function() {
 			console.log('App Show');

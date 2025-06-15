@@ -36,6 +36,7 @@ export default {
           <image
               class="map-thumbnail"
               :src="item.thumbnail"
+              lazy-load: true
               mode="aspectFill"
               @click="navigateToMap(item.id, index)"
               @error="handleImageError"
