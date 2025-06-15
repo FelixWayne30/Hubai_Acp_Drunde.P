@@ -19,6 +19,12 @@
 			}
 		},
 		{
+			"path": "pages/map/topic-explore",
+			"style": {
+				"navigationBarTitleText": "专题探索"
+			}
+		},
+		{
 			"path": "pages/map/browse",
 			"style": {
 				"navigationBarTitleText": "图幅浏览"
@@ -87,7 +93,7 @@
 				"text": "首页"
 			},
 			{
-				"pagePath": "pages/map/topic-intro",
+				"pagePath": "pages/map/topic-explore",
 				"iconPath": "/static/icons/search.png",
 				"selectedIconPath": "static/icons/search-active.png",
 				"text": "探索"

@@ -1,50 +1,58 @@
 <template>
-	<view class="container">
-		<!-- 头部操作栏 -->
-		<view class="header-bar" v-if="batchMode">
-			<view class="select-all" @click="toggleSelectAll">
-				<text :class="{'selected': allSelected}">{{allSelected ? '取消全选' : '全选'}}</text>
-			</view>
-			<view class="delete-btn" @click="deleteSelected">删除</view>
-		</view>
-		
-		<!-- 收藏列表 -->
-		<view class="collection-list">
-			<block v-if="collections.length > 0">
-				<view 
-					class="collection-item"
-					v-for="(item, index) in collections"
-					:key="index"
-					@click="viewMap(item)"
-					@longpress="enterBatchMode"
-				>
-					<!-- 多选勾选框 -->
-					<view class="checkbox" v-if="batchMode" @click.stop="toggleSelect(index)">
-						<text :class="{'selected': item.selected}">{{item.selected ? '✓' : ''}}</text>
-					</view>
-					
-					<!-- 缩略图 -->
-					<image class="thumbnail placeholder-image" :src="item.image || '/static/placeholder.png'"></image>
-					
-					<!-- 地图信息 -->
-					<view class="map-info">
-						<view class="map-title">{{item.title}}</view>
-						<view class="collect-time">{{formatDate(item.create_time)}}</view>
-					</view>
-					
-					<!-- 取消收藏按钮 -->
-					<view class="uncollect-btn" @click.stop="uncollectMap(item.map_id, index)">
-						<text class="iconfont">🗑</text>
-					</view>
-				</view>
-			</block>
-			<view class="empty-list" v-else>
-				<image class="empty-icon placeholder-image" src="/static/empty.png"></image>
-				<view class="empty-text">暂无收藏</view>
-				<button class="browse-btn btn-primary" @click="navigateToHome">去浏览</button>
-			</view>
-		</view>
-	</view>
+  <view class="container">
+    <!-- Background using user-download.png -->
+    <view class="background">
+      <image class="background-image" src="/static/background/user-download.png" mode="aspectFill"></image>
+    </view>
+
+    <!-- Main content area -->
+    <view class="content">
+      <!-- 头部操作栏 -->
+      <view class="header-bar" v-if="batchMode">
+        <view class="select-all" @click="toggleSelectAll">
+          <text :class="{'selected': allSelected}">{{allSelected ? '取消全选' : '全选'}}</text>
+        </view>
+        <view class="delete-btn" @click="deleteSelected">删除</view>
+      </view>
+      
+      <!-- 收藏列表 -->
+      <view class="collection-list">
+        <block v-if="collections.length > 0">
+          <view 
+            class="collection-item"
+            v-for="(item, index) in collections"
+            :key="index"
+            @click="viewMap(item)"
+            @longpress="enterBatchMode"
+          >
+            <!-- 多选勾选框 -->
+            <view class="checkbox" v-if="batchMode" @click.stop="toggleSelect(index)">
+              <text :class="{'selected': item.selected}">{{item.selected ? '✓' : ''}}</text>
+            </view>
+            
+            <!-- 缩略图 -->
+            <image class="thumbnail placeholder-image" :src="item.image || '/static/placeholder.png'"></image>
+            
+            <!-- 地图信息 -->
+            <view class="map-info">
+              <view class="map-title">{{item.title}}</view>
+              <view class="collect-time">{{formatDate(item.create_time)}}</view>
+            </view>
+            
+            <!-- 取消收藏按钮 -->
+            <view class="uncollect-btn" @click.stop="uncollectMap(item.map_id, index)">
+              <text class="iconfont">🗑</text>
+            </view>
+          </view>
+        </block>
+        <view class="empty-list" v-else>
+          <image class="empty-icon placeholder-image" src="/static/empty.png"></image>
+          <view class="empty-text">暂无收藏</view>
+          <button class="browse-btn btn-primary" @click="navigateToHome">去浏览</button>
+        </view>
+      </view>
+    </view>
+  </view>
 </template>
 
 <script>
@@ -334,132 +342,158 @@ export default {
   }
 }
 </script>
+
 <style>
-	.container {
-		padding-bottom: 30rpx;
-	}
-	
-	/* 头部操作栏 */
-	.header-bar {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 20rpx 30rpx;
-		background-color: #FFFFFF;
-		border-bottom: 1px solid #EEEEEE;
-		position: sticky;
-		top: 0;
-		z-index: 10;
-	}
-	
-	.select-all {
-		font-size: 28rpx;
-		color: #666666;
-	}
-	
-	.delete-btn {
-		font-size: 28rpx;
-		color: #FF0000;
-	}
-	
-	/* 收藏列表 */
-	.collection-list {
-		padding: 20rpx;
-	}
-	
-	.collection-item {
-		display: flex;
-		align-items: center;
-		padding: 20rpx;
-		background-color: #FFFFFF;
-		border-radius: 10rpx;
-		margin-bottom: 20rpx;
-		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
-	}
-	
-	.checkbox {
-		width: 40rpx;
-		height: 40rpx;
-		border-radius: 50%;
-		border: 1px solid #CCCCCC;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-right: 20rpx;
-		color: #FFFFFF;
-	}
-	
-	.checkbox .selected {
-		background-color: #2E8B57;
-		border-color: #2E8B57;
-	}
-	
-	.thumbnail {
-		width: 120rpx;
-		height: 120rpx;
-		border-radius: 10rpx;
-	}
-	
-	.map-info {
-		flex: 1;
-		margin-left: 20rpx;
-		overflow: hidden;
-	}
-	
-	.map-title {
-		font-size: 28rpx;
-		color: #333333;
-		margin-bottom: 10rpx;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	
-	.collect-time {
-		font-size: 24rpx;
-		color: #999999;
-	}
-	
-	.uncollect-btn {
-		width: 60rpx;
-		height: 60rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	
-	.iconfont {
-		font-size: 40rpx;
-		color: #FF0000;
-	}
-	
-	/* 空列表 */
-	.empty-list {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 100rpx 0;
-	}
-	
-	.empty-icon {
-		width: 200rpx;
-		height: 200rpx;
-		margin-bottom: 30rpx;
-	}
-	
-	.empty-text {
-		font-size: 30rpx;
-		color: #999999;
-		margin-bottom: 30rpx;
-	}
-	
-	.browse-btn {
-		width: 200rpx;
-		height: 80rpx;
-		line-height: 80rpx;
-		font-size: 28rpx;
-		color: #FFFFFF;
-		border-radius: 10rpx;
-	}
+.container {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  padding-bottom: 30rpx;
+}
+
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* For web compatibility */
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* 头部操作栏 */
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 30rpx;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #EEEEEE;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.select-all {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.delete-btn {
+  font-size: 28rpx;
+  color: #FF0000;
+}
+
+/* 收藏列表 */
+.collection-list {
+  padding: 20rpx;
+}
+
+.collection-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background-color: #FFFFFF;
+  border-radius: 10rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 1px solid #CCCCCC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  color: #FFFFFF;
+}
+
+.checkbox .selected {
+  background-color: #7aa26f; /* Updated green color */
+  border-color: #7aa26f; /* Updated green color */
+}
+
+.thumbnail {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 10rpx;
+}
+
+.map-info {
+  flex: 1;
+  margin-left: 20rpx;
+  overflow: hidden;
+}
+
+.map-title {
+  font-size: 28rpx;
+  color: #333333;
+  margin-bottom: 10rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collect-time {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.uncollect-btn {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconfont {
+  font-size: 40rpx;
+  color: #FF0000;
+}
+
+/* 空列表 */
+.empty-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+}
+
+.empty-icon {
+  width: 200rpx;
+  height: 200rpx;
+  margin-bottom: 30rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  color: #999999;
+  margin-bottom: 30rpx;
+}
+
+.browse-btn {
+  width: 200rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 28rpx;
+  color: #FFFFFF;
+  background-color: #7aa26f; /* Updated green color */
+  border-radius: 10rpx;
+}
 </style>
