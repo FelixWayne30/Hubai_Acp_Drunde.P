@@ -96,7 +96,7 @@
 				"pagePath": "pages/map/topic-explore",
 				"iconPath": "/static/icons/custom.png",
 				"selectedIconPath": "static/icons/custom-active.png",
-				"text": "自定义"
+				"text": "探索"
 			},
 			{
 				"pagePath": "pages/user/center",
