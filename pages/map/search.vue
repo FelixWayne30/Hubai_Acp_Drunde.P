@@ -119,6 +119,7 @@
 <script>
 import { API } from '@/common/config.js';
 import imageCache from '@/common/cache.js';
+import { generateSubimageUrl } from '@/common/utils';
 
 export default {
   data() {
