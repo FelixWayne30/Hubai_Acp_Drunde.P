@@ -1,67 +1,34 @@
 <template>
   <view class="container">
-    <!-- Background using main-bg.png consistent with index.vue -->
     <view class="background">
       <image class="background-image" src="/static/background/main-bg.png" mode="aspectFill"></image>
     </view>
-    
-    <!-- Main content area -->
     <view class="content">
-      <!-- Translucent container wrapping all topic cards -->
       <view class="topics-container">
-        <!-- Card 1 -->
+       <view class="topics-card">
+         <image class="card-background" src="../../static/background/explore1.png" mode="aspectFill"></image>
+         <view class="card-title">千湖织锦</view>
+         <view class="card-subtitle">长江沿岸湿地生态矩阵</view>
+       </view>
         <view class="topics-card">
-          <view class="card-title">千湖织锦</view>
-          <view class="card-subtitle">长江沿岸湿地生态矩阵</view>
-          <view class="card-content">
-            <text>探索长江沿岸湿地生态系统的多样性与保护</text>
-          </view>
-        </view>
-        
-        <!-- Card 2 -->
-        <view class="topics-card">
+          <image class="card-background" src="../../static/background/explore2.png" mode="aspectFill"></image>
           <view class="card-title">青铜楚韵</view>
           <view class="card-subtitle">鄂东矿产资源开发史话</view>
-          <view class="card-content">
-            <text>追溯鄂东矿产开发的历史与文化传承</text>
-          </view>
         </view>
-        
-        <!-- Card 3 -->
         <view class="topics-card">
+          <image class="card-background" src="../../static/background/explore3.png" mode="aspectFill"></image>
           <view class="card-title">鄂西地脉</view>
           <view class="card-subtitle">山地灾害风险智能预警图谱</view>
-          <view class="card-content">
-            <text>了解山地灾害风险的智能监测与预警技术</text>
-          </view>
         </view>
-        
-        <!-- Card 4 -->
-        <view class="topics-card">
-          <view class="card-title">荆楚田赋</view>
-          <view class="card-subtitle">历史农业资源与现代区划</view>
-          <view class="card-content">
-            <text>研究历史农业资源与现代区域规划的结合</text>
-          </view>
-        </view>
+		<view class="topics-card">
+		  <image class="card-background" src="../../static/background/explore4.png" mode="aspectFill"></image>
+		  <view class="card-title">荆楚田赋</view>
+		  <view class="card-subtitle">历史农业资源与现代区划</view>
+		</view>
       </view>
     </view>
   </view>
 </template>
-
-<script>
-export default {
-  name: 'Page',
-  data() {
-    return {
-      // Add your data properties here
-    }
-  },
-  methods: {
-    // Add your methods here
-  }
-}
-</script>
 
 <style scoped>
 .container {
@@ -109,35 +76,44 @@ export default {
 .topics-card {
   background: #ffffff;
   border-radius: 16rpx;
-  padding: 20rpx;
+  padding: 30rpx; 
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
-  min-height: 400rpx;
+  min-height: 250rpx; 
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease;
+  position: relative; 
+  overflow: hidden; /* 确保背景图片不溢出 */
 }
 
 .topics-card:hover {
   transform: translateY(-4rpx);
 }
 
+.card-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0; /* 确保背景图片在文字下方 */
+  object-fit: cover; /* 确保图片填满容器 */
+}
+
 .card-title {
   font-size: 36rpx;
   font-weight: bold;
-  color: #2c3e50;
+  color: #464740;
   margin-bottom: 10rpx;
+  position: relative; /* Ensure text is above background */
+  z-index: 1; /* Bring text to front */
 }
 
 .card-subtitle {
   font-size: 28rpx;
-  color: #7f8c8d;
+  color: #515151;
   margin-bottom: 20rpx;
-}
-
-.card-content {
-  font-size: 24rpx;
-  color: #34495e;
-  flex-grow: 1;
-  line-height: 1.6;
+  position: relative;
+  z-index: 1;
 }
 </style>
