@@ -37,6 +37,12 @@
 			}
 		},
 		{
+			"path": "pages/map/catalog",
+			"style": {
+				"navigationBarTitleText": "图集目录"
+			}
+		},
+		{
 			"path": "pages/user/center",
 			"style": {
 				"navigationBarTitleText": "个人中心"
@@ -89,20 +95,17 @@
 			{
 				"pagePath": "pages/index/index",
 				"iconPath": "static/icons/home.png",
-				"selectedIconPath": "static/icons/home-active.png",
-				"text": "首页"
+				"selectedIconPath": "static/icons/home-active.png"
 			},
 			{
-				"pagePath": "pages/map/topic-explore",
-				"iconPath": "/static/icons/custom.png",
-				"selectedIconPath": "static/icons/custom-active.png",
-				"text": "探索"
+				"pagePath": "pages/map/catalog",
+				"iconPath": "/static/icons/catalog.png",
+				"selectedIconPath": "static/icons/catalog-active.png"
 			},
 			{
 				"pagePath": "pages/user/center",
 				"iconPath": "static/icons/user.png",
-				"selectedIconPath": "static/icons/user-active.png",
-				"text": "我的"
+				"selectedIconPath": "static/icons/user-active.png"
 			}
 		]
 	},
