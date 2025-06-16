@@ -9,14 +9,6 @@
       </view>
     </view>
     
-    <!-- 顶部信息栏 -->
-    <view class="top-header">
-      <view class="map-info">
-        <view class="map-title">{{ currentMap?.title || '加载中...' }}</view>
-        <view class="map-counter">{{ currentMapIndex + 1 }} / {{ allMaps.length }}</view>
-      </view>
-    </view>
-    
     <!-- 地图显示区域 -->
     <view class="map-display-area" 
           @touchstart="handleTouchStart"
@@ -37,25 +29,38 @@
     
     <!-- 底部控制栏 -->
     <view class="bottom-controls">
-      <button 
-        class="nav-btn prev-btn" 
-        :disabled="currentMapIndex === 0"
-        @click="switchMap('prev')"
-      >
-        <text class="nav-icon">‹</text>
-      </button>
-      
-      <button class="detail-btn" @click="viewDetail">
-        <text class="detail-text">查看详情</text>
-      </button>
-      
-      <button 
-        class="nav-btn next-btn" 
-        :disabled="currentMapIndex === allMaps.length - 1"
-        @click="switchMap('next')"
-      >
-        <text class="nav-icon">›</text>
-      </button>
+<!--      <text class="control-item-tag">{{ currentMap?.title || '加载中...' }}</text>-->
+
+      <view class="control-item">
+        <button class="nav-btn" @click="viewDetail">
+          <text class="nav-icon">i</text>
+        </button>
+      </view>
+
+      <view class="control-item">
+        <button
+            class="nav-btn prev-btn"
+            :disabled="currentMapIndex === 0"
+            @click="switchMap('prev')"
+        >
+          <text class="nav-icon">←</text>
+        </button>
+        <text class="control-item-tag">上一张</text>
+      </view>
+
+      <text class="control-item-tag" style="margin-top: 0">第{{ currentMapIndex + 1 }}/{{ allMaps.length }}张</text>
+
+      <view class="control-item">
+        <button
+            class="nav-btn next-btn"
+            :disabled="currentMapIndex === allMaps.length - 1"
+            @click="switchMap('next')"
+        >
+          <text class="nav-icon">→</text>
+        </button>
+        <text class="control-item-tag">下一张</text>
+      </view>
+
     </view>
   </view>
 </template>
@@ -475,11 +480,13 @@ export default {
 .bottom-controls {
   background-color: #ffffff;
   padding: 25rpx 30rpx;
-  padding-bottom: calc(25rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(10rpx + env(safe-area-inset-bottom));
   border-top: 1px solid #e8e8e8;
   display: flex;
+  flex-direction: row-reverse;
   align-items: center;
   justify-content: space-between;
+  height: 7vh;
 }
 
 .nav-btn {
@@ -510,6 +517,7 @@ export default {
 }
 
 .nav-icon {
+  transform: rotate(90deg);
   font-size: 48rpx;
   font-weight: bold;
   color: #ffffff;
@@ -564,5 +572,15 @@ export default {
   .detail-btn {
     margin: 0 25rpx;
   }
+}
+
+.control-item{
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.control-item-tag{
+  margin-top: 20rpx;
+  transform: rotate(90deg);
 }
 </style>

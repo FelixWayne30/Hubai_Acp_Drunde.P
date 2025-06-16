@@ -428,9 +428,10 @@ export default {
 }
 
 .thumbnail {
-  width: 120rpx;
+  width: 170rpx;
   height: 120rpx;
   border-radius: 10rpx;
+  object-fit: cover;
 }
 
 .map-info {

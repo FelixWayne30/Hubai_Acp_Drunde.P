@@ -2,7 +2,7 @@
 	<view class="container">
 		<!-- 图幅预览区域 -->
 		<view class="preview-container">
-			<image class="preview-image placeholder-image" :src="mapInfo.image"></image>
+			<image class="preview-image placeholder-image" :src="mapInfo.image" @click="backToBrowse"></image>
 			<!-- 图幅标题 -->
 			<view class="map-title">{{mapInfo.title}}</view>
 		</view>
@@ -100,11 +100,7 @@
 				</view>
 			</view>
 		</view>
-		
-		<!-- 进入浏览按钮 -->
-		<view class="back-to-browse" @click="backToBrowse">
-			<text>进入浏览页 →</text>
-		</view>
+
 	</view>
 </template>
 
@@ -986,6 +982,7 @@ export default {
 		left: 0;
 		width: 100%;
 		padding: 10rpx;
+    padding-bottom: calc(25rpx + env(safe-area-inset-bottom));
 		background-color: #E6F3E6;
 		border-top: 1rpx solid #D9E8D9;
 		display: flex;
