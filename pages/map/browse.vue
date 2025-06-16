@@ -35,6 +35,14 @@
         <button class="nav-btn" @click="viewDetail">
           <text class="nav-icon">i</text>
         </button>
+        <text class="control-item-tag">详情</text>
+      </view>
+
+      <view class="control-item">
+        <button class="nav-btn" @click="resetTransform">
+          <text class="nav-icon">◎</text>
+        </button>
+        <text class="control-item-tag">重置</text>
       </view>
 
       <view class="control-item">
@@ -48,7 +56,7 @@
         <text class="control-item-tag">上一张</text>
       </view>
 
-      <text class="control-item-tag" style="margin-top: 0">第{{ currentMapIndex + 1 }}/{{ allMaps.length }}张</text>
+<!--      <text class="control-item-tag" style="margin-top: 0">第{{ currentMapIndex + 1 }}/{{ allMaps.length }}张</text>-->
 
       <view class="control-item">
         <button
@@ -490,8 +498,8 @@ export default {
 }
 
 .nav-btn {
-  width: 100rpx;
-  height: 100rpx;
+  width: 10rpx;
+  height: 10rpx;
   border-radius: 50rpx;
   background-color: #7aa26f;
   border: none;
@@ -518,34 +526,10 @@ export default {
 
 .nav-icon {
   transform: rotate(90deg);
-  font-size: 48rpx;
+  font-size: 10rpx;
   font-weight: bold;
   color: #ffffff;
   line-height: 1;
-}
-
-.detail-btn {
-  flex: 1;
-  height: 80rpx;
-  background-color: #ffffff;
-  border: 2rpx solid #7aa26f;
-  border-radius: 40rpx;
-  margin: 0 30rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.detail-btn:active {
-  transform: scale(0.98);
-  background-color: #f8f9fa;
-}
-
-.detail-text {
-  font-size: 30rpx;
-  font-weight: 500;
-  color: #7aa26f;
 }
 
 /* ===== 动画 ===== */
@@ -580,7 +564,8 @@ export default {
 }
 
 .control-item-tag{
-  margin-top: 20rpx;
+  margin-right: 20rpx;
+  font-size: 25rpx;
   transform: rotate(90deg);
 }
 </style>
