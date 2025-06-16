@@ -1,5 +1,9 @@
 <template>
 	<view class="container">
+		<!-- Background using user-download.png -->
+		<view class="background">
+		  <image class="background-image" src="/static/background/user-download.png" mode="aspectFill"></image>
+		</view>
 		<!-- 头部信息 -->
 		<view class="header">
 			<view class="title">{{listName}}</view>
@@ -400,6 +404,25 @@ export default {
 	.container {
 		padding: 30rpx;
 	}
+	.background {
+	  position: fixed;
+	  top: 0;
+	  left: 0;
+	  width: 100%;
+	  height: 100%;
+	  z-index: -1;
+	}
+	
+	.background-image {
+	  width: 100%;
+	  height: 100%;
+	  object-fit: cover; /* For web compatibility */
+	}
+	
+	.content {
+	  position: relative;
+	  z-index: 1;
+	}
 	
 	/* 头部 */
 	.header {
@@ -417,7 +440,7 @@ export default {
 	
 	.edit-mode-btn {
 		padding: 10rpx 30rpx;
-		color: #2E8B57;
+		color: #7aa26f;
 		font-size: 30rpx;
 	}
 	
@@ -428,7 +451,7 @@ export default {
 		align-items: center;
 		padding: 20rpx 0;
 		margin-bottom: 20rpx;
-		border-bottom: 1px solid #EEEEEE;
+		border-bottom: 1px solid #666666;
 	}
 	
 	.select-all {
@@ -437,7 +460,7 @@ export default {
 	}
 	
 	.select-all .selected {
-		color: #2E8B57;
+		color: #7aa26f;
 	}
 	
 	.batch-actions {
@@ -448,9 +471,9 @@ export default {
 		margin-left: 20rpx;
 		padding: 10rpx 25rpx;
 		font-size: 28rpx;
-		color: #2E8B57;
+		color: #7aa26f;
 		background-color: #FFFFFF;
-		border: 1px solid #2E8B57;
+		border: 1px solid #7aa26f;
 		border-radius: 30rpx;
 	}
 	
@@ -497,8 +520,8 @@ export default {
 	}
 	
 	.checkbox.checked {
-		background-color: #2E8B57;
-		border-color: #2E8B57;
+		background-color: #7aa26f;
+		border-color: #7aa26f;
 	}
 	
 	.checkbox.checked::after {
@@ -562,6 +585,7 @@ export default {
 		line-height: 80rpx;
 		font-size: 30rpx;
 		color: #FFFFFF;
+		background-color: #7aa26f; /* Updated to #7aa26f */
 		border-radius: 10rpx;
 	}
 	

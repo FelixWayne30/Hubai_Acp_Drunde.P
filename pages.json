@@ -21,7 +21,7 @@
 		{
 			"path": "pages/map/topic-explore",
 			"style": {
-				"navigationBarTitleText": "专题探索"
+				"navigationBarTitleText": "自定义图组"
 			}
 		},
 		{
@@ -94,9 +94,9 @@
 			},
 			{
 				"pagePath": "pages/map/topic-explore",
-				"iconPath": "/static/icons/search.png",
-				"selectedIconPath": "static/icons/search-active.png",
-				"text": "探索"
+				"iconPath": "/static/icons/custom.png",
+				"selectedIconPath": "static/icons/custom-active.png",
+				"text": "自定义"
 			},
 			{
 				"pagePath": "pages/user/center",
