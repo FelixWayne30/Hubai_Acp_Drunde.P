@@ -284,7 +284,7 @@ export default {
         const touch2 = touches[1];
         const distance = this.getDistance(touch1, touch2);
         const center = this.getCenter(touch1, touch2);
-        
+
         this.touchStartData = {
           type: 'zoom',
           startDistance: distance,
@@ -296,28 +296,28 @@ export default {
         };
       }
     },
-    
+
     handleTouchMove(e) {
       if (!this.touching || !this.touchStartData) return;
-      
+
       e.preventDefault();
       const touches = e.touches;
-      
+
       if (this.touchStartData.type === 'pan' && touches.length === 1) {
         // 单指拖拽
         const deltaX = touches[0].clientX - this.touchStartData.startX;
         const deltaY = touches[0].clientY - this.touchStartData.startY;
-        
+
         this.translateX = this.touchStartData.startTranslateX + deltaX;
         this.translateY = this.touchStartData.startTranslateY + deltaY;
-        
+
       } else if (this.touchStartData.type === 'zoom' && touches.length === 2) {
         // 双指缩放
         const touch1 = touches[0];
         const touch2 = touches[1];
         const distance = this.getDistance(touch1, touch2);
         const scaleRatio = distance / this.touchStartData.startDistance;
-        
+
         let newScale = this.touchStartData.startScale * scaleRatio;
         newScale = Math.max(0.5, Math.min(this.maxscale, newScale)); // 限制缩放范围
         
