@@ -18,6 +18,7 @@
             :style="mapTransformStyle">
         <image 
           class="map-image"
+          :style="rotationStyle90"
           :src="currentMapUrl"
           mode="aspectFit"
           @load="onImageLoad"
@@ -29,45 +30,40 @@
     
     <!-- 底部控制栏 -->
     <view class="bottom-controls">
-<!--      <text class="control-item-tag">{{ currentMap?.title || '加载中...' }}</text>-->
+      <image
+          class="control-btn"
+          :style="rotationStyle90"
+          src="../../static/icons/info.svg"
+          @click="viewDetail">
+      </image>
 
-      <view class="control-item">
-        <button class="nav-btn" @click="viewDetail">
-          <text class="nav-icon">i</text>
-        </button>
-        <text class="control-item-tag">详情</text>
-      </view>
+      <image
+          class="control-btn"
+          :style="rotationStyle"
+          src="../../static/icons/reset.svg"
+          @click="resetTransform">
+      </image>
 
-      <view class="control-item">
-        <button class="nav-btn" @click="resetTransform">
-          <text class="nav-icon">◎</text>
-        </button>
-        <text class="control-item-tag">重置</text>
-      </view>
+      <image
+          class="control-btn"
+          :style="rotationStyle90"
+          src="../../static/icons/rotate.svg"
+          @click="rotate">
+      </image>
 
-      <view class="control-item">
-        <button
-            class="nav-btn prev-btn"
-            :disabled="currentMapIndex === 0"
-            @click="switchMap('prev')"
-        >
-          <text class="nav-icon">←</text>
-        </button>
-        <text class="control-item-tag">上一张</text>
-      </view>
+      <image
+          class="control-btn"
+          :style="rotationStyle"
+          :src="currentMapIndex === allMaps.length - 1? arrow_img.disabled: arrow_img.active"
+          @click="switchMap('next')">
+      </image>
 
-<!--      <text class="control-item-tag" style="margin-top: 0">第{{ currentMapIndex + 1 }}/{{ allMaps.length }}张</text>-->
-
-      <view class="control-item">
-        <button
-            class="nav-btn next-btn"
-            :disabled="currentMapIndex === allMaps.length - 1"
-            @click="switchMap('next')"
-        >
-          <text class="nav-icon">→</text>
-        </button>
-        <text class="control-item-tag">下一张</text>
-      </view>
+      <image
+        class="control-btn"
+        :style="rotationStyle180"
+        :src="currentMapIndex === 0? arrow_img.disabled: arrow_img.active"
+        @click="switchMap('prev')">
+      </image>
 
     </view>
   </view>
@@ -93,10 +89,19 @@ export default {
       scale: 1,
       translateX: 0,
       translateY: 0,
+      maxscale: 10,
+      initialscale: 2,
       
       // 手势操作状态
       touching: false,
-      touchStartData: null
+      touchStartData: null,
+
+      arrow_img:{
+        active: "../../static/icons/arrow-active.svg",
+        disabled: "../../static/icons/arrow.svg",
+      },
+
+      rotation: 0
     }
   },
   
@@ -106,7 +111,19 @@ export default {
         transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`,
         transition: this.touching ? 'none' : 'transform 0.3s ease-out'
       }
-    }
+    },
+    rotationStyle() {
+      return `transform: rotate(${this.rotation}deg);
+              transition: transform 0.5s ease-in-out;`;
+    },
+    rotationStyle90() {
+      return `transform: rotate(${this.rotation+90}deg);
+              transition: transform 0.5s ease-in-out;`;
+    },
+    rotationStyle180() {
+      return `transform: rotate(${this.rotation+180}deg);
+              transition: transform 0.5s ease-in-out;`;
+    },
   },
   
   onLoad(options) {
@@ -232,11 +249,26 @@ export default {
     
     // ===== 手势操作相关 =====
     handleTouchStart(e) {
+
+      // 发生双击时进行放大
+      const now = Date.now();
+      if (now - this.lastTap < 300) {
+        if(this.scale*2 > this.maxscale){
+          this.scale = this.initialscale
+        }
+        else{
+          this.scale = this.scale * 2
+        }
+        this.lastTap = 0;
+        return;
+      }
+      this.lastTap = now;
+
       this.touching = true;
       const touches = e.touches;
-      
+
+      // 单指拖拽
       if (touches.length === 1) {
-        // 单指拖拽
         this.touchStartData = {
           type: 'pan',
           startX: touches[0].clientX,
@@ -244,8 +276,10 @@ export default {
           startTranslateX: this.translateX,
           startTranslateY: this.translateY
         };
-      } else if (touches.length === 2) {
-        // 双指缩放
+      }
+
+      // 双指缩放
+      else if (touches.length === 2) {
         const touch1 = touches[0];
         const touch2 = touches[1];
         const distance = this.getDistance(touch1, touch2);
@@ -285,7 +319,7 @@ export default {
         const scaleRatio = distance / this.touchStartData.startDistance;
         
         let newScale = this.touchStartData.startScale * scaleRatio;
-        newScale = Math.max(0.5, Math.min(3, newScale)); // 限制缩放范围
+        newScale = Math.max(0.5, Math.min(this.maxscale, newScale)); // 限制缩放范围
         
         // 以触摸中心点为基准进行缩放
         const scaleDiff = newScale - this.scale;
@@ -316,7 +350,7 @@ export default {
     },
     
     resetTransform() {
-      this.scale = 2;
+      this.scale = this.initialscale;
       this.translateX = 0;
       this.translateY = 0;
     },
@@ -378,7 +412,11 @@ export default {
           this.loadingText = '';
         }
       }, 3000);
-    }
+    },
+
+    rotate() {
+      this.rotation = (this.rotation + 90) % 360;
+    },
   }
 }
 </script>
@@ -430,32 +468,6 @@ export default {
   font-weight: 500;
 }
 
-/* ===== 顶部信息栏 ===== */
-.top-header {
-  background-color: #7aa26f;
-  padding: 20rpx 30rpx;
-  border-bottom: 1px solid #689963;
-  height: 55rpx;
-}
-
-.map-info {
-  text-align: center;
-}
-
-.map-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 8rpx;
-  line-height: 1.4;
-}
-
-.map-counter {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 400;
-}
-
 /* ===== 地图显示区域 ===== */
 .map-display-area {
   flex: 1;
@@ -481,55 +493,36 @@ export default {
   height: 100%;
   object-fit: contain;
   display: block;
-  transform: rotate(90deg);
 }
 
 /* ===== 底部控制栏 ===== */
 .bottom-controls {
   background-color: #ffffff;
-  padding: 25rpx 30rpx;
-  padding-bottom: calc(10rpx + env(safe-area-inset-bottom));
+  padding: 20rpx 30rpx calc(-20rpx + env(safe-area-inset-bottom)) 30rpx;
   border-top: 1px solid #e8e8e8;
   display: flex;
   flex-direction: row-reverse;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-around;
   height: 7vh;
 }
 
-.nav-btn {
-  width: 10rpx;
-  height: 10rpx;
-  border-radius: 50rpx;
-  background-color: #7aa26f;
+.control-btn {
+  width: 80rpx;
+  height: 80rpx;
   border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: 0 2rpx 8rpx rgba(122, 162, 111, 0.3);
+  background: none;
+  padding: 0;
+  object-fit: contain;
+  transition: transform 0.5s ease-in-out;
 }
 
-.nav-btn:active {
-  transform: scale(0.95);
-  box-shadow: 0 1rpx 4rpx rgba(122, 162, 111, 0.4);
+.rotate-180-btn{
+  transform: rotate(180deg);
 }
 
-.nav-btn:disabled {
-  background-color: #e8e8e8;
-  box-shadow: none;
-}
-
-.nav-btn:disabled .nav-icon {
-  color: #bbb;
-}
-
-.nav-icon {
+.rotate-90-btn{
   transform: rotate(90deg);
-  font-size: 10rpx;
-  font-weight: bold;
-  color: #ffffff;
-  line-height: 1;
 }
 
 /* ===== 动画 ===== */
@@ -552,20 +545,5 @@ export default {
   .nav-icon {
     font-size: 44rpx;
   }
-  
-  .detail-btn {
-    margin: 0 25rpx;
-  }
-}
-
-.control-item{
-  display: flex;
-  flex-direction: row-reverse;
-}
-
-.control-item-tag{
-  margin-right: 20rpx;
-  font-size: 25rpx;
-  transform: rotate(90deg);
 }
 </style>
