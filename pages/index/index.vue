@@ -4,7 +4,7 @@
     <view class="background-image">
       <image class="bg-illustration" src="/static/background/main-bg.png" mode="aspectFill"></image>
     </view>
-    
+
     <!-- 主要内容区域 -->
     <view class="main-content">
       <!-- 顶部标题 -->
@@ -15,33 +15,12 @@
         </view>
       </view>
 
-      <view class="bottom-section">
-        <!-- 搜索框 -->
-        <view class="search-container">
-          <view class="search-inputbox">
-            <input
-                class="search-input"
-                placeholder="试试搜索“武汉市降水量”"
-                placeholder-class="search-placeholder"
-                confirm-type="search"
-                @confirm="performSearch"
-                @input="onSearchInput"
-                v-model="searchQuery"
-            />
-            <view v-if="searchQuery" class="clear-button" @click="clearSearch">
-              <text class="clear-icon">×</text>
-            </view>
-          </view>
-          <view class="search-tag">
-            已接入阿里巴巴千问大模型
-          </view>
-        </view>
-
+      <view class="topics-section">
         <!--专题卡片-->
         <view class="topics-card">
           <view class="card-header">
-            <text class="section-title">自然资源专题探索<br/></text>
-            <view class="section-subtitle">发现湖北自然资源的多样魅力</view>
+            <text class="section-title">图集板块<br/></text>
+            <view class="section-subtitle">呈现湖北自然资源的多样魅力</view>
           </view>
 
           <scroll-view class="topics-scroll" scroll-y :show-scrollbar="false">
@@ -92,35 +71,16 @@
 export default {
   data() {
     return {
-      searchQuery: '',
       topicList: ["极目楚天","富饶资源","绿色发展","城市新篇"]
     }
   },
   methods: {
-    onSearchInput(e) {
-      this.searchQuery = e.detail.value;
-    },
        
     navigateToTopic(topic) {
       if (!topic) return;
       uni.navigateTo({
         url: '/pages/map/topic-static?topic=' + topic
       });
-    },
-    
-    performSearch() {
-      if (!this.searchQuery.trim()) {
-        uni.showToast({ title: '请输入搜索内容', icon: 'none' });
-        return;
-      }
-      
-      uni.navigateTo({
-        url: `/pages/map/search?query=${encodeURIComponent(this.searchQuery)}`
-      });
-    },
-    
-    clearSearch() {
-      this.searchQuery = '';
     }
   }
 }
@@ -155,11 +115,12 @@ export default {
   padding: 0 30rpx;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  padding-top: 8vh;
 }
 
 .header-section {
-  padding: 10vh 0 0;
+  padding-top: 5vh;
   text-align: center;
 }
 
@@ -171,85 +132,28 @@ export default {
   display: block;
   font-size: 40rpx;
   color: rgb(91, 57, 30);
-  letter-spacing: 3rpx;
-  font-weight: 300;
+  letter-spacing: 4rpx;
+  font-weight: 800;
   font-family: "ChillKai";
 }
 
 .title-up{
 	display: block;
-	font-size: 65rpx;
+	font-size: 80rpx;
 	color: rgb(0, 0, 0);
-	letter-spacing: 3rpx;
-	font-weight: 500;
+	letter-spacing: 5rpx;
+	font-weight: 800;
 	font-family: "Kunpeng";
-	margin-bottom: 40rpx;
-}
-
-/* 搜索框 */
-.search-container {
-  height: 120rpx;
-  background: rgba(245, 245, 245, 0.7);
-  border-radius: 10rpx;
-  margin-bottom: 1vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 4rpx 20rpx rgba(46, 139, 87, 0.08);
-  padding: 10rpx;
-}
-
-.search-inputbox{
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: baseline;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 8rpx;
-  margin-bottom: 10rpx;
-}
-
-.search-input {
-  height: 65rpx;
-  line-height: 65rpx;
-  font-size: 30rpx;
-  color: #333333;
-  padding-left: 32rpx;
-  background: transparent;
-}
-
-.search-tag{
-  color: rgba(51, 51, 51, 0.7);
-  font-size: 20rpx;
-  margin-bottom: 10rpx;
-  padding: 10rpx;
-}
-
-.clear-button {
-  width: 45rpx;
-  height: 45rpx;
-  margin-right: 10rpx;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 22rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-}
-
-.clear-button:active {
-  background: rgba(0, 0, 0, 0.1);
-  transform: scale(0.95);
-}
-
-.clear-icon {
-  font-size: 32rpx;
-  color: #666666;
-  font-weight: normal;
-  line-height: 1;
+	margin-bottom: 25rpx;
 }
 
 /* 专题卡片区域 */
+
+.topics-section {
+  flex: 1; /* 占据剩余空间 */
+  padding-top: 10vh;
+}
+
 .topics-card {
   background: rgba(241, 241, 241, 0.6);
   border-radius: 24rpx;
@@ -267,8 +171,8 @@ export default {
 }
 
 .section-title {
-  font-size: 35rpx;
-  font-weight: 400;
+  font-size: 40rpx;
+  font-weight: 700;
   font-family: 'ChillKai';
   color: #3a485e;
   margin-bottom: 8rpx;
@@ -276,10 +180,12 @@ export default {
 }
 
 .section-subtitle {
-  font-size: 24rpx;
+  font-size: 30rpx;
   font-family: 'ChillKai';
   color: #718096;
-  opacity: 0.8;
+  opacity: 0.9;
+  padding-top: 12rpx;
+  font-weight: 500;
 }
 
 .topics-scroll {
@@ -293,7 +199,7 @@ export default {
 
 .row-1 {
   display: flex;
-  height: 240rpx;
+  height: 320rpx;
   margin-bottom: 12rpx;
   gap: 12rpx;
 }
@@ -318,7 +224,7 @@ export default {
 }
 
 .row-2 {
-  height: 180rpx;
+  height: 240rpx;
 }
 
 .full-width {
@@ -376,18 +282,18 @@ export default {
   position: absolute;
   top: 16rpx;
   right: 20rpx;
-  font-size: 50rpx;
-  font-weight: normal;
+  font-size: 42rpx;
+  font-weight: 600;
   color: rgba(0,0,0,0.1);
   z-index: 1;
-  font-family: "Chillkai","PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+  font-family: "Chillkai";
   line-height: 1;
 }
 
 .card-content {
   position: relative;
   z-index: 2;
-  padding: 30rpx 30rpx;
+  padding: 40rpx 40rpx;
   height: 70%;
   display: flex;
   align-items: center;
@@ -395,13 +301,14 @@ export default {
 }
 
 .card-title {
-  font-size: 36rpx;
+  font-size: 50rpx;
   font-weight: normal;
   color: #464740;
   line-height: 1.5;
   text-align: center;
-  font-family: "ChillKai","PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+  font-family: "ChillKai";
   letter-spacing: 0.5rpx;
+  font-weight: 600;
 }
 
 .right-top .card-content,
@@ -411,13 +318,13 @@ export default {
 
 .right-top .card-title,
 .right-bottom .card-title {
-  font-size: 32rpx;
+  font-size: 46rpx;
   line-height: 1.3;
 }
 
 .right-top .card-number,
 .right-bottom .card-number {
-  font-size: 40rpx;
+  font-size: 42rpx;
   top: 10rpx;
   right: 16rpx;
 }
