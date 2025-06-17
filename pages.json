@@ -3,8 +3,10 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "湖北省自然资源地图集"
+				"navigationBarTitleText": "湖北省自然资源地图集",
+				"disableScroll": true
 			}
+			
 		},
 		{
 			"path": "pages/map/topic-intro",
