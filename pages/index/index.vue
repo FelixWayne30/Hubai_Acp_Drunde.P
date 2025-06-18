@@ -22,14 +22,14 @@
             <view class="section-subtitle">呈现湖北自然资源的多样魅力</view>
           </view>
 
-          <scroll-view class="topics-scroll" scroll-y :show-scrollbar="false">
+ <view class="topics-container-inner">
             <view class="topics-content">
 
               <view class="row-2">
                 <view class="topic-card full-width color-sky" @click="navigateToTopic('篇首')">
                   <view class="card-number">零</view>
                   <view class="card-content">
-                    <text class="card-title">封面 序 目录</text>
+                    <text class="card-title">封面 序</text>
                   </view>
                 </view>
               </view>
@@ -77,7 +77,7 @@
                 </view>
               </view>
             </view>
-          </scroll-view>
+          </view>
         </view>
       </view>
     </view>
@@ -130,12 +130,12 @@ export default {
 }
 
 .header-section {
-  padding-top: 2vh;
+  padding-top: 10vh;
   text-align: center;
 }
 
 .app-title {
-  margin-bottom: 20rpx;
+  margin-bottom: 30rpx;
 }
 
 .title-sub {
@@ -162,12 +162,13 @@ export default {
   background: rgba(241, 241, 241, 0.6);
   border-radius: 24rpx;
   padding: 30rpx;
-  margin-bottom: 2vh;
+  margin-bottom: 20rpx;
   box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.15);
   min-height: 800rpx;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  padding-bottom: 0;
 }
 
 .card-header {
@@ -193,7 +194,7 @@ export default {
   font-weight: 500;
 }
 
-.topics-scroll {
+.topics-container-inner {
   flex: 1;
   overflow: hidden;
 }
@@ -234,7 +235,7 @@ export default {
 
 .row-2 {
   height: 140rpx;
-  margin-bottom: 12rpx;
+  margin-bottom: 15rpx
 }
 
 .full-width {
@@ -308,6 +309,11 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.full-width .card-content {
+  height: 100%;
+  padding: 0 40rpx;
 }
 
 .card-title {
