@@ -150,8 +150,6 @@ export default {
 					// 临时更新显示
 					this.userInfo.avatar = tempFilePath;
 					
-					// TODO: 这里应该上传到服务器
-					// 现在只是本地模拟
 					const userInfo = authManager.getUserInfo();
 					userInfo.avatar = tempFilePath;
 					uni.setStorageSync('userInfo', JSON.stringify(userInfo));
@@ -278,10 +276,9 @@ export default {
     display: flex;
     flex-direction: column;
 		min-height: 100vh;
-    justify-content: space-between;
+    justify-content: start;
 	}
 	
-	/* Background image container - now at bottom */
 	.background-image-container {
 	  position: absolute;
 	  bottom: 0;
@@ -292,43 +289,37 @@ export default {
 	  overflow: hidden;
 	}
 	
-	/* Background image */
 	.background-image-top {
 	  width: 100%;
 	  height: 100%;
 	  object-fit: cover;
 	}
 	
-	/* Gradient overlay - now fades upward */
-	.gradient-overlay {
-	  position: absolute;
-	  top: 0;
-	  left: 0;
-	  width: 100%;
-	  height: 60%;
-	  background: linear-gradient(to top, transparent 0%, #E8F4F0 100%);
-	  z-index: 1;
-	}
-	
-	/* 用户信息区域 */
 	.user-info-section {
-    margin-top: 50rpx;
-	  padding: 50rpx 30rpx;
+	  margin-top: 80rpx;
+	  padding: 50rpx 30rpx 60rpx;
 	  display: flex;
 	  flex-direction: column;
 	  align-items: center;
 	}
 	
-	.avatar-container {
-		position: relative;
-		width: 150rpx;
-		height: 150rpx;
-		border-radius: 50%;
-		overflow: hidden;
-		margin-bottom: 20rpx;
-		border: 4rpx solid #FFFFFF;
-		cursor: pointer;
-	}
+.avatar-container {
+  position: relative;
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 20rpx;
+  border: 6rpx solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.avatar-container:active {
+  transform: scale(0.95);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+}
 	
 	.avatar {
 		width: 100%;
@@ -352,10 +343,13 @@ export default {
 	
 	.user-name {
 	  font-size: 32rpx;
+	  font-weight: 600;
 	  color: #333333; 
 	  display: flex;
 	  align-items: center;
 	  cursor: pointer;
+	  margin-bottom: 8rpx;
+	  letter-spacing: 1rpx;
 	}
 	
 	.edit-name {
@@ -365,24 +359,28 @@ export default {
 	
 	/* 功能列表 */
 	.function-list {
-		padding: 20rpx;
+	  padding: 20rpx 30rpx;
+	  display: flex;
+	  flex-direction: column;
+	  gap: 12rpx;
 	}
 	
 	.function-card {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		padding: 30rpx 30rpx;
-		background-color: rgba(255, 255, 255, 0.6);
-		border-radius: 15rpx;
-		margin-bottom: 20rpx;
-		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
-		cursor: pointer;
-	}
+	  display: flex;
+	  align-items: center;
+	  padding: 32rpx 30rpx;
+	  background-color: rgba(255, 255, 255, 0.75);
+	  border-radius: 16rpx;
+	  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+	  backdrop-filter: blur(10rpx);
+	  border: 1rpx solid rgba(255, 255, 255, 0.2);
+	}	
 	
 	.function-title {
-		font-size: 30rpx;
-		color: #333333;
+	  font-size: 32rpx;
+	  font-weight: 500;
+	  color: #333333;
+	  letter-spacing: 0.5rpx;
 	}
 	
 	.function-arrow {
