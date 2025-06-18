@@ -250,29 +250,32 @@ export default {
     // ===== 手势操作相关 =====
     handleTouchStart(e) {
 
-      // 发生双击时进行放大
-      const now = Date.now();
-      if (now - this.lastTap < 300) {
-        if(this.scale*2 > this.maxscale){
-          this.scale = this.initialscale
-        }
-        else{
-          this.scale = this.scale * 2
-        }
-        this.lastTap = 0;
-        return;
-      }
-      this.lastTap = now;
-
       this.touching = true;
       const touches = e.touches;
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+
+      // 发生双击时进行放大
+      const now = Date.now();
+      if (now - this.lastTap < 300 &&
+          Math.abs(x - this.lastTapX) < 10 &&
+          Math.abs(y - this.lastTapY) < 10) {
+        // 发生双击时进行放大
+        if(this.scale*2 < this.maxscale)
+          this.scale = this.scale*2
+        this.lastTap = 0;
+      } else {
+        this.lastTap = now;
+        this.lastTapX = x;
+        this.lastTapY = y;
+      };
 
       // 单指拖拽
       if (touches.length === 1) {
         this.touchStartData = {
           type: 'pan',
-          startX: touches[0].clientX,
-          startY: touches[0].clientY,
+          startX: x,
+          startY: y,
           startTranslateX: this.translateX,
           startTranslateY: this.translateY
         };
