@@ -6,6 +6,9 @@ export const API = {
   COMMENT_ADD: `${envConfig.API_BASE_URL}/comment/addcomment`, 
   COMMENT_LIST: `${envConfig.API_BASE_URL}/comment/comments`,
   
+  // 目录相关API
+  CATALOGS: `${envConfig.API_BASE_URL}/api/catalogs`,
+  
   // 自定义列表相关API
   CUSTOM_LIST_GET: `${envConfig.API_BASE_URL}/customlist/list`,
   CUSTOM_LIST_DETAIL: `${envConfig.API_BASE_URL}/customlist/detail/`,

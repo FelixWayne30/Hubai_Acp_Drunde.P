@@ -29,43 +29,92 @@
         </view>
       </view>
       
-      <!-- 目录卡片 -->
-      <view class="catalog-card" style="background-image: linear-gradient(to right, #ebf4fb, #ffffff 20%);">
-        <view class="card-content" style="color: #95bbce;">极目楚天</view>
-        <view class="card-indicator" style="background-color: #95bbce;" @click="toggleDropdown">
-          <text class="dropdown-icon">▼</text>
+      <!-- 动态渲染目录卡片 -->
+            <block v-for="(catalog, index) in catalogs" :key="index">
+              <view class="catalog-card" :style="getCardStyle(index)">
+                <view class="card-content" :style="getCardContentStyle(index)">{{ catalog.group }}</view>
+                <view class="card-indicator" :style="getCardIndicatorStyle(index)" @click="toggleDropdown(index)">
+                  <text class="dropdown-icon">{{ dropdownStates[index] ? '▲' : '▼' }}</text>
+                </view>
+              </view>
+              <view v-if="dropdownStates[index]" class="dropdown-content" :style="getDropdownStyle(index)">
+                <view class="dropdown-item" v-for="(subgroup, subIndex) in catalog.subgroups" :key="subIndex">
+                  <view class="dropdown-item-content" @click="toggleSecondaryDropdown(index, subIndex)">
+                    <text class="secondary-toggle-icon">{{ secondaryDropdownStates[index][subIndex] ? '▼' : '▶' }}</text>
+                    <text>{{ subgroup.subgroup }}</text>
+                  </view>
+                  <view v-if="secondaryDropdownStates[index][subIndex]" class="secondary-dropdown-content">
+                    <view class="secondary-dropdown-item" v-for="(map, mapIndex) in subgroup.maps" :key="mapIndex">
+                      {{ map }}
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </block>
+          </view>
         </view>
-      </view>
-      <view class="catalog-card" style="background-image: linear-gradient(to right, #f7f8e0, #ffffff 20%);">
-        <view class="card-content" style="color: #cbc77c;">富饶资源</view>
-        <view class="card-indicator" style="background-color: #cbc77c;" @click="toggleDropdown">
-          <text class="dropdown-icon">▼</text>
-        </view>
-      </view>
-      <view class="catalog-card" style="background-image: linear-gradient(to right, #e6f2e9, #ffffff 20%);">
-        <view class="card-content" style="color: #9bb38d;">绿色发展</view>
-        <view class="card-indicator" style="background-color: #9bb38d;" @click="toggleDropdown">
-          <text class="dropdown-icon">▼</text>
-        </view>
-      </view>
-      <view class="catalog-card" style="background-image: linear-gradient(to right, #f5f2f8, #ffffff 20%);">
-        <view class="card-content" style="color: #b7aabf;">城市新篇</view>
-        <view class="card-indicator" style="background-color: #b7aabf;" @click="toggleDropdown">
-          <text class="dropdown-icon">▼</text>
-        </view>
-      </view>
-    </view>
-  </view>
 </template>
 
 <script>
+import { API } from '@/common/config.js';
+
 export default {
   data() {
     return {
-      searchQuery: ''
+      searchQuery: '',
+      dropdownStates: [],
+      secondaryDropdownStates: [],
+      catalogs: [] // 存储目录数据
     }
   },
+  
   methods: {
+	getCatalogs() {
+	    uni.request({
+	      url: API.CATALOGS, // 从 config.js 导入
+	      method: 'GET',
+	      success: (res) => {
+	        if (res.statusCode === 200 && res.data.code === 200) {
+	          this.catalogs = res.data.data;
+	          // 初始化状态数组
+	          this.dropdownStates = new Array(this.catalogs.length).fill(false);
+	          this.secondaryDropdownStates = this.catalogs.map(group => 
+	            new Array(group.subgroups.length).fill(false)
+	          );
+	        } else {
+	          uni.showToast({
+	            title: '获取目录失败',
+	            icon: 'none'
+	          });
+	        }
+	      },
+	      fail: () => {
+	        uni.showToast({
+	          title: '网络错误',
+	          icon: 'none'
+	        });
+	      }
+	    });
+	  },
+	  
+	getCardStyle(index) {
+	    const colors = ['#ebf4fb', '#f7f8e0', '#e6f2e9', '#f5f2f8'];
+	    return `background-image: linear-gradient(to right, ${colors[index % colors.length]}, #ffffff 20%);`;
+	  },
+	  getCardContentStyle(index) {
+	    const colors = ['#95bbce', '#cbc77c', '#9bb38d', '#b7aabf'];
+	    return `color: ${colors[index % colors.length]};`;
+	  },
+	  getCardIndicatorStyle(index) {
+	    const colors = ['#95bbce', '#cbc77c', '#9bb38d', '#b7aabf'];
+	    return `background-color: ${colors[index % colors.length]};`;
+	  },
+	  getDropdownStyle(index) {
+	    const colors = ['#ebf4fb', '#f7f8e0', '#e6f2e9', '#f5f2f8'];
+	    const borderColors = ['#95bbce', '#cbc77c', '#9bb38d', '#b7aabf'];
+	    return `background-color: ${colors[index % colors.length]}; border: 2rpx solid ${borderColors[index % borderColors.length]};`;
+	  },
+	  
     onSearchInput(e) {
       this.searchQuery = e.detail.value;
     },
@@ -85,9 +134,23 @@ export default {
       this.searchQuery = '';
     },
     
-    toggleDropdown() {
-      // 这里可以添加下拉逻辑，暂为空
+    toggleDropdown(index) {
+      this.dropdownStates[index] = !this.dropdownStates[index];
+      // Close all secondary dropdowns when primary dropdown is toggled
+      if (!this.dropdownStates[index]) {
+        this.secondaryDropdownStates[index] = [false, false, false];
+      }
+      this.$forceUpdate(); // Ensure UI updates
+    },
+    
+    toggleSecondaryDropdown(cardIndex, itemIndex) {
+      this.secondaryDropdownStates[cardIndex][itemIndex] = !this.secondaryDropdownStates[cardIndex][itemIndex];
+      this.$forceUpdate(); // Ensure UI updates
     }
+  },
+  
+  onLoad() {
+    this.getCatalogs();
   }
 }
 </script>
@@ -227,5 +290,58 @@ export default {
 .dropdown-icon {
   font-size: 24rpx;
   color: #ffffff;
+}
+
+/* 主要下拉栏目 */
+.dropdown-content {
+  border-radius: 10rpx;
+  margin-top: 10rpx;
+  padding: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 3;
+}
+
+.dropdown-item {
+  padding: 15rpx 20rpx;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item-content {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.secondary-toggle-icon {
+  font-size: 24rpx;
+  color: #666666;
+  margin-right: 10rpx;
+}
+
+/* 次级下拉栏目 */
+.secondary-dropdown-content {
+  background-color: #ffffff;
+  border-radius: 8rpx;
+  margin-top: 10rpx;
+  margin-left: 30rpx;
+  padding: 15rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  z-index: 4;
+}
+
+.secondary-dropdown-item {
+  font-size: 26rpx;
+  color: #333333;
+  padding: 10rpx 15rpx;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.secondary-dropdown-item:last-child {
+  border-bottom: none;
 }
 </style>
