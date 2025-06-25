@@ -42,6 +42,7 @@
                   <view 
                       class="secondary-dropdown-item" 
                       v-for="(map, mapIndex) in catalog.subgroups[0].maps" 
+                      @click="mapItemClick(map, catalog.group)"
                       :key="mapIndex">
                         {{ map }}
                       </view>
@@ -58,7 +59,8 @@
                     <view v-if="secondaryDropdownStates[index][subIndex]" class="secondary-dropdown-content">
                       <view 
                       class="secondary-dropdown-item" 
-                      v-for="(map, mapIndex) in subgroup.maps" 
+                      v-for="(map, mapIndex) in subgroup.maps"
+                      @click="mapItemClick(map, catalog.group)" 
                       :key="mapIndex">
                         {{ map }}
                       </view>
@@ -83,21 +85,21 @@ export default {
   },
   
   methods: {
-	getCatalogs() {
-	    uni.getStorage({
-        key: 'catalogs',
-        success: (res)=>{
-          this.catalogs = [...res.data];
-          this.dropdownStates = new Array(this.catalogs.length).fill(false);
-          this.secondaryDropdownStates = this.catalogs.map(group => new Array(group.subgroups.length).fill(false));
-        }
-      });
-	  },
-	  
-	getCardStyle(index) {
-	    const colors = ['#ebf4fb', '#f7f8e0', '#e6f2e9', '#f5f2f8'];
-	    return `background-image: linear-gradient(to right, ${colors[index % colors.length]}, #ffffff 20%);`;
-	  },
+    getCatalogs() {
+        uni.getStorage({
+          key: 'catalogs',
+          success: (res)=>{
+            this.catalogs = [...res.data];
+            this.dropdownStates = new Array(this.catalogs.length).fill(false);
+            this.secondaryDropdownStates = this.catalogs.map(group => new Array(group.subgroups.length).fill(false));
+          }
+        });
+      },
+      
+    getCardStyle(index) {
+        const colors = ['#ebf4fb', '#f7f8e0', '#e6f2e9', '#f5f2f8'];
+        return `background-image: linear-gradient(to right, ${colors[index % colors.length]}, #ffffff 20%);`;
+      },
 	  getCardContentStyle(index) {
 	    const colors = ['#95bbce', '#cbc77c', '#9bb38d', '#b7aabf'];
 	    return `color: ${colors[index % colors.length]};`;
@@ -143,6 +145,22 @@ export default {
     toggleSecondaryDropdown(cardIndex, itemIndex) {
       this.secondaryDropdownStates[cardIndex][itemIndex] = !this.secondaryDropdownStates[cardIndex][itemIndex];
       this.$forceUpdate(); // Ensure UI updates
+    },
+
+    mapItemClick(map,topic){
+      if (!map) return;
+
+      uni.getStorage({
+        key: 'maps',
+        success: (res) => {
+          let maps = res.data
+          let matchItem = maps.find(item =>item.title === map)
+          console.log('匹配到的地图:', matchItem);
+          uni.navigateTo({
+              url: `/pages/map/detail?id=${matchItem.map_id}&topic=${topic}`
+          });
+        },
+      });
     }
   },
   
