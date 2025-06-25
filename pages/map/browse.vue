@@ -12,10 +12,10 @@
     <view class="map-display-area">
       <MapImage
         :current-map-url="currentMapUrl"
-        v-model:scale="scale"
-        v-model:translate-x="translateX"
-        v-model:translate-y="translateY"
-        v-model:rotation="rotation"
+        :scale="scale"
+        :translate-x="translateX"
+        :translate-y="translateY"
+        :rotation="rotation"
         @image-load="onImageLoad"
         @image-error="onImageError"
       />
