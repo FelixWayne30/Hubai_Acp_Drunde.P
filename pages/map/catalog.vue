@@ -56,8 +56,6 @@
 </template>
 
 <script>
-import { API } from '@/common/config.js';
-
 export default {
   data() {
     return {
@@ -70,31 +68,14 @@ export default {
   
   methods: {
 	getCatalogs() {
-	    uni.request({
-	      url: API.CATALOGS, // 从 config.js 导入
-	      method: 'GET',
-	      success: (res) => {
-	        if (res.statusCode === 200 && res.data.code === 200) {
-	          this.catalogs = res.data.data;
-	          // 初始化状态数组
-	          this.dropdownStates = new Array(this.catalogs.length).fill(false);
-	          this.secondaryDropdownStates = this.catalogs.map(group => 
-	            new Array(group.subgroups.length).fill(false)
-	          );
-	        } else {
-	          uni.showToast({
-	            title: '获取目录失败',
-	            icon: 'none'
-	          });
-	        }
-	      },
-	      fail: () => {
-	        uni.showToast({
-	          title: '网络错误',
-	          icon: 'none'
-	        });
-	      }
-	    });
+	    uni.getStorage({
+        key: 'catalogs',
+        success: (res)=>{
+          this.catalogs = [...res.data];
+          this.dropdownStates = new Array(this.catalogs.length).fill(false);
+          this.secondaryDropdownStates = this.catalogs.map(group => new Array(group.subgroups.length).fill(false));
+        }
+      });
 	  },
 	  
 	getCardStyle(index) {
