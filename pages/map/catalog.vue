@@ -38,14 +38,30 @@
                 </view>
               </view>
               <view v-if="dropdownStates[index]" class="dropdown-content" :style="getDropdownStyle(index)">
-                <view class="dropdown-item" v-for="(subgroup, subIndex) in catalog.subgroups" :key="subIndex">
-                  <view class="dropdown-item-content" @click="toggleSecondaryDropdown(index, subIndex)">
-                    <text class="secondary-toggle-icon">{{ secondaryDropdownStates[index][subIndex] ? '▼' : '▶' }}</text>
-                    <text>{{ subgroup.subgroup }}</text>
-                  </view>
-                  <view v-if="secondaryDropdownStates[index][subIndex]" class="secondary-dropdown-content">
-                    <view class="secondary-dropdown-item" v-for="(map, mapIndex) in subgroup.maps" :key="mapIndex">
-                      {{ map }}
+                <view v-if="catalog.subgroups.length === 1" class="no-subgroups">
+                  <view 
+                      class="secondary-dropdown-item" 
+                      v-for="(map, mapIndex) in catalog.subgroups[0].maps" 
+                      :key="mapIndex">
+                        {{ map }}
+                      </view>
+                </view>
+                <view v-else>
+                  <view 
+                    class="dropdown-item"
+                    v-for="(subgroup, subIndex) in catalog.subgroups" 
+                    :key="subIndex">
+                    <view class="dropdown-item-content" @click="toggleSecondaryDropdown(index, subIndex)">
+                      <text class="secondary-toggle-icon">{{ secondaryDropdownStates[index][subIndex] ? '▼' : '▶' }}</text>
+                      <text>{{ subgroup.subgroup }}</text>
+                    </view>
+                    <view v-if="secondaryDropdownStates[index][subIndex]" class="secondary-dropdown-content">
+                      <view 
+                      class="secondary-dropdown-item" 
+                      v-for="(map, mapIndex) in subgroup.maps" 
+                      :key="mapIndex">
+                        {{ map }}
+                      </view>
                     </view>
                   </view>
                 </view>
