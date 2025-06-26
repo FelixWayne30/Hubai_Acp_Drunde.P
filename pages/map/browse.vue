@@ -12,50 +12,13 @@
     <view class="map-display-area">
       <MapImage
         :current-map-url="currentMapUrl"
-        v-model:scale="scale"
-        v-model:translate-x="translateX"
-        v-model:translate-y="translateY"
-        v-model:rotation="rotation"
+        :all-maps="allMaps"
+        :current-map-index="currentMapIndex"
+        :topic="topic"
+        :topic-id="topicId"
+        @switch-map="switchMap"
         @image-load="onImageLoad"
         @image-error="onImageError"
-      />
-    </view>
-    
-    <!-- 底部控制栏 -->
-    <view class="bottom-controls">
-      <image
-        class="control-btn"
-        :style="rotationStyle90"
-        src="../../static/icons/info.svg"
-        @click="viewDetail"
-      />
-
-      <image
-        class="control-btn"
-        :style="rotationStyle"
-        src="../../static/icons/reset.svg"
-        @click="resetTransform"
-      />
-
-      <image
-        class="control-btn"
-        :style="rotationStyle90"
-        src="../../static/icons/rotate.svg"
-        @click="rotate"
-      />
-
-      <image
-        class="control-btn"
-        :style="rotationStyle"
-        :src="currentMapIndex === allMaps.length - 1 ? arrow_img.disabled : arrow_img.active"
-        @click="switchMap('next')"
-      />
-
-      <image
-        class="control-btn"
-        :style="rotationStyle180"
-        :src="currentMapIndex === 0 ? arrow_img.disabled : arrow_img.active"
-        @click="switchMap('prev')"
       />
     </view>
   </view>
@@ -79,26 +42,7 @@ export default {
       currentMap: null,
       currentMapUrl: '',
       isLoading: true,
-      loadingText: '加载中...',
-      scale: 2,
-      translateX: 0,
-      translateY: 0,
-      rotation: 0,
-      arrow_img: {
-        active: "../../static/icons/arrow-active.svg",
-        disabled: "../../static/icons/arrow.svg",
-      }
-    }
-  },
-  computed: {
-    rotationStyle() {
-      return `transform: rotate(${this.rotation}deg); transition: transform 0.5s ease-in-out;`;
-    },
-    rotationStyle90() {
-      return `transform: rotate(${this.rotation + 90}deg); transition: transform 0.5s ease-in-out;`;
-    },
-    rotationStyle180() {
-      return `transform: rotate(${this.rotation + 180}deg); transition: transform 0.5s ease-in-out;`;
+      loadingText: '加载中...'
     }
   },
   onLoad(options) {
@@ -219,19 +163,6 @@ export default {
       this.currentMapIndex = newIndex;
       this.loadCurrentMap();
     },
-    viewDetail() {
-      if (!this.currentMap) return;
-      
-      let url = `/pages/map/detail?id=${this.currentMap.map_id}&from=browse`;
-      
-      if (this.topic) {
-        url += `&topic=${this.topic}`;
-      } else if (this.topicId) {
-        url += `&topic_id=${this.topicId}`;
-      }
-      
-      uni.navigateTo({ url });
-    },
     onImageLoad() {
       console.log('原图显示成功');
       this.isLoading = false;
@@ -255,21 +186,12 @@ export default {
           this.loadingText = '';
         }
       }, 3000);
-    },
-    resetTransform() {
-      this.scale = 2;
-      this.translateX = 0;
-      this.translateY = 0;
-    },
-    rotate() {
-      this.rotation = (this.rotation + 90) % 360;
     }
   }
 }
 </script>
 
 <style>
-/* 保持原有样式不变 */
 .container {
   width: 100%;
   height: 100vh;
@@ -278,7 +200,6 @@ export default {
   flex-direction: column;
 }
 
-/* 加载指示器 */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -316,7 +237,6 @@ export default {
   font-weight: 500;
 }
 
-/* 地图显示区域 */
 .map-display-area {
   flex: 1;
   background-color: #ffffff;
@@ -327,43 +247,14 @@ export default {
   position: relative;
 }
 
-/* 底部控制栏 */
-.bottom-controls {
-  background-color: #ffffff;
-  padding: 20rpx 30rpx calc(-20rpx + env(safe-area-inset-bottom)) 30rpx;
-  border-top: 1px solid #e8e8e8;
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: space-around;
-  height: 7vh;
-}
-
-.control-btn {
-  width: 80rpx;
-  height: 80rpx;
-  border: none;
-  background: none;
-  padding: 0;
-  object-fit: contain;
-  transition: transform 0.5s ease-in-out;
-}
-
-/* 动画 */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-/* 响应式适配 */
 @media screen and (max-width: 480px) {
   .map-display-area {
     margin: 15rpx;
-  }
-  
-  .control-btn {
-    width: 90rpx;
-    height: 90rpx;
   }
 }
 </style>
