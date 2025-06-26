@@ -30,6 +30,7 @@ export const API = {
   SEARCH_SUGGESTIONS: `${envConfig.API_BASE_URL}/mapinfo/search-suggestions`,
   BANNER_MAPS: `${envConfig.API_BASE_URL}/mapinfo/bannerMaps`,
   GET_MAP_TOPIC: `${envConfig.API_BASE_URL}/mapinfo/getTopicByMapId/`, 
+  SUBITEM_BOUNDS: `${envConfig.API_BASE_URL}/mapinfo/subitem/bounds/`,
   
   // 交互相关API
   COLLECTION_TOGGLE: `${envConfig.API_BASE_URL}/interaction/collection/toggle`,
