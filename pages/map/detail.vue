@@ -114,6 +114,7 @@ export default {
     return {
       mapId: '',
       topicId: '',
+	  subitemName: '', //地图子图名称
       //自定义列表有关
       showListsSelector: false,
       customLists: [],
@@ -148,15 +149,18 @@ export default {
   },
 
   onLoad(options) {
+	  
    console.log('详情页接收到的参数:', options);
      this.mapId = options.id || '';
      this.topicId = options.topic_id || '';
-     this.topic = options.topic ? decodeURIComponent(options.topic) : '';  // 解码专题名称
+     this.topic = options.topic ? decodeURIComponent(options.topic) : '';  
+	 this.subitemName = options.subitem_name ? decodeURIComponent(options.subitem_name) : ''; 
      
      console.log('设置后的参数:', {
        mapId: this.mapId,
        topicId: this.topicId,
-       topic: this.topic  
+       topic: this.topic  ,
+	   subitemName: this.subitemName  
         });
         
         if (options.from === 'browse') {
@@ -827,6 +831,11 @@ export default {
        url += `&topic_id=${this.topicId}`;
        console.log('使用专题ID跳转到浏览页:', this.topicId);
      }
+	 
+	  if (this.subitemName) {
+	       url += `&subitem_name=${encodeURIComponent(this.subitemName)}`;
+	       console.log('传递子图名称到浏览页:', this.subitemName);
+	     } 
      
      console.log('跳转到浏览页URL:', url);
      

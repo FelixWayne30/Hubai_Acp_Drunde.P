@@ -271,6 +271,9 @@ export default {
           if (resultItem.topic_name) {
             url += `&topic=${encodeURIComponent(resultItem.topic_name)}`;
           }
+		  if (resultItem.subitem_name) {
+		        url += `&subitem_name=${encodeURIComponent(resultItem.subitem_name)}`;
+		      }
         }
         
         console.log('从搜索页跳转到详情页:', url);
