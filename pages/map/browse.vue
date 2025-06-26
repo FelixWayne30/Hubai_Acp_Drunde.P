@@ -10,11 +10,17 @@
     
     <!-- 地图显示区域 -->
     <view class="map-display-area">
-      <MapImage
-          ref="map"
-          :current-map-url="currentMapUrl"
-          :extends="[299.9244146,1248.482095,3018.427816,2950.8553]"
-      />
+     <MapImage
+         ref="map"
+         :current-map-url="currentMapUrl"
+         :extends="[299.9244146,1248.482095,3018.427816,2950.8553]"
+         :scale="mapScale"
+         :translate-x="mapTranslateX"
+         :translate-y="mapTranslateY"
+         @update:scale="mapScale = $event"
+         @update:translate-x="mapTranslateX = $event"
+         @update:translate-y="mapTranslateY = $event"
+     />
     </view>
     
     <!-- 底部控制栏 -->
@@ -67,6 +73,9 @@ export default {
   },
   data() {
     return {
+	  mapScale: 2,
+	  mapTranslateX: 0,
+	  mapTranslateY: 0,
       topicId: '',
       topic: '',
       mapId: '',
@@ -114,6 +123,10 @@ export default {
     }
   },
   methods: {
+	  resetTransform() {
+	    this.$refs.map.resetTransform();
+	  },
+	  
     async loadMapsData() {
       try {
         this.isLoading = true;
@@ -176,7 +189,8 @@ export default {
         });
       });
     },
-    loadCurrentMap() {
+    
+	loadCurrentMap() {
       if (!this.allMaps.length) {
         this.showError('没有可显示的地图');
         return;
@@ -198,6 +212,7 @@ export default {
       
       this.isLoading = false;
     },
+	
     switchMap(direction) {
       let newIndex = this.currentMapIndex;
       

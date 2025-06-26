@@ -28,13 +28,22 @@ export default {
       type: Array, //[xmin, ymin, xmax, ymax]
       required: false,
     },
+	 scale: {
+	    type: Number,
+	    default: 2
+	  },
+	  translateX: {
+	    type: Number,
+	    default: 0
+	  },
+	  translateY: {
+	    type: Number,
+	    default: 0
+	  }
   },
   data() {
     return {
       rotation: 0,
-      scale: 2,
-      translateX:0,
-      translateY:0,
 
       touching: false,
       touchStartData: null,
@@ -74,11 +83,9 @@ export default {
 
       const newScale = Math.min(scaleX, scaleY); // 保证完全显示
 
-      this.scale = newScale;
-
-      // 设置平移，使图像居中
-      this.translateX = -xmin * newScale + (containerWidth - targetWidth * newScale) / 2;
-      this.translateY = -ymin * newScale + (containerHeight - targetHeight * newScale) / 2;
+     this.$emit('update:scale', newScale);
+     this.$emit('update:translate-x', -xmin * newScale + (containerWidth - targetWidth * newScale) / 2);
+     this.$emit('update:translate-y', -ymin * newScale + (containerHeight - targetHeight * newScale) / 2);
     },
 
     handleTouchStart(e) {
@@ -91,7 +98,7 @@ export default {
       if (now - this.lastTap < 300 &&
           Math.abs(x - this.lastTapX) < 10 &&
           Math.abs(y - this.lastTapY) < 10) {
-        if (this.scale * 2 < this.maxScale) this.scale = this.scale * 2;
+        if (this.scale * 2 < this.maxScale) this.$emit('update:scale', this.scale * 2);
         this.lastTap = 0;
       } else {
         this.lastTap = now;
@@ -134,8 +141,8 @@ export default {
         const deltaX = touches[0].clientX - this.touchStartData.startX;
         const deltaY = touches[0].clientY - this.touchStartData.startY;
 
-        this.$emit('update:translateX', this.touchStartData.startTranslateX + deltaX);
-        this.$emit('update:translateY', this.touchStartData.startTranslateY + deltaY);
+     this.$emit('update:translate-x', this.touchStartData.startTranslateX + deltaX);
+     this.$emit('update:translate-y', this.touchStartData.startTranslateY + deltaY);
       } else if (this.touchStartData.type === 'zoom' && touches.length === 2) {
         const touch1 = touches[0];
         const touch2 = touches[1];
@@ -149,8 +156,8 @@ export default {
         const center = this.getCenter(touch1, touch2);
 
         this.$emit('update:scale', newScale);
-        this.$emit('update:translateX', this.touchStartData.startTranslateX - (center.x - this.touchStartData.centerX) * scaleDiff);
-        this.$emit('update:translateY', this.touchStartData.startTranslateY - (center.y - this.touchStartData.centerY) * scaleDiff);
+        this.$emit('update:translate-x', this.touchStartData.startTranslateX - (center.x - this.touchStartData.centerX) * scaleDiff);
+        this.$emit('update:translate-y', this.touchStartData.startTranslateY - (center.y - this.touchStartData.centerY) * scaleDiff);
       }
     },
     handleTouchEnd() {
@@ -193,9 +200,9 @@ export default {
       }, 3000);
     },
     resetTransform() {
-      this.scale = 2;
-      this.translateX = 0;
-      this.translateY = 0;
+      this.$emit('update:scale', 2);
+      this.$emit('update:translate-x', 0);
+      this.$emit('update:translate-y', 0);
     },
     rotate() {
       this.rotation = (this.rotation + 90) % 360;
