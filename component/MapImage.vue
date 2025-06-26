@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <!-- 工具栏，独立图层 -->
   <view class="floating-toolbar">
     <image class="control-btn" :style="rotationStyle90" src="/static/icons/info.svg" @click="viewDetail" />
@@ -82,12 +83,16 @@
   <!-- 地图容器 -->
   <view class="map-container" 
         :style="mapTransformStyle"
+=======
+  <view class="map-container"
+        :style="containerStyle"
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
         @touchstart="handleTouchStart"
         @touchmove="handleTouchMove" 
         @touchend="handleTouchEnd">
     <image 
       class="map-image"
-      :style="rotationStyle"
+      :style="imageStyle"
       :src="currentMapUrl"
       mode="widthFix" 
       @load="onImageLoad"
@@ -119,6 +124,7 @@ export default {
       type: String,
       required: true
     },
+<<<<<<< HEAD
     allMaps: {
       type: Array,
       required: true
@@ -142,10 +148,39 @@ export default {
       translateX: 0,
       translateY: 0,
       rotation: 0,
+=======
+    extends: {
+      type: Array, //[xmin, ymin, xmax, ymax]
+      required: false,
+    },
+	 scale: {
+	    type: Number,
+	    default: 2
+	  },
+	  translateX: {
+	    type: Number,
+	    default: 0
+	  },
+	  translateY: {
+	    type: Number,
+	    default: 0
+	  }
+  },
+  data() {
+    return {
+      rotation: 0,
+
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
       touching: false,
       touchStartData: null,
+
       maxScale: 10,
+<<<<<<< HEAD
       initialScale: 1,
+=======
+      initialScale: 2,
+
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
       lastTap: 0,
       lastTapX: 0,
       lastTapY: 0,
@@ -175,12 +210,13 @@ export default {
     }
   },
   computed: {
-    mapTransformStyle() {
+    containerStyle() {
       return {
         transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`,
         transition: 'none'
       }
     },
+<<<<<<< HEAD
     rotationStyle() {
       return `transform: rotate(${this.rotation}deg);`
     },
@@ -213,6 +249,33 @@ export default {
       console.error('Image load failed:', e)
       this.$emit('image-error', e)
     },
+=======
+    imageStyle() {
+      return `transform: rotate(${this.rotation + 90}deg); transition: transform 0.5s ease-in-out;`;
+    }
+  },
+  methods: {
+    fitToExtent(extent) {
+      const [xmin, ymin, xmax, ymax] = extent;
+      const targetWidth = xmax - xmin;
+      const targetHeight = ymax - ymin;
+
+      //FIXME: 找不到 getElementsByClassName
+      const container = document.getElementsByClassName('map-container')[0];
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      const scaleX = containerWidth / targetWidth;
+      const scaleY = containerHeight / targetHeight;
+
+      const newScale = Math.min(scaleX, scaleY); // 保证完全显示
+
+     this.$emit('update:scale', newScale);
+     this.$emit('update:translate-x', -xmin * newScale + (containerWidth - targetWidth * newScale) / 2);
+     this.$emit('update:translate-y', -ymin * newScale + (containerHeight - targetHeight * newScale) / 2);
+    },
+
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
     handleTouchStart(e) {
       if (this.paintLineMode || this.rectMode) return
 
@@ -225,10 +288,15 @@ export default {
       if (now - this.lastTap < 300 &&
           Math.abs(x - this.lastTapX) < 10 &&
           Math.abs(y - this.lastTapY) < 10) {
+<<<<<<< HEAD
         if (this.scale * 2 <= this.maxScale) {
           this.scale = this.scale * 2
         }
         this.lastTap = 0
+=======
+        if (this.scale * 2 < this.maxScale) this.$emit('update:scale', this.scale * 2);
+        this.lastTap = 0;
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
       } else {
         this.lastTap = now
         this.lastTapX = x
@@ -272,8 +340,13 @@ export default {
         const deltaX = touches[0].clientX - this.touchStartData.startX
         const deltaY = touches[0].clientY - this.touchStartData.startY
 
+<<<<<<< HEAD
         this.translateX = this.touchStartData.startTranslateX + deltaX
         this.translateY = this.touchStartData.startTranslateY + deltaY
+=======
+     this.$emit('update:translate-x', this.touchStartData.startTranslateX + deltaX);
+     this.$emit('update:translate-y', this.touchStartData.startTranslateY + deltaY);
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
       } else if (this.touchStartData.type === 'zoom' && touches.length === 2) {
         const touch1 = touches[0]
         const touch2 = touches[1]
@@ -286,9 +359,15 @@ export default {
         const scaleDiff = newScale - this.scale
         const center = this.getCenter(touch1, touch2)
 
+<<<<<<< HEAD
         this.scale = newScale
         this.translateX = this.touchStartData.startTranslateX - (center.x - this.touchStartData.centerX) * scaleDiff
         this.translateY = this.touchStartData.startTranslateY - (center.y - this.touchStartData.centerY) * scaleDiff
+=======
+        this.$emit('update:scale', newScale);
+        this.$emit('update:translate-x', this.touchStartData.startTranslateX - (center.x - this.touchStartData.centerX) * scaleDiff);
+        this.$emit('update:translate-y', this.touchStartData.startTranslateY - (center.y - this.touchStartData.centerY) * scaleDiff);
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
       }
     },
     handleTouchEnd() {
@@ -354,6 +433,7 @@ export default {
       return {
         x: (touch1.clientX + touch2.clientX) / 2,
         y: (touch1.clientY + touch2.clientY) / 2
+<<<<<<< HEAD
       }
     },
     resetTransform() {
@@ -457,8 +537,46 @@ export default {
         this.rectMode = false
         this.clearMode = true
       }
+=======
+      };
+    },
+    onImageLoad() {
+      console.log('原图显示成功');
+      this.isLoading = false;
+    },
+    onImageError(error) {
+      console.error('原图显示失败:', error);
+      this.showError('图片显示失败，请检查网络连接');
+    },
+    showError(message) {
+      this.isLoading = false;
+      this.loadingText = message;
+
+      uni.showToast({
+        title: message,
+        icon: 'none',
+        duration: 3000
+      });
+
+      setTimeout(() => {
+        if (this.loadingText === message) {
+          this.loadingText = '';
+        }
+      }, 3000);
+    },
+    resetTransform() {
+      this.$emit('update:scale', 2);
+      this.$emit('update:translate-x', 0);
+      this.$emit('update:translate-y', 0);
+    },
+    rotate() {
+      this.rotation = (this.rotation + 90) % 360;
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
     }
-  }
+  },
+  mounted() {
+    this.fitToExtent(this.extends)
+  },
 }
 </script>
 

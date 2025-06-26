@@ -1,9 +1,9 @@
 <script>
-import {clearMapCache, getMapintoCache} from "./common/uniStorage";
+import {clearMapCache, getCatalogsCache, getMapintoCache} from "./common/uniStorage";
 	export default {
 		onLaunch: function() {
 			console.log('App Launch');
-			   // 添加统一的请求头
+			// 添加统一的请求头
 			uni.addInterceptor('request', {
 			        invoke(args) {
 			            args.header = args.header || {};
@@ -11,13 +11,13 @@ import {clearMapCache, getMapintoCache} from "./common/uniStorage";
 			            return args;
 			        }
 			    });
-      uni.addInterceptor('downloadFile', {
-        invoke(args) {
-          args.header = args.header || {};
-          args.header['Authorization'] = 'Telecarto@501502511';
-          return args;
-        }
-      });
+			uni.addInterceptor('downloadFile', {
+			invoke(args) {
+				args.header = args.header || {};
+				args.header['Authorization'] = 'Telecarto@501502511';
+				return args;
+			}
+			});
 			// 添加路由拦截器用于调试
 			uni.addInterceptor('navigateTo', {
 				invoke(e) {
@@ -28,14 +28,23 @@ import {clearMapCache, getMapintoCache} from "./common/uniStorage";
 					console.error('路由跳转失败:', err);
 				}
 			});
-      getMapintoCache()
-      setInterval(()=>{
-        uni.removeStorage({
-          key:"maps",
-          success:getMapintoCache
-        })
-      },1000*60*5)
+
+			getMapintoCache()
+
+			getCatalogsCache()
+
+			setInterval(()=>{
+				uni.removeStorage({
+				key:"maps",
+				success:getMapintoCache
+				})
+				uni.removeStorage({
+				key:"catalogs",
+				success:getCatalogsCache
+				})
+			},1000*60*5)
 		},
+
 		onShow: function() {
 			console.log('App Show');
 		},

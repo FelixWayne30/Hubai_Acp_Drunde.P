@@ -7,7 +7,7 @@ export const API = {
   COMMENT_LIST: `${envConfig.API_BASE_URL}/comment/comments`,
   
   // 目录相关API
-  CATALOGS: `${envConfig.API_BASE_URL}/api/catalogs`,
+  CATALOGS: `${envConfig.API_BASE_URL}/catalogs`,
   
   // 自定义列表相关API
   CUSTOM_LIST_GET: `${envConfig.API_BASE_URL}/customlist/list`,
@@ -30,6 +30,7 @@ export const API = {
   SEARCH_SUGGESTIONS: `${envConfig.API_BASE_URL}/mapinfo/search-suggestions`,
   BANNER_MAPS: `${envConfig.API_BASE_URL}/mapinfo/bannerMaps`,
   GET_MAP_TOPIC: `${envConfig.API_BASE_URL}/mapinfo/getTopicByMapId/`, 
+  SUBITEM_BOUNDS: `${envConfig.API_BASE_URL}/mapinfo/subitem/bounds/`,
   
   // 交互相关API
   COLLECTION_TOGGLE: `${envConfig.API_BASE_URL}/interaction/collection/toggle`,

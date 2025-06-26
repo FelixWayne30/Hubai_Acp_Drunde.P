@@ -38,14 +38,32 @@
                 </view>
               </view>
               <view v-if="dropdownStates[index]" class="dropdown-content" :style="getDropdownStyle(index)">
-                <view class="dropdown-item" v-for="(subgroup, subIndex) in catalog.subgroups" :key="subIndex">
-                  <view class="dropdown-item-content" @click="toggleSecondaryDropdown(index, subIndex)">
-                    <text class="secondary-toggle-icon">{{ secondaryDropdownStates[index][subIndex] ? '▼' : '▶' }}</text>
-                    <text>{{ subgroup.subgroup }}</text>
-                  </view>
-                  <view v-if="secondaryDropdownStates[index][subIndex]" class="secondary-dropdown-content">
-                    <view class="secondary-dropdown-item" v-for="(map, mapIndex) in subgroup.maps" :key="mapIndex">
-                      {{ map }}
+                <view v-if="catalog.subgroups.length === 1" class="no-subgroups">
+                  <view 
+                      class="secondary-dropdown-item" 
+                      v-for="(map, mapIndex) in catalog.subgroups[0].maps" 
+                      @click="mapItemClick(map, catalog.group)"
+                      :key="mapIndex">
+                        {{ map }}
+                      </view>
+                </view>
+                <view v-else>
+                  <view 
+                    class="dropdown-item"
+                    v-for="(subgroup, subIndex) in catalog.subgroups" 
+                    :key="subIndex">
+                    <view class="dropdown-item-content" @click="toggleSecondaryDropdown(index, subIndex)">
+                      <text class="secondary-toggle-icon">{{ secondaryDropdownStates[index][subIndex] ? '▼' : '▶' }}</text>
+                      <text>{{ subgroup.subgroup }}</text>
+                    </view>
+                    <view v-if="secondaryDropdownStates[index][subIndex]" class="secondary-dropdown-content">
+                      <view 
+                      class="secondary-dropdown-item" 
+                      v-for="(map, mapIndex) in subgroup.maps"
+                      @click="mapItemClick(map, catalog.group)" 
+                      :key="mapIndex">
+                        {{ map }}
+                      </view>
                     </view>
                   </view>
                 </view>
@@ -56,8 +74,6 @@
 </template>
 
 <script>
-import { API } from '@/common/config.js';
-
 export default {
   data() {
     return {
@@ -69,38 +85,21 @@ export default {
   },
   
   methods: {
-	getCatalogs() {
-	    uni.request({
-	      url: API.CATALOGS, // 从 config.js 导入
-	      method: 'GET',
-	      success: (res) => {
-	        if (res.statusCode === 200 && res.data.code === 200) {
-	          this.catalogs = res.data.data;
-	          // 初始化状态数组
-	          this.dropdownStates = new Array(this.catalogs.length).fill(false);
-	          this.secondaryDropdownStates = this.catalogs.map(group => 
-	            new Array(group.subgroups.length).fill(false)
-	          );
-	        } else {
-	          uni.showToast({
-	            title: '获取目录失败',
-	            icon: 'none'
-	          });
-	        }
-	      },
-	      fail: () => {
-	        uni.showToast({
-	          title: '网络错误',
-	          icon: 'none'
-	        });
-	      }
-	    });
-	  },
-	  
-	getCardStyle(index) {
-	    const colors = ['#ebf4fb', '#f7f8e0', '#e6f2e9', '#f5f2f8'];
-	    return `background-image: linear-gradient(to right, ${colors[index % colors.length]}, #ffffff 20%);`;
-	  },
+    getCatalogs() {
+        uni.getStorage({
+          key: 'catalogs',
+          success: (res)=>{
+            this.catalogs = [...res.data];
+            this.dropdownStates = new Array(this.catalogs.length).fill(false);
+            this.secondaryDropdownStates = this.catalogs.map(group => new Array(group.subgroups.length).fill(false));
+          }
+        });
+      },
+      
+    getCardStyle(index) {
+        const colors = ['#ebf4fb', '#f7f8e0', '#e6f2e9', '#f5f2f8'];
+        return `background-image: linear-gradient(to right, ${colors[index % colors.length]}, #ffffff 20%);`;
+      },
 	  getCardContentStyle(index) {
 	    const colors = ['#95bbce', '#cbc77c', '#9bb38d', '#b7aabf'];
 	    return `color: ${colors[index % colors.length]};`;
@@ -146,6 +145,22 @@ export default {
     toggleSecondaryDropdown(cardIndex, itemIndex) {
       this.secondaryDropdownStates[cardIndex][itemIndex] = !this.secondaryDropdownStates[cardIndex][itemIndex];
       this.$forceUpdate(); // Ensure UI updates
+    },
+
+    mapItemClick(map,topic){
+      if (!map) return;
+
+      uni.getStorage({
+        key: 'maps',
+        success: (res) => {
+          let maps = res.data
+          let matchItem = maps.find(item =>item.title === map)
+          console.log('匹配到的地图:', matchItem);
+          uni.navigateTo({
+              url: `/pages/map/detail?id=${matchItem.map_id}&topic=${topic}`
+          });
+        },
+      });
     }
   },
   

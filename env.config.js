@@ -13,7 +13,7 @@ const CURRENT_ENV = ENV_TYPE.DEVELOPMENT;
 const ENV_CONFIG = {
   [ENV_TYPE.DEVELOPMENT]: {
     // 开发环境配置————华为云服务：1.92.85.165
-    API_BASE_URL: 'http://1.92.85.165:8088', 
+    API_BASE_URL: 'http://1.92.85.165:8088',
     GEOSERVER_BASE_URL: 'http://1.92.85.165:8087/geoserver',
 	WEBVIEW_BASE_URL: 'http://1.92.85.165:2180',
     DEBUG: true,
