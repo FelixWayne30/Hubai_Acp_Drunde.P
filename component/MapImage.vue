@@ -1,12 +1,12 @@
 <template>
-  <view class="map-container" 
-        :style="mapTransformStyle"
+  <view class="map-container"
+        :style="containerStyle"
         @touchstart="handleTouchStart"
         @touchmove="handleTouchMove" 
         @touchend="handleTouchEnd">
     <image 
       class="map-image"
-      :style="rotationStyle"
+      :style="imageStyle"
       :src="currentMapUrl"
       mode="aspectFit"
       @load="onImageLoad"
@@ -24,46 +24,63 @@ export default {
       type: String,
       required: true
     },
-    scale: {
-      type: Number,
-      default: 1
+    extends: {
+      type: Array, //[xmin, ymin, xmax, ymax]
+      required: false,
     },
-    translateX: {
-      type: Number,
-      default: 0
-    },
-    translateY: {
-      type: Number,
-      default: 0
-    },
-    rotation: {
-      type: Number,
-      default: 0
-    }
   },
   data() {
     return {
+      rotation: 0,
+      scale: 2,
+      translateX:0,
+      translateY:0,
+
       touching: false,
       touchStartData: null,
+
       maxScale: 10,
       initialScale: 2,
+
       lastTap: 0,
       lastTapX: 0,
       lastTapY: 0
     }
   },
   computed: {
-    mapTransformStyle() {
+    containerStyle() {
       return {
         transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`,
         transition: this.touching ? 'none' : 'transform 0.3s ease-out'
       }
     },
-    rotationStyle() {
-      return `transform: rotate(${this.rotation}deg); transition: transform 0.5s ease-in-out;`;
+    imageStyle() {
+      return `transform: rotate(${this.rotation + 90}deg); transition: transform 0.5s ease-in-out;`;
     }
   },
   methods: {
+    fitToExtent(extent) {
+      const [xmin, ymin, xmax, ymax] = extent;
+      const targetWidth = xmax - xmin;
+      const targetHeight = ymax - ymin;
+
+      //FIXME: 找不到 getElementsByClassName
+      const container = document.getElementsByClassName('map-container')[0];
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      const scaleX = containerWidth / targetWidth;
+      const scaleY = containerHeight / targetHeight;
+
+      const newScale = Math.min(scaleX, scaleY); // 保证完全显示
+
+      this.scale = newScale;
+
+      // 设置平移，使图像居中
+      this.translateX = -xmin * newScale + (containerWidth - targetWidth * newScale) / 2;
+      this.translateY = -ymin * newScale + (containerHeight - targetHeight * newScale) / 2;
+    },
+
     handleTouchStart(e) {
       this.touching = true;
       const touches = e.touches;
@@ -152,20 +169,41 @@ export default {
       };
     },
     onImageLoad() {
-      this.$emit('image-load');
+      console.log('原图显示成功');
+      this.isLoading = false;
     },
     onImageError(error) {
-      this.$emit('image-error', error);
+      console.error('原图显示失败:', error);
+      this.showError('图片显示失败，请检查网络连接');
+    },
+    showError(message) {
+      this.isLoading = false;
+      this.loadingText = message;
+
+      uni.showToast({
+        title: message,
+        icon: 'none',
+        duration: 3000
+      });
+
+      setTimeout(() => {
+        if (this.loadingText === message) {
+          this.loadingText = '';
+        }
+      }, 3000);
     },
     resetTransform() {
-      this.$emit('update:scale', this.initialScale);
-      this.$emit('update:translateX', 0);
-      this.$emit('update:translateY', 0);
+      this.scale = 2;
+      this.translateX = 0;
+      this.translateY = 0;
     },
     rotate() {
-      this.$emit('update:rotation', (this.rotation + 90) % 360);
+      this.rotation = (this.rotation + 90) % 360;
     }
-  }
+  },
+  mounted() {
+    this.fitToExtent(this.extends)
+  },
 }
 </script>
 

@@ -11,13 +11,9 @@
     <!-- 地图显示区域 -->
     <view class="map-display-area">
       <MapImage
-        :current-map-url="currentMapUrl"
-        :scale="scale"
-        :translate-x="translateX"
-        :translate-y="translateY"
-        :rotation="rotation"
-        @image-load="onImageLoad"
-        @image-error="onImageError"
+          ref="map"
+          :current-map-url="currentMapUrl"
+          :extends="[299.9244146,1248.482095,3018.427816,2950.8553]"
       />
     </view>
     
@@ -80,9 +76,6 @@ export default {
       currentMapUrl: '',
       isLoading: true,
       loadingText: '加载中...',
-      scale: 2,
-      translateX: 0,
-      translateY: 0,
       rotation: 0,
       arrow_img: {
         active: "../../static/icons/arrow-active.svg",
@@ -232,37 +225,12 @@ export default {
       
       uni.navigateTo({ url });
     },
-    onImageLoad() {
-      console.log('原图显示成功');
-      this.isLoading = false;
-    },
-    onImageError(error) {
-      console.error('原图显示失败:', error);
-      this.showError('图片显示失败，请检查网络连接');
-    },
-    showError(message) {
-      this.isLoading = false;
-      this.loadingText = message;
-      
-      uni.showToast({
-        title: message,
-        icon: 'none',
-        duration: 3000
-      });
-      
-      setTimeout(() => {
-        if (this.loadingText === message) {
-          this.loadingText = '';
-        }
-      }, 3000);
-    },
     resetTransform() {
-      this.scale = 2;
-      this.translateX = 0;
-      this.translateY = 0;
+      this.$refs.map.resetTransform()
     },
     rotate() {
       this.rotation = (this.rotation + 90) % 360;
+      this.$refs.map.rotate()
     }
   }
 }
