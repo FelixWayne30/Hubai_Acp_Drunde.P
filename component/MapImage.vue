@@ -58,7 +58,7 @@
         :min="1" 
         :max="10" 
         :step="1" 
-        :disabled="!paintLineMode && !rectMode && !circleMode && !polylineMode"
+        :disabled="!paintLineMode && !rectMode && !circleMode && !polylineMode && !polygonMode"
       />
       <text class="slider-value">{{ lineWidth }}px</text>
       <view class="color-column-container">
@@ -69,8 +69,8 @@
             class="color-block" 
             :style="{ backgroundColor: color }" 
             :class="{
-              'active': currentColor === color && (paintLineMode || rectMode || circleMode || polylineMode),
-              'disabled': !paintLineMode && !rectMode && !circleMode && !polylineMode
+              'active': currentColor === color && (paintLineMode || rectMode || circleMode || polylineMode || polygonMode),
+              'disabled': !paintLineMode && !rectMode && !circleMode && !polylineMode && !polygonMode
             }" 
             @click="selectColor(color)"
           />
@@ -96,13 +96,13 @@
       :show-menu-by-longpress="false"
     />
     <canvas 
-      v-if="paintLineMode || rectMode || circleMode || polylineMode"
+      v-if="paintLineMode || rectMode || circleMode || polylineMode || polygonMode"
       class="doodle-canvas"
       canvas-id="doodleCanvas"
       @touchstart="handleCanvasTouchStart"
       @touchmove="handleCanvasTouchMove"
       @touchend="handleCanvasTouchEnd"
-      :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
+      :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px', transform: `rotate(${rotation}deg)` }"
     />
   </view>
 
@@ -137,7 +137,7 @@ export default {
       default: ''
     },
     extends: {
-      type: Array, //[xmin, ymin, xmax, ymax]
+      type: Array, // [xmin, ymin, xmax, ymax]
       required: false
     }
   },
@@ -154,6 +154,8 @@ export default {
       lastTap: 0,
       lastTapX: 0,
       lastTapY: 0,
+      lastCanvasTapTime: 0, // For double-tap detection in polyline and polygon
+      lastRotateTime: 0, // For debouncing rotate button
       isDoodling: false,
       showToast: false,
       paintLineMode: false,
@@ -165,10 +167,8 @@ export default {
       canvasHeight: 0,
       canvasContext: null,
       isDrawing: false,
-      lastX: 0,
-      lastY: 0,
-      startX: 0,
-      startY: 0,
+      currentShape: null,
+      shapes: [],
       currentColor: null,
       clearMode: false,
       lineWidth: 2,
@@ -185,12 +185,15 @@ export default {
   computed: {
     containerStyle() {
       return {
-        transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale}) rotate(${this.rotation}deg)`,
+        transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`,
         transition: 'none'
       }
     },
     imageStyle() {
-      return `transform: rotate(${this.rotation}deg); transition: transform 0.5s ease-in-out;`
+      return {
+        transform: `rotate(${this.rotation}deg)`,
+        transition: 'transform 0.5s ease-in-out'
+      }
     },
     rotationStyle() {
       return `transform: rotate(${this.rotation}deg);`
@@ -206,7 +209,6 @@ export default {
     fitToExtent(extent) {
       if (!extent) return;
       const [xmin, ymin, xmax, ymax] = extent;
-
       const targetWidth = xmax - xmin;
       const targetHeight = ymax - ymin;
 
@@ -224,13 +226,14 @@ export default {
         this.translateY = -ymin * newScale + (containerHeight - targetHeight * newScale) / 2;
       }).exec();
     },
-    onImageLoad() {
+    async onImageLoad() {
       console.log('原图显示成功');
       const query = uni.createSelectorQuery().in(this);
-      query.select('.map-image').boundingClientRect(data => {
+      query.select('#map-container').boundingClientRect(data => {
         if (data) {
           this.canvasWidth = data.width;
           this.canvasHeight = data.height;
+          console.log('画布尺寸初始化：', { width: this.canvasWidth, height: this.canvasHeight });
           this.canvasContext = uni.createCanvasContext('doodleCanvas', this);
           this.canvasContext.setLineWidth(this.lineWidth);
           if (this.currentColor) {
@@ -238,6 +241,9 @@ export default {
           }
           this.canvasContext.setLineCap('round');
           this.canvasContext.setLineJoin('round');
+          this.drawAllShapes();
+        } else {
+          console.error('无法获取 map-container 尺寸');
         }
       }).exec();
       this.$emit('image-load');
@@ -246,8 +252,186 @@ export default {
       console.error('原图显示失败:', error);
       this.$emit('image-error', error);
     },
+    async getCanvasCoordinates(touch) {
+      const query = uni.createSelectorQuery().in(this);
+      const canvasRect = await new Promise(resolve => {
+        query.select('.doodle-canvas').boundingClientRect(resolve).exec();
+      });
+      if (!canvasRect) {
+        console.error('无法获取画布位置');
+        return { x: touch.x, y: touch.y };
+      }
+      const centerX = canvasRect.left + canvasRect.width / 2;
+      const centerY = canvasRect.top + canvasRect.height / 2;
+      const dx = touch.x - centerX;
+      const dy = touch.y - centerY;
+      const angle = -this.rotation * Math.PI / 180; // 逆旋转以校正触摸坐标
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const localDx = cos * dx - sin * dy;
+      const localDy = sin * dx + cos * dy;
+      const canvasX = (localDx + this.canvasWidth / 2) / this.scale;
+      const canvasY = (localDy + this.canvasHeight / 2) / this.scale;
+      console.log('触摸坐标转换：', { touchX: touch.x, touchY: touch.y, canvasX, canvasY });
+      return { x: canvasX, y: canvasY };
+    },
+    async handleCanvasTouchStart(e) {
+      if (!this.paintLineMode && !this.rectMode && !this.circleMode && !this.polylineMode && !this.polygonMode) return;
+      const touch = e.touches[0];
+      const coords = await this.getCanvasCoordinates(touch);
+
+      if ((this.polylineMode || this.polygonMode) && this.currentShape) {
+        const now = Date.now();
+        if (now - this.lastCanvasTapTime < 300 && this.currentShape.points.length > 1) {
+          if (this.polygonMode) {
+            this.currentShape.points.push(this.currentShape.points[0]);
+          }
+          this.shapes.push(this.currentShape);
+          this.currentShape = null;
+          this.drawAllShapes();
+          this.lastCanvasTapTime = 0;
+          return;
+        }
+        this.lastCanvasTapTime = now;
+      }
+
+      this.isDrawing = true;
+
+      if (this.paintLineMode) {
+        this.currentShape = {
+          type: 'line',
+          points: [{ x: coords.x, y: coords.y }],
+          color: this.currentColor,
+          lineWidth: this.lineWidth
+        };
+      } else if (this.rectMode) {
+        this.currentShape = {
+          type: 'rect',
+          startX: coords.x,
+          startY: coords.y,
+          endX: coords.x,
+          endY: coords.y,
+          color: this.currentColor,
+          lineWidth: this.lineWidth
+        };
+      } else if (this.circleMode) {
+        this.currentShape = {
+          type: 'circle',
+          centerX: coords.x,
+          centerY: coords.y,
+          radius: 0,
+          color: this.currentColor,
+          lineWidth: this.lineWidth
+        };
+      } else if (this.polylineMode) {
+        if (!this.currentShape) {
+          this.currentShape = {
+            type: 'polyline',
+            points: [{ x: coords.x, y: coords.y }],
+            color: this.currentColor,
+            lineWidth: this.lineWidth
+          };
+        } else {
+          this.currentShape.points.push({ x: coords.x, y: coords.y });
+        }
+      } else if (this.polygonMode) {
+        if (!this.currentShape) {
+          this.currentShape = {
+            type: 'polygon',
+            points: [{ x: coords.x, y: coords.y }],
+            color: this.currentColor,
+            lineWidth: this.lineWidth
+          };
+        } else {
+          this.currentShape.points.push({ x: coords.x, y: coords.y });
+        }
+      }
+      this.drawAllShapes();
+    },
+    async handleCanvasTouchMove(e) {
+      if (!this.isDrawing || (!this.paintLineMode && !this.rectMode && !this.circleMode && !this.polylineMode && !this.polygonMode)) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const coords = await this.getCanvasCoordinates(touch);
+      const currentX = coords.x;
+      const currentY = coords.y;
+
+      if (this.paintLineMode) {
+        this.currentShape.points.push({ x: currentX, y: currentY });
+        this.drawAllShapes();
+      } else if (this.rectMode) {
+        this.currentShape.endX = currentX;
+        this.currentShape.endY = currentY;
+        this.drawAllShapes();
+      } else if (this.circleMode) {
+        const dx = currentX - this.currentShape.centerX;
+        const dy = currentY - this.currentShape.centerY;
+        this.currentShape.radius = Math.sqrt(dx * dx + dy * dy);
+        this.drawAllShapes();
+      } else if (this.polylineMode && this.currentShape) {
+        const lastPoint = this.currentShape.points[this.currentShape.points.length - 1];
+        lastPoint.x = currentX;
+        lastPoint.y = currentY;
+        this.drawAllShapes();
+      } else if (this.polygonMode && this.currentShape) {
+        const lastPoint = this.currentShape.points[this.currentShape.points.length - 1];
+        lastPoint.x = currentX;
+        lastPoint.y = currentY;
+        this.drawAllShapes();
+      }
+    },
+    handleCanvasTouchEnd() {
+      if (!this.isDrawing || (!this.paintLineMode && !this.rectMode && !this.circleMode && !this.polylineMode && !this.polygonMode)) return;
+      this.isDrawing = false;
+      if (this.paintLineMode || this.rectMode || this.circleMode) {
+        this.shapes.push(this.currentShape);
+        this.currentShape = null;
+        this.drawAllShapes();
+      }
+    },
+    drawAllShapes() {
+      if (!this.canvasContext) return;
+      this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+      this.shapes.forEach(shape => this.drawShape(shape));
+      if (this.currentShape) this.drawShape(this.currentShape);
+      this.canvasContext.draw(true);
+    },
+    drawShape(shape) {
+      this.canvasContext.beginPath();
+      this.canvasContext.setStrokeStyle(shape.color);
+      this.canvasContext.setLineWidth(shape.lineWidth);
+      this.canvasContext.setLineCap('round');
+      this.canvasContext.setLineJoin('round');
+
+      if (shape.type === 'line') {
+        shape.points.forEach((point, index) => {
+          if (index === 0) this.canvasContext.moveTo(point.x, point.y);
+          else this.canvasContext.lineTo(point.x, point.y);
+        });
+        this.canvasContext.stroke();
+      } else if (shape.type === 'rect') {
+        this.canvasContext.rect(shape.startX, shape.startY, shape.endX - shape.startX, shape.endY - shape.startY);
+        this.canvasContext.stroke();
+      } else if (shape.type === 'circle') {
+        this.canvasContext.arc(shape.centerX, shape.centerY, shape.radius, 0, 2 * Math.PI);
+        this.canvasContext.stroke();
+      } else if (shape.type === 'polyline') {
+        shape.points.forEach((point, index) => {
+          if (index === 0) this.canvasContext.moveTo(point.x, point.y);
+          else this.canvasContext.lineTo(point.x, point.y);
+        });
+        this.canvasContext.stroke();
+      } else if (shape.type === 'polygon') {
+        shape.points.forEach((point, index) => {
+          if (index === 0) this.canvasContext.moveTo(point.x, point.y);
+          else this.canvasContext.lineTo(point.x, point.y);
+        });
+        this.canvasContext.closePath();
+        this.canvasContext.stroke();
+      }
+    },
     handleTouchStart(e) {
-      if (this.paintLineMode || this.rectMode) return;
+      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
       this.touching = true;
       const touches = e.touches;
       const x = touches[0].clientX;
@@ -291,7 +475,7 @@ export default {
       }
     },
     handleTouchMove(e) {
-      if (this.paintLineMode || this.rectMode) return;
+      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
       if (!this.touching || !this.touchStartData) return;
 
       e.preventDefault();
@@ -320,54 +504,9 @@ export default {
       }
     },
     handleTouchEnd() {
-      if (this.paintLineMode || this.rectMode) return;
+      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
       this.touching = false;
       this.touchStartData = null;
-    },
-    handleCanvasTouchStart(e) {
-      if (!this.paintLineMode && !this.rectMode) return;
-      this.isDrawing = true;
-      const touch = e.touches[0];
-      this.startX = touch.x;
-      this.startY = touch.y;
-      this.lastX = touch.x;
-      this.lastY = touch.y;
-
-      this.canvasContext.beginPath();
-      if (this.rectMode) {
-        this.canvasContext.rect(this.startX, this.startY, 0, 0);
-      } else {
-        this.canvasContext.moveTo(this.lastX, this.lastY);
-      }
-    },
-    handleCanvasTouchMove(e) {
-      if (!this.paintLineMode && !this.rectMode || !this.isDrawing) return;
-      e.preventDefault();
-      const touch = e.touches[0];
-      const currentX = touch.x;
-      const currentY = touch.y;
-
-      if (this.rectMode) {
-        this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        this.canvasContext.beginPath();
-        this.canvasContext.rect(this.startX, this.startY, currentX - this.startX, currentY - this.startY);
-        this.canvasContext.stroke();
-      } else {
-        this.canvasContext.lineTo(currentX, currentY);
-        this.canvasContext.stroke();
-      }
-
-      this.lastX = currentX;
-      this.lastY = currentY;
-    },
-    handleCanvasTouchEnd() {
-      if (!this.paintLineMode && !this.rectMode) return;
-      this.isDrawing = false;
-      if (this.rectMode) {
-        this.canvasContext.stroke();
-      }
-      this.canvasContext.closePath();
-      this.canvasContext.draw(true);
     },
     getDistance(touch1, touch2) {
       const dx = touch1.clientX - touch2.clientX;
@@ -386,22 +525,23 @@ export default {
       this.translateY = 0;
       this.rotation = 0;
       if (this.canvasContext) {
-        this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        this.canvasContext.draw();
+        this.drawAllShapes();
       }
     },
     rotate() {
+      const now = Date.now();
+      if (now - this.lastRotateTime < 300) return; // 防抖
+      this.lastRotateTime = now;
       this.rotation = (this.rotation + 90) % 360;
+      console.log('Map rotated to:', this.rotation, 'degrees (clockwise)');
       if (this.canvasContext) {
-        this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        this.canvasContext.draw();
+        this.drawAllShapes();
       }
     },
     switchMap(direction) {
       this.$emit('switch-map', direction);
       if (this.canvasContext) {
-        this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        this.canvasContext.draw();
+        this.drawAllShapes();
       }
     },
     viewDetail() {
@@ -423,12 +563,18 @@ export default {
       if (!this.isDoodling) {
         this.paintLineMode = false;
         this.rectMode = false;
+        this.circleMode = false;
+        this.polylineMode = false;
+        this.polygonMode = false;
         this.clearMode = false;
       }
     },
     togglePaintLineMode() {
       this.paintLineMode = !this.paintLineMode;
       this.rectMode = false;
+      this.circleMode = false;
+      this.polylineMode = false;
+      this.polygonMode = false;
       this.clearMode = false;
       if (this.paintLineMode && this.canvasContext) {
         this.currentColor = this.currentColor || '#000000';
@@ -441,6 +587,9 @@ export default {
     toggleRectMode() {
       this.rectMode = !this.rectMode;
       this.paintLineMode = false;
+      this.circleMode = false;
+      this.polylineMode = false;
+      this.polygonMode = false;
       this.clearMode = false;
       if (this.rectMode && this.canvasContext) {
         this.currentColor = this.currentColor || '#000000';
@@ -454,58 +603,75 @@ export default {
       this.circleMode = !this.circleMode;
       this.paintLineMode = false;
       this.rectMode = false;
+      this.polylineMode = false;
+      this.polygonMode = false;
       this.clearMode = false;
       if (this.circleMode && this.canvasContext) {
         this.currentColor = this.currentColor || '#000000';
         this.canvasContext.setLineWidth(this.lineWidth);
         this.canvasContext.setStrokeStyle(this.currentColor);
+        this.canvasContext.setLineCap('round');
+        this.canvasContext.setLineJoin('round');
       }
     },
     togglePolylineMode() {
       this.polylineMode = !this.polylineMode;
       this.paintLineMode = false;
       this.rectMode = false;
+      this.circleMode = false;
+      this.polygonMode = false;
       this.clearMode = false;
       if (this.polylineMode && this.canvasContext) {
         this.currentColor = this.currentColor || '#000000';
         this.canvasContext.setLineWidth(this.lineWidth);
         this.canvasContext.setStrokeStyle(this.currentColor);
+        this.canvasContext.setLineCap('round');
+        this.canvasContext.setLineJoin('round');
       }
     },
     togglePolygonMode() {
       this.polygonMode = !this.polygonMode;
       this.paintLineMode = false;
       this.rectMode = false;
+      this.circleMode = false;
+      this.polylineMode = false;
       this.clearMode = false;
       if (this.polygonMode && this.canvasContext) {
         this.currentColor = this.currentColor || '#000000';
         this.canvasContext.setLineWidth(this.lineWidth);
         this.canvasContext.setStrokeStyle(this.currentColor);
+        this.canvasContext.setLineCap('round');
+        this.canvasContext.setLineJoin('round');
       }
     },
     selectColor(color) {
-      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode) {
+      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) {
         this.currentColor = color;
         this.clearMode = false;
         if (this.canvasContext) {
           this.canvasContext.setStrokeStyle(this.currentColor);
-          this.canvasContext.draw(true);
+          this.drawAllShapes();
         }
       }
     },
     updateLineWidth(e) {
-      if ((this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode) && this.canvasContext) {
+      if ((this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) && this.canvasContext) {
         this.lineWidth = e.detail.value;
         this.canvasContext.setLineWidth(this.lineWidth);
-        this.canvasContext.draw(true);
+        this.drawAllShapes();
       }
     },
     clearCanvas() {
       if (this.canvasContext) {
+        this.shapes = [];
+        this.currentShape = null;
         this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
         this.canvasContext.draw(true);
         this.paintLineMode = false;
         this.rectMode = false;
+        this.circleMode = false;
+        this.polylineMode = false;
+        this.polygonMode = false;
         this.clearMode = true;
       }
     }
@@ -534,6 +700,7 @@ export default {
   height: auto;
   object-fit: contain;
   display: block;
+  z-index: 1;
 }
 
 .doodle-canvas {
@@ -544,6 +711,7 @@ export default {
   height: 100%;
   z-index: 10;
   background: transparent;
+  transform-origin: center;
 }
 
 .floating-toolbar {
