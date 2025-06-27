@@ -10,6 +10,18 @@
     
     <!-- 地图显示区域 -->
     <view class="map-display-area">
+<<<<<<< HEAD
+      <MapImage
+        :current-map-url="currentMapUrl"
+        :all-maps="allMaps"
+        :current-map-index="currentMapIndex"
+        :topic="topic"
+        :topic-id="topicId"
+        @switch-map="switchMap"
+        @image-load="onImageLoad"
+        @image-error="onImageError"
+      />
+=======
      <MapImage
          ref="map"
          :current-map-url="currentMapUrl"
@@ -21,44 +33,7 @@
          @update:translate-x="mapTranslateX = $event"
          @update:translate-y="mapTranslateY = $event"
      />
-    </view>
-    
-    <!-- 底部控制栏 -->
-    <view class="bottom-controls">
-      <image
-        class="control-btn"
-        :style="rotationStyle90"
-        src="../../static/icons/info.svg"
-        @click="viewDetail"
-      />
-
-      <image
-        class="control-btn"
-        :style="rotationStyle"
-        src="../../static/icons/reset.svg"
-        @click="resetTransform"
-      />
-
-      <image
-        class="control-btn"
-        :style="rotationStyle90"
-        src="../../static/icons/rotate.svg"
-        @click="rotate"
-      />
-
-      <image
-        class="control-btn"
-        :style="rotationStyle"
-        :src="currentMapIndex === allMaps.length - 1 ? arrow_img.disabled : arrow_img.active"
-        @click="switchMap('next')"
-      />
-
-      <image
-        class="control-btn"
-        :style="rotationStyle180"
-        :src="currentMapIndex === 0 ? arrow_img.disabled : arrow_img.active"
-        @click="switchMap('prev')"
-      />
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
     </view>
   </view>
 </template>
@@ -84,6 +59,10 @@ export default {
       currentMap: null,
       currentMapUrl: '',
       isLoading: true,
+<<<<<<< HEAD
+      loadingText: '加载中...'
+    }
+=======
       loadingText: '加载中...',
       rotation: 0,
       arrow_img: {
@@ -107,6 +86,7 @@ export default {
 	 mapExtends() {
 	      return this.subitemBounds;
 	    }
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
   },
   onLoad(options) {
     this.topicId = options.topic_id || '';
@@ -275,6 +255,31 @@ export default {
       this.currentMapIndex = newIndex;
       this.loadCurrentMap();
     },
+<<<<<<< HEAD
+    onImageLoad() {
+      console.log('原图显示成功');
+      this.isLoading = false;
+    },
+    onImageError(error) {
+      console.error('原图显示失败:', error);
+      this.showError('图片显示失败，请检查网络连接');
+    },
+    showError(message) {
+      this.isLoading = false;
+      this.loadingText = message;
+      
+      uni.showToast({
+        title: message,
+        icon: 'none',
+        duration: 3000
+      });
+      
+      setTimeout(() => {
+        if (this.loadingText === message) {
+          this.loadingText = '';
+        }
+      }, 3000);
+=======
     viewDetail() {
       if (!this.currentMap) return;
       
@@ -294,13 +299,13 @@ export default {
     rotate() {
       this.rotation = (this.rotation + 90) % 360;
       this.$refs.map.rotate()
+>>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
     }
   }
 }
 </script>
 
 <style>
-/* 保持原有样式不变 */
 .container {
   width: 100%;
   height: 100vh;
@@ -309,7 +314,6 @@ export default {
   flex-direction: column;
 }
 
-/* 加载指示器 */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -347,7 +351,6 @@ export default {
   font-weight: 500;
 }
 
-/* 地图显示区域 */
 .map-display-area {
   flex: 1;
   background-color: #ffffff;
@@ -358,43 +361,14 @@ export default {
   position: relative;
 }
 
-/* 底部控制栏 */
-.bottom-controls {
-  background-color: #ffffff;
-  padding: 20rpx 30rpx calc(-20rpx + env(safe-area-inset-bottom)) 30rpx;
-  border-top: 1px solid #e8e8e8;
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: space-around;
-  height: 7vh;
-}
-
-.control-btn {
-  width: 80rpx;
-  height: 80rpx;
-  border: none;
-  background: none;
-  padding: 0;
-  object-fit: contain;
-  transition: transform 0.5s ease-in-out;
-}
-
-/* 动画 */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-/* 响应式适配 */
 @media screen and (max-width: 480px) {
   .map-display-area {
     margin: 15rpx;
-  }
-  
-  .control-btn {
-    width: 90rpx;
-    height: 90rpx;
   }
 }
 </style>
