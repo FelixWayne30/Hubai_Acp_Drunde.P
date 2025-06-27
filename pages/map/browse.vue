@@ -10,30 +10,17 @@
     
     <!-- 地图显示区域 -->
     <view class="map-display-area">
-<<<<<<< HEAD
       <MapImage
         :current-map-url="currentMapUrl"
         :all-maps="allMaps"
         :current-map-index="currentMapIndex"
         :topic="topic"
         :topic-id="topicId"
+        :extends="mapExtends"
         @switch-map="switchMap"
         @image-load="onImageLoad"
         @image-error="onImageError"
       />
-=======
-     <MapImage
-         ref="map"
-         :current-map-url="currentMapUrl"
-         :extends="mapExtends"
-         :scale="mapScale"
-         :translate-x="mapTranslateX"
-         :translate-y="mapTranslateY"
-         @update:scale="mapScale = $event"
-         @update:translate-x="mapTranslateX = $event"
-         @update:translate-y="mapTranslateY = $event"
-     />
->>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
     </view>
   </view>
 </template>
@@ -48,9 +35,6 @@ export default {
   },
   data() {
     return {
-	  mapScale: 2,
-	  mapTranslateX: 0,
-	  mapTranslateY: 0,
       topicId: '',
       topic: '',
       mapId: '',
@@ -59,49 +43,29 @@ export default {
       currentMap: null,
       currentMapUrl: '',
       isLoading: true,
-<<<<<<< HEAD
-      loadingText: '加载中...'
-    }
-=======
       loadingText: '加载中...',
-      rotation: 0,
-      arrow_img: {
-        active: "../../static/icons/arrow-active.svg",
-        disabled: "../../static/icons/arrow.svg",
-      },
-	 subitemName: '',          // 子图名称
-	 subitemBounds: null,  //子图区域
+      subitemName: '',
+      subitemBounds: null
     }
   },
   computed: {
-    rotationStyle() {
-      return `transform: rotate(${this.rotation}deg); transition: transform 0.5s ease-in-out;`;
-    },
-    rotationStyle90() {
-      return `transform: rotate(${this.rotation + 90}deg); transition: transform 0.5s ease-in-out;`;
-    },
-    rotationStyle180() {
-      return `transform: rotate(${this.rotation + 180}deg); transition: transform 0.5s ease-in-out;`;
-    },
-	 mapExtends() {
-	      return this.subitemBounds;
-	    }
->>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
+    mapExtends() {
+      return this.subitemBounds;
+    }
   },
   onLoad(options) {
     this.topicId = options.topic_id || '';
     this.topic = options.topic ? decodeURIComponent(options.topic) : '';
     this.mapId = options.id || '';
     this.currentMapIndex = parseInt(options.index || '0');
-    this.subitemName = options.subitem_name ? decodeURIComponent(options.subitem_name) : ''; 	
-	
-    
+    this.subitemName = options.subitem_name ? decodeURIComponent(options.subitem_name) : '';  
+
     console.log('地图浏览页加载参数:', {
       topicId: this.topicId,
       topic: this.topic,
       mapId: this.mapId,
       mapIndex: this.currentMapIndex,
-	  subitemName: this.subitemName 
+      subitemName: this.subitemName 
     });
     
     if (this.topic || this.topicId) {
@@ -111,10 +75,6 @@ export default {
     }
   },
   methods: {
-	  resetTransform() {
-	    this.$refs.map.resetTransform();
-	  },
-	  
     async loadMapsData() {
       try {
         this.isLoading = true;
@@ -177,8 +137,7 @@ export default {
         });
       });
     },
-    
-	loadCurrentMap() {
+    loadCurrentMap() {
       if (!this.allMaps.length) {
         this.showError('没有可显示的地图');
         return;
@@ -199,48 +158,44 @@ export default {
       this.currentMapUrl = originalImageUrl;
       
       this.isLoading = false;
-	  
-	  if (this.subitemName) {
-	    this.fetchSubitemBounds(this.subitemName);
-	  }
+      if (this.subitemName) {
+        this.fetchSubitemBounds(this.subitemName);
+      }
     },
-	
-	// 获取子图区域信息
-	async fetchSubitemBounds(subitemName) {
-	  if (!subitemName) {
-	    console.log('子图名称为空，跳过区域获取');
-	    return;
-	  }
-	  
-	  console.log('开始获取子图区域信息:', subitemName);
-	  
-	  try {
-	    const res = await new Promise((resolve, reject) => {
-	      uni.request({
-	        url: API.SUBITEM_BOUNDS + encodeURIComponent(subitemName),
-	        method: 'GET',
-	        success: resolve,
-	        fail: reject
-	      });
-	    });
-	    
-	    if (res.statusCode === 200 && res.data.code === 200) {
-	      const boundsData = res.data.data;
-	      this.subitemBounds = [
-	        boundsData.xmin,
-	        boundsData.ymin, 
-	        boundsData.xmax,
-	        boundsData.ymax
-	      ];
-	      console.log('子图区域信息获取成功:', this.subitemBounds);
-	    } else {
-	      console.warn('获取子图区域信息失败:', res.data);
-	    }
-	  } catch (error) {
-	    console.error('获取子图区域信息请求失败:', error);
-	  }
-	},
-	
+    async fetchSubitemBounds(subitemName) {
+      if (!subitemName) {
+        console.log('子图名称为空，跳过区域获取');
+        return;
+      }
+      
+      console.log('开始获取子图区域信息:', subitemName);
+      
+      try {
+        const res = await new Promise((resolve, reject) => {
+          uni.request({
+            url: API.SUBITEM_BOUNDS + encodeURIComponent(subitemName),
+            method: 'GET',
+            success: resolve,
+            fail: reject
+          });
+        });
+        
+        if (res.statusCode === 200 && res.data.code === 200) {
+          const boundsData = res.data.data;
+          this.subitemBounds = [
+            boundsData.xmin,
+            boundsData.ymin, 
+            boundsData.xmax,
+            boundsData.ymax
+          ];
+          console.log('子图区域信息获取成功:', this.subitemBounds);
+        } else {
+          console.warn('获取子图区域信息失败:', res.data);
+        }
+      } catch (error) {
+        console.error('获取子图区域信息请求失败:', error);
+      }
+    },
     switchMap(direction) {
       let newIndex = this.currentMapIndex;
       
@@ -255,7 +210,6 @@ export default {
       this.currentMapIndex = newIndex;
       this.loadCurrentMap();
     },
-<<<<<<< HEAD
     onImageLoad() {
       console.log('原图显示成功');
       this.isLoading = false;
@@ -279,27 +233,6 @@ export default {
           this.loadingText = '';
         }
       }, 3000);
-=======
-    viewDetail() {
-      if (!this.currentMap) return;
-      
-      let url = `/pages/map/detail?id=${this.currentMap.map_id}&from=browse`;
-      
-      if (this.topic) {
-        url += `&topic=${this.topic}`;
-      } else if (this.topicId) {
-        url += `&topic_id=${this.topicId}`;
-      }
-      
-      uni.navigateTo({ url });
-    },
-    resetTransform() {
-      this.$refs.map.resetTransform()
-    },
-    rotate() {
-      this.rotation = (this.rotation + 90) % 360;
-      this.$refs.map.rotate()
->>>>>>> c913cf43993a8965996175c05cc6e5bc753eea07
     }
   }
 }
