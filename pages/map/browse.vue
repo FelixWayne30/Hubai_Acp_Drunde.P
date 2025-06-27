@@ -13,7 +13,7 @@
      <MapImage
          ref="map"
          :current-map-url="currentMapUrl"
-		 :extends="mapExtends"
+         :extends="mapExtends"
          :scale="mapScale"
          :translate-x="mapTranslateX"
          :translate-y="mapTranslateY"

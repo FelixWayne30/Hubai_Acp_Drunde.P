@@ -1,5 +1,6 @@
 <template>
   <view class="map-container"
+        id="map-container"
         :style="containerStyle"
         @touchstart="handleTouchStart"
         @touchmove="handleTouchMove" 
@@ -69,23 +70,27 @@ export default {
   },
   methods: {
     fitToExtent(extent) {
-      const [xmin, ymin, xmax, ymax] = extent;
+      const [xmin, ymin, xmax, ymax] = [0.048265918,0.277440466,0.48574635,0.655745622];
+
       const targetWidth = xmax - xmin;
       const targetHeight = ymax - ymin;
 
-      //FIXME: 找不到 getElementsByClassName
-      const container = document.getElementsByClassName('map-container')[0];
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
+      const container = uni.createSelectorQuery().in(this).select('#map-container');
+      container.boundingClientRect((data) => {
 
-      const scaleX = containerWidth / targetWidth;
-      const scaleY = containerHeight / targetHeight;
+            const containerWidth = data.width;
+            const containerHeight = data.height;
 
-      const newScale = Math.min(scaleX, scaleY); // 保证完全显示
+            const scaleX = containerWidth / targetWidth;
+            const scaleY = containerHeight / targetHeight;
 
-     this.$emit('update:scale', newScale);
-     this.$emit('update:translate-x', -xmin * newScale + (containerWidth - targetWidth * newScale) / 2);
-     this.$emit('update:translate-y', -ymin * newScale + (containerHeight - targetHeight * newScale) / 2);
+            const newScale = Math.min(scaleX, scaleY); // 保证完全显示
+
+            this.$emit('update:scale', newScale);
+            this.$emit('update:translate-x', -xmin * newScale + (containerWidth - targetWidth * newScale) / 2);
+            this.$emit('update:translate-y', -ymin * newScale + (containerHeight - targetHeight * newScale) / 2);
+          }).exec()
+
     },
 
     handleTouchStart(e) {
