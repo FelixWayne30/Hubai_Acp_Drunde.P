@@ -1,9 +1,9 @@
 <template>
   <!-- 工具栏，独立图层 -->
   <view class="floating-toolbar">
-    <image class="control-btn" :style="rotationStyle90" src="/static/icons/info.svg" @click="viewDetail" />
+    <image class="control-btn" :style="rotationStyle" src="/static/icons/info.svg" @click="viewDetail" />
     <image class="control-btn" :style="rotationStyle" src="/static/icons/reset.svg" @click="resetTransform" />
-    <image class="control-btn" :style="rotationStyle90" src="/static/icons/rotate.svg" @click="rotate" />
+    <image class="control-btn" :style="rotationStyle" src="/static/icons/rotate.svg" @click="rotate" />
     <image class="control-btn" :style="rotationStyle" :src="currentMapIndex === allMaps.length - 1 ? '/static/icons/arrow.svg' : '/static/icons/arrow-active.svg'" @click="switchMap('next')" />
     <image class="control-btn" :style="rotationStyle180" :src="currentMapIndex === 0 ? '/static/icons/arrow.svg' : '/static/icons/arrow-active.svg'" @click="switchMap('prev')" />
     <image class="control-btn doodle-btn" :style="rotationStyle" src="/static/icons/paint.svg" @click="toggleDoodle" />
@@ -88,6 +88,7 @@
         @touchend="handleTouchEnd">
     <image 
       class="map-image"
+      id="map-image"
       :style="imageStyle"
       :src="currentMapUrl"
       mode="widthFix" 
@@ -196,14 +197,17 @@ export default {
       }
     },
     rotationStyle() {
-      return `transform: rotate(${this.rotation}deg);`
-    },
-    rotationStyle90() {
-      return `transform: rotate(${this.rotation + 90}deg);`
+      return {
+        transform: `rotate(${this.rotation}deg)`,
+        transition: 'transform 0.5s ease-in-out'
+      }
     },
     rotationStyle180() {
-      return `transform: rotate(${this.rotation + 180}deg);`
-    }
+      return {
+        transform: `rotate(${this.rotation + 180}deg)`,
+        transition: 'transform 0.5s ease-in-out'
+      }
+    },
   },
   methods: {
     fitToExtent(extent) {
@@ -437,34 +441,30 @@ export default {
       const x = touches[0].clientX;
       const y = touches[0].clientY;
 
-      const now = Date.now();
-      if (now - this.lastTap < 300 && Math.abs(x - this.lastTapX) < 10 && Math.abs(y - this.lastTapY) < 10) {
-        if (this.scale * 2 <= this.maxScale) {
-          this.scale = this.scale * 2;
-        }
-        this.lastTap = 0;
-      } else {
-        this.lastTap = now;
-        this.lastTapX = x;
-        this.lastTapY = y;
-      }
+      this.touchStartData = {
+        startX: x,
+        startY: y,
+        type: touches.length === 2 ? 'zoom' : 'pan',
+        moved: false // 标记是否移动过
+      };
 
+      // PAN
       if (touches.length === 1) {
         this.touchStartData = {
-          type: 'pan',
-          startX: x,
-          startY: y,
+          ...this.touchStartData,
           startTranslateX: this.translateX,
           startTranslateY: this.translateY
         };
-      } else if (touches.length === 2) {
+      } else
+        // ZOOM
+        if (touches.length === 2) {
         const touch1 = touches[0];
         const touch2 = touches[1];
         const distance = this.getDistance(touch1, touch2);
         const center = this.getCenter(touch1, touch2);
 
         this.touchStartData = {
-          type: 'zoom',
+          ...this.touchStartData,
           startDistance: distance,
           startScale: this.scale,
           centerX: center.x,
@@ -473,6 +473,29 @@ export default {
           startTranslateY: this.translateY
         };
       }
+
+      // Double Click
+      const now = Date.now();
+      const isDoubleTap = now - this.lastTap < 300 && Math.abs(x - this.lastTapX) < 10 && Math.abs(y - this.lastTapY) < 10;
+      if (isDoubleTap) {
+        clearTimeout(this.singleClickTimeout); // 阻止之前延迟触发的单击
+        if (this.scale * 2 <= this.maxScale) {
+          this.scale = this.scale * 2;
+        }
+        this.lastTap = 0;
+        this.lastTapX = 0;
+        this.lastTapY = 0;
+      } else {
+        // 设置单击延迟触发逻辑
+        this.singleClickTimeout = setTimeout(() => {
+          if (!this.touchStartData?.moved) {
+            this.handleSingleClick(x,y);
+          }
+        }, 300);
+        this.lastTap = now;
+        this.lastTapX = x;
+        this.lastTapY = y;
+      }
     },
     handleTouchMove(e) {
       if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
@@ -480,6 +503,8 @@ export default {
 
       e.preventDefault();
       const touches = e.touches;
+
+      this.touchStartData.moved = true;
 
       if (this.touchStartData.type === 'pan' && touches.length === 1) {
         const deltaX = touches[0].clientX - this.touchStartData.startX;
@@ -508,6 +533,39 @@ export default {
       this.touching = false;
       this.touchStartData = null;
     },
+    handleSingleClick(x,y) {
+      console.log("singleClick",x,y)
+      console.log('handleSingleClick',this.getImageNormCoordinates(x,y));
+      // TODO
+    },
+
+    async getImageNormCoordinates(x, y) {
+      const position = await this.getContainerImageGeometries()
+
+      console.log('image info:', position.imageInfo);
+      console.log('container info:', position.containerInfo);
+
+      // TODO: compute the normalized image coodinates from the args above
+
+    },
+
+    async getContainerImageGeometries() {
+      const query1 = uni.createSelectorQuery().in(this);
+      const query2 = uni.createSelectorQuery().in(this);
+      const imageInfo = new Promise(resolve => {
+        query1.select('#map-image').fields({size:true, computedStyle:['transform']},resolve).exec();
+      });
+      const containerInfo = new Promise(resolve => {
+        query2.select('#map-container').fields({size:true, computedStyle:['transform']},resolve).exec();
+      });
+
+      const [image, container] = await Promise.all([imageInfo, containerInfo]);
+      return {
+        imageInfo: image,
+        container: container
+      }
+    },
+
     getDistance(touch1, touch2) {
       const dx = touch1.clientX - touch2.clientX;
       const dy = touch1.clientY - touch2.clientY;
