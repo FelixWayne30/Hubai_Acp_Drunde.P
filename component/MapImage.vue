@@ -210,25 +210,48 @@ export default {
     },
   },
   methods: {
-    fitToExtent(extent) {
+    async fitToExtent(extent) {
       if (!extent) return;
-      const [xmin, ymin, xmax, ymax] = extent;
-      const targetWidth = xmax - xmin;
-      const targetHeight = ymax - ymin;
+      let [xmin, ymin, xmax, ymax] = extent;
 
-      const container = uni.createSelectorQuery().in(this).select('#map-container');
-      container.boundingClientRect((data) => {
-        const containerWidth = data.width;
-        const containerHeight = data.height;
+      const info = await this.getContainerImageGeometries();
+      const imageWidth = info.imageInfo.width;
+      const imageHeight = info.imageInfo.height;
+      const containerWidth = info.containerInfo.width;
+      const containerHeight = info.containerInfo.height;
 
-        const scaleX = containerWidth / targetWidth;
-        const scaleY = containerHeight / targetHeight;
+      // 将归一化 extent 转换为像素值
+      const left = xmin * imageWidth;
+      const right = xmax * imageWidth;
+      const top = ymin * imageHeight;
+      const bottom = ymax * imageHeight;
 
-        const newScale = Math.min(scaleX, scaleY);
-        this.scale = newScale;
-        this.translateX = -xmin * newScale + (containerWidth - targetWidth * newScale) / 2;
-        this.translateY = -ymin * newScale + (containerHeight - targetHeight * newScale) / 2;
-      }).exec();
+      const targetWidth = right - left;
+      const targetHeight = bottom - top;
+
+      // 计算缩放比例（保持目标区域完整显示在 container 中）
+      const scaleX = containerWidth / targetWidth;
+      const scaleY = containerHeight / targetHeight;
+      const newScale = Math.min(scaleX, scaleY);
+
+      // 缩放后目标区域大小
+      const scaledTargetWidth = targetWidth * newScale;
+      const scaledTargetHeight = targetHeight * newScale;
+
+      // 计算偏移：让目标区域居中于 container
+      const offsetX = (containerWidth - scaledTargetWidth) / 2;
+      const offsetY = (containerHeight - scaledTargetHeight) / 2;
+
+      // 设置变换
+      this.scale = newScale;
+      this.translateX = -left * newScale + offsetX;
+      this.translateY = -top * newScale + offsetY;
+
+      console.log("fitToExtent 完成:", {
+        scale: this.scale,
+        translateX: this.translateX,
+        translateY: this.translateY
+      });
     },
     async onImageLoad() {
       console.log('原图显示成功');
@@ -250,6 +273,9 @@ export default {
           console.error('无法获取 map-container 尺寸');
         }
       }).exec();
+
+      await this.fitToExtent(this.extends); // test 年平均日照数： [0.048265918,0.277440466,0.48574635,0.655745622]
+
       this.$emit('image-load');
     },
     onImageError(error) {
@@ -562,7 +588,7 @@ export default {
       const [image, container] = await Promise.all([imageInfo, containerInfo]);
       return {
         imageInfo: image,
-        container: container
+        containerInfo: container
       }
     },
 
@@ -734,11 +760,6 @@ export default {
       }
     }
   },
-  mounted() {
-    if (this.extends) {
-      this.fitToExtent(this.extends);
-    }
-  }
 }
 </script>
 
