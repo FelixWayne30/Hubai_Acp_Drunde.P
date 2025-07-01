@@ -209,24 +209,63 @@ export default {
     },
   },
   methods: {
+    // component/MapImage.vue - 完善 fitToExtent 方法
+
     async fitToExtent(extent) {
       if (!extent) return;
       let [xmin, ymin, xmax, ymax] = extent;
 
-      const info = await this.getContainerImageGeometries();
-      const imageWidth = info.imageInfo.width;
-      const imageHeight = info.imageInfo.height;
-      const containerWidth = info.containerInfo.width;
-      const containerHeight = info.containerInfo.height;
+      const position = await this.getContainerImageGeometries();
 
-      // 将归一化 extent 转换为像素值
-      const left = xmin * imageWidth;
-      const right = xmax * imageWidth;
-      const top = ymin * imageHeight;
-      const bottom = ymax * imageHeight;
+      // 获取图片的实际显示尺寸（已经应用了scale变换）
+      const scaledImageWidth = position.imageInfo.width;
+      const scaledImageHeight = position.imageInfo.height;
+
+      // 获取容器尺寸
+      const containerWidth = position.containerInfo.width;
+      const containerHeight = position.containerInfo.height;
+
+      // 从transform matrix中提取scale信息，获取原始显示尺寸
+      const imageTransform = position.imageInfo.transform;
+      const imageMatrixMatch = imageTransform.match(/matrix\((.*?)\)/);
+      let imageScaleX = 1, imageScaleY = 1;
+      if (imageMatrixMatch) {
+        const values = imageMatrixMatch[1].split(',').map(v => parseFloat(v.trim()));
+        imageScaleX = values[0]; // a
+        imageScaleY = values[3]; // d
+      }
+
+      // 获取图片原始显示尺寸（未应用用户缩放的尺寸）
+      const originalDisplayWidth = scaledImageWidth / imageScaleX;
+      const originalDisplayHeight = scaledImageHeight / imageScaleY;
+
+      console.log('fitToExtent 调试信息:', {
+        extent,
+        scaledImageWidth,
+        scaledImageHeight,
+        containerWidth,
+        containerHeight,
+        imageScaleX,
+        imageScaleY,
+        originalDisplayWidth,
+        originalDisplayHeight
+      });
+
+      // 将归一化 extent 转换为原始图片像素值（纠过xy）
+      const left = ymin * originalDisplayWidth;
+      const right = ymax * originalDisplayWidth;
+      const top = xmin * originalDisplayHeight;
+      const bottom = xmax * originalDisplayHeight;
 
       const targetWidth = right - left;
       const targetHeight = bottom - top;
+
+      console.log('目标区域像素坐标:', {
+        left, top, right, bottom,
+        targetWidth, targetHeight,
+        'ymin->left': ymin, 'ymax->right': ymax,
+        'xmin->top': xmin, 'xmax->bottom': xmax
+      });
 
       // 计算缩放比例（保持目标区域完整显示在 container 中）
       const scaleX = containerWidth / targetWidth;
@@ -249,9 +288,13 @@ export default {
       console.log("fitToExtent 完成:", {
         scale: this.scale,
         translateX: this.translateX,
-        translateY: this.translateY
+        translateY: this.translateY,
+        newScale,
+        offsetX,
+        offsetY
       });
     },
+
     async onImageLoad() {
       console.log('原图显示成功');
       const query = uni.createSelectorQuery().in(this);
