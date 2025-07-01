@@ -103,7 +103,11 @@
       @touchstart="handleCanvasTouchStart"
       @touchmove="handleCanvasTouchMove"
       @touchend="handleCanvasTouchEnd"
-      :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px', transform: `rotate(${rotation}deg)` }"
+      :style="{
+      width: canvasWidth + 'px',
+      height: canvasHeight + 'px',
+      transform: `rotate(${rotation}deg) scale(${scale})`
+  }"
     />
   </view>
 
