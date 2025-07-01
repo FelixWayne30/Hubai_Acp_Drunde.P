@@ -186,14 +186,13 @@ export default {
   computed: {
     containerStyle() {
       return {
-        transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`,
+        transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0)`,
         transition: 'none'
       }
     },
     imageStyle() {
       return {
-        transform: `rotate(${this.rotation}deg)`,
-        transition: 'transform 0.5s ease-in-out'
+        transform: `rotate(${this.rotation}deg)  scale(${this.scale})`,
       }
     },
     rotationStyle() {
