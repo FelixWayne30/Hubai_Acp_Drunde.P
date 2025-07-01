@@ -190,13 +190,13 @@ export default {
   computed: {
     containerStyle() {
       return {
-        transform: `translate3d(${this.translateX}px, ${this.translateY}px, 0)`,
+        transform: `translate(${this.translateX}px, ${this.translateY}px ) scale(${this.scale})`,
         transition: 'none'
       }
     },
     imageStyle() {
       return {
-        transform: `rotate(${this.rotation}deg)  scale(${this.scale})`,
+        transform: `rotate(${this.rotation}deg) `,
       }
     },
     rotationStyle() {
@@ -213,7 +213,6 @@ export default {
     },
   },
   methods: {
-    // component/MapImage.vue - 完善 fitToExtent 方法
 
     async fitToExtent(extent) {
       if (!extent) return;
