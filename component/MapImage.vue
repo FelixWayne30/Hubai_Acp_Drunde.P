@@ -565,13 +565,80 @@ export default {
     },
 
     async getImageNormCoordinates(x, y) {
-      const position = await this.getContainerImageGeometries()
+      const position = await this.getContainerImageGeometries();
 
       console.log('image info:', position.imageInfo);
       console.log('container info:', position.containerInfo);
 
-      // TODO: compute the normalized image coodinates from the args above
+      // 获取图片的实际显示尺寸（已经应用了scale变换）
+      const scaledImageWidth = position.imageInfo.width;
+      const scaledImageHeight = position.imageInfo.height;
 
+      // 获取容器尺寸
+      const containerWidth = position.containerInfo.width;
+      const containerHeight = position.containerInfo.height;
+
+      // 从transform matrix中提取scale信息
+      // matrix(a, b, c, d, e, f) 其中 a=scaleX, d=scaleY
+      const imageTransform = position.imageInfo.transform;
+      const imageMatrixMatch = imageTransform.match(/matrix\((.*?)\)/);
+      let imageScaleX = 1, imageScaleY = 1;
+      if (imageMatrixMatch) {
+        const values = imageMatrixMatch[1].split(',').map(v => parseFloat(v.trim()));
+        imageScaleX = values[0]; // a
+        imageScaleY = values[3]; // d
+      }
+
+      const originalDisplayWidth = scaledImageWidth / imageScaleX;
+      const originalDisplayHeight = scaledImageHeight / imageScaleY;
+      let relativeX = x - this.translateX;
+      let relativeY = y - this.translateY;
+
+      const imageCenterInContainerX = containerWidth / 2;
+      const imageCenterInContainerY = containerHeight / 2;
+
+      let imageRelativeX = relativeX - imageCenterInContainerX;
+      let imageRelativeY = relativeY - imageCenterInContainerY;
+
+      const rotationRad = (-this.rotation * Math.PI) / 180;
+      const cos = Math.cos(rotationRad);
+      const sin = Math.sin(rotationRad);
+
+      const rotatedX = imageRelativeX * cos - imageRelativeY * sin;
+      const rotatedY = imageRelativeX * sin + imageRelativeY * cos;
+
+      const unscaledX = rotatedX / this.scale;
+      const unscaledY = rotatedY / this.scale;
+
+      const imagePixelX = unscaledX + originalDisplayWidth / 2;
+      const imagePixelY = unscaledY + originalDisplayHeight / 2;
+
+      //计算归一化坐标
+      const normalizedX = imagePixelX / originalDisplayWidth;
+      const normalizedY = imagePixelY / originalDisplayHeight;
+
+      console.log('坐标转换详细步骤:', {
+        '输入坐标': { x, y },
+        '减去位移': { relativeX, relativeY },
+        '相对图片中心': { imageRelativeX, imageRelativeY },
+        '旋转后': { rotatedX, rotatedY },
+        '逆缩放': { unscaledX, unscaledY },
+        '图片像素坐标': { imagePixelX, imagePixelY },
+        '归一化坐标': { normalizedX, normalizedY }
+      });
+
+      return {
+        pixelX: imagePixelX,
+        pixelY: imagePixelY,
+        normalizedX: normalizedX,
+        normalizedY: normalizedY,
+        isWithinImage: (
+            imagePixelX >= 0 &&
+            imagePixelX <= originalDisplayWidth &&
+            imagePixelY >= 0 &&
+            imagePixelY <= originalDisplayHeight
+        )
+      };
     },
 
     async getContainerImageGeometries() {
