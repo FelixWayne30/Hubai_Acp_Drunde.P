@@ -97,7 +97,7 @@
       :show-menu-by-longpress="false"
     />
 	<canvas 
-	  v-if="paintLineMode || rectMode || circleMode || polylineMode || polygonMode"
+	  v-if="isDoodling"
 	  class="doodle-canvas"
 	  canvas-id="doodleCanvas"
 	  @touchstart="handleCanvasTouchStart"
