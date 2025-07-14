@@ -96,19 +96,19 @@
       @error="onImageError"
       :show-menu-by-longpress="false"
     />
-    <canvas 
-      v-if="paintLineMode || rectMode || circleMode || polylineMode || polygonMode"
-      class="doodle-canvas"
-      canvas-id="doodleCanvas"
-      @touchstart="handleCanvasTouchStart"
-      @touchmove="handleCanvasTouchMove"
-      @touchend="handleCanvasTouchEnd"
-      :style="{
-      width: canvasWidth + 'px',
-      height: canvasHeight + 'px',
-      transform: `rotate(${rotation}deg) scale(${scale})`
-  }"
-    />
+	<canvas 
+	  v-if="paintLineMode || rectMode || circleMode || polylineMode || polygonMode"
+	  class="doodle-canvas"
+	  canvas-id="doodleCanvas"
+	  @touchstart="handleCanvasTouchStart"
+	  @touchmove="handleCanvasTouchMove"
+	  @touchend="handleCanvasTouchEnd"
+	  :style="{
+	    width: canvasWidth + 'px',
+	    height: canvasHeight + 'px'
+	    /* transform 属性已从此处理移除 */
+	  }"
+	/>
   </view>
 
   <!-- 涂鸦模式提示 -->
@@ -188,17 +188,20 @@ export default {
     }
   },
   computed: {
-    containerStyle() {
-      return {
-        transform: `translate(${this.translateX}px, ${this.translateY}px ) scale(${this.scale})`,
-        transition: 'none'
-      }
-    },
-    imageStyle() {
-      return {
-        transform: `rotate(${this.rotation}deg) `,
-      }
-    },
+	containerStyle() {
+	    return {
+	      // 将所有变换都统一应用到这个容器上
+	      transform: `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale}) rotate(${this.rotation}deg)`,
+	      transition: 'none'
+	    }
+	  },
+	  imageStyle() {
+	    // 图片不再需要独立的旋转了
+	    return {
+	      // transform: `rotate(${this.rotation}deg)`, // 这行现在由父容器处理，可以注释或删除
+	    }
+	  },
+	 
     rotationStyle() {
       return {
         transform: `rotate(${this.rotation}deg)`,
@@ -327,29 +330,45 @@ export default {
       console.error('原图显示失败:', error);
       this.$emit('image-error', error);
     },
-    async getCanvasCoordinates(touch) {
-      const query = uni.createSelectorQuery().in(this);
-      const canvasRect = await new Promise(resolve => {
-        query.select('.doodle-canvas').boundingClientRect(resolve).exec();
-      });
-      if (!canvasRect) {
-        console.error('无法获取画布位置');
-        return { x: touch.x, y: touch.y };
-      }
-      const centerX = canvasRect.left + canvasRect.width / 2;
-      const centerY = canvasRect.top + canvasRect.height / 2;
-      const dx = touch.x - centerX;
-      const dy = touch.y - centerY;
-      const angle = -this.rotation * Math.PI / 180; // 逆旋转以校正触摸坐标
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      const localDx = cos * dx - sin * dy;
-      const localDy = sin * dx + cos * dy;
-      const canvasX = (localDx + this.canvasWidth / 2) / this.scale;
-      const canvasY = (localDy + this.canvasHeight / 2) / this.scale;
-      console.log('触摸坐标转换：', { touchX: touch.x, touchY: touch.y, canvasX, canvasY });
-      return { x: canvasX, y: canvasY };
-    },
+ 
+  async getCanvasCoordinates(touch) {
+    const touchX = touch.clientX;
+    const touchY = touch.clientY;
+    
+    const cx = this.canvasWidth / 2;
+    const cy = this.canvasHeight / 2;
+    
+    const pointAfterInvTranslate = {
+        x: touchX - this.translateX,
+        y: touchY - this.translateY,
+    };
+  
+    const pointAfterInvScale = {
+        x: (pointAfterInvTranslate.x - cx) / this.scale + cx,
+        y: (pointAfterInvTranslate.y - cy) / this.scale + cy,
+    };
+  
+    const angleRad = (-this.rotation * Math.PI) / 180; // 旋转的逆角度
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+    
+    const pointRelativeToCenter = {
+        x: pointAfterInvScale.x - cx,
+        y: pointAfterInvScale.y - cy,
+    };
+    
+    const pointAfterInvRotate = {
+        x: pointRelativeToCenter.x * cos - pointRelativeToCenter.y * sin,
+        y: pointRelativeToCenter.x * sin + pointRelativeToCenter.y * cos,
+    };
+    
+    const finalCanvasCoord = {
+        x: pointAfterInvRotate.x + cx,
+        y: pointAfterInvRotate.y + cy,
+    };
+  
+    return finalCanvasCoord;
+  },
     async handleCanvasTouchStart(e) {
       if (!this.paintLineMode && !this.rectMode && !this.circleMode && !this.polylineMode && !this.polygonMode) return;
       const touch = e.touches[0];
@@ -568,37 +587,40 @@ export default {
         this.lastTapY = y;
       }
     },
-    handleTouchMove(e) {
-      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
-      if (!this.touching || !this.touchStartData) return;
-
-      e.preventDefault();
-      const touches = e.touches;
-
-      this.touchStartData.moved = true;
-
-      if (this.touchStartData.type === 'pan' && touches.length === 1) {
-        const deltaX = touches[0].clientX - this.touchStartData.startX;
-        const deltaY = touches[0].clientY - this.touchStartData.startY;
-        this.translateX = this.touchStartData.startTranslateX + deltaX;
-        this.translateY = this.touchStartData.startTranslateY + deltaY;
-      } else if (this.touchStartData.type === 'zoom' && touches.length === 2) {
-        const touch1 = touches[0];
-        const touch2 = touches[1];
-        const distance = this.getDistance(touch1, touch2);
-        const scaleRatio = distance / this.touchStartData.startDistance;
-
-        let newScale = this.touchStartData.startScale * scaleRatio;
-        newScale = Math.max(1, Math.min(this.maxScale, newScale));
-
-        const scaleDiff = newScale - this.scale;
-        const center = this.getCenter(touch1, touch2);
-
-        this.scale = newScale;
-        this.translateX = this.touchStartData.startTranslateX - (center.x - this.touchStartData.centerX) * scaleDiff;
-        this.translateY = this.touchStartData.startTranslateY - (center.y - this.touchStartData.centerY) * scaleDiff;
-      }
-    },
+   handleTouchMove(e) {
+     if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
+     if (!this.touching || !this.touchStartData) return;
+   
+     e.preventDefault();
+     const touches = e.touches;
+     this.touchStartData.moved = true;
+   
+     if (this.touchStartData.type === 'pan' && touches.length === 1) {
+       const deltaX = touches[0].clientX - this.touchStartData.startX;
+       const deltaY = touches[0].clientY - this.touchStartData.startY;
+       this.translateX = this.touchStartData.startTranslateX + deltaX;
+       this.translateY = this.touchStartData.startTranslateY + deltaY;
+   
+     } else if (this.touchStartData.type === 'zoom' && touches.length === 2) {
+       // --- 双指缩放逻辑 (已修正) ---
+       const touch1 = touches[0];
+       const touch2 = touches[1];
+       const newDistance = this.getDistance(touch1, touch2);
+       const newScale = this.touchStartData.startScale * (newDistance / this.touchStartData.startDistance);
+       
+       const finalScale = Math.max(1, Math.min(this.maxScale, newScale));
+   
+       const center = this.getCenter(touch1, touch2);
+       
+       const oldScale = this.touchStartData.startScale;
+       const oldTranslateX = this.touchStartData.startTranslateX;
+       const oldTranslateY = this.touchStartData.startTranslateY;
+       
+       this.translateX = center.x - (center.x - oldTranslateX) * finalScale / oldScale;
+       this.translateY = center.y - (center.y - oldTranslateY) * finalScale / oldScale;
+       this.scale = finalScale;
+     }
+   },
     handleTouchEnd() {
       if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
       this.touching = false;
