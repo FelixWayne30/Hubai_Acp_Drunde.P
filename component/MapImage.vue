@@ -1,117 +1,99 @@
 <template>
-  <!-- 工具栏，独立图层 -->
   <view class="floating-toolbar">
-    <image class="control-btn" :style="rotationStyle" src="/static/icons/info.svg" @click="viewDetail" />
-    <image class="control-btn" :style="rotationStyle" src="/static/icons/reset.svg" @click="resetTransform" />
-    <image class="control-btn" :style="rotationStyle" src="/static/icons/rotate.svg" @click="rotate" />
-    <image class="control-btn" :style="rotationStyle" :src="currentMapIndex === allMaps.length - 1 ? '/static/icons/arrow.svg' : '/static/icons/arrow-active.svg'" @click="switchMap('next')" />
-    <image class="control-btn" :style="rotationStyle180" :src="currentMapIndex === 0 ? '/static/icons/arrow.svg' : '/static/icons/arrow-active.svg'" @click="switchMap('prev')" />
-    <image class="control-btn doodle-btn" :style="rotationStyle" src="/static/icons/paint.svg" @click="toggleDoodle" />
+    <view class="tool-btn" @click="viewDetail">
+      <image src="/static/icons/info.svg" class="tool-icon" />
+    </view>
+    <view class="tool-btn" @click="resetTransform">
+      <image src="/static/icons/reset.svg" class="tool-icon" />
+    </view>
+    <view class="tool-btn" @click="switchMap('next')">
+      <image :src="nextArrowIcon" class="tool-icon" />
+    </view>
+    <view class="tool-btn" @click="switchMap('prev')">
+      <image :src="prevArrowIcon" class="tool-icon arrow-prev" />
+    </view>
+    <view class="tool-btn" @click="toggleDoodle">
+      <image src="/static/icons/paint.svg" class="tool-icon" />
+    </view>
   </view>
 
   <!-- 涂鸦工具栏 -->
   <view v-if="isDoodling" class="doodle-toolbar">
-    <view class="tool-column">
-      <image 
-        class="doodle-tool-btn" 
-        :class="{ 'active': paintLineMode }" 
-        src="/static/icons/qianbi.svg" 
-        @click="togglePaintLineMode" 
-      />
-      <image 
-        class="doodle-tool-btn" 
-        :class="{ 'active': rectMode }" 
-        src="/static/icons/juxing.svg" 
-        @click="toggleRectMode" 
-      />
-      <image 
-        class="doodle-tool-btn" 
-        :class="{ 'active': circleMode }" 
-        src="/static/icons/yuanxing.svg" 
-        @click="toggleCircleMode" 
-      />
-      <image 
-        class="doodle-tool-btn" 
-        :class="{ 'active': polylineMode }" 
-        src="/static/icons/zhexian.svg" 
-        @click="togglePolylineMode" 
-      />
-      <image
-        class="doodle-tool-btn" 
-        :class="{ 'active': polygonMode }" 
-        src="/static/icons/duobianxing.svg" 
-        @click="togglePolygonMode" 
-      />
-      <image 
-        class="doodle-tool-btn clear-btn" 
-        :class="{ 'active': clearMode }" 
-        src="/static/icons/qingchu.svg" 
-        @click="clearCanvas" 
-      />
+    <view class="doodle-tools">
+      <view class="tool-btn" :class="{ 'active': paintLineMode }" @click="togglePaintLineMode">
+        <image src="/static/icons/qianbi.svg" class="tool-icon" />
+      </view>
+      <view class="tool-btn" :class="{ 'active': rectMode }" @click="toggleRectMode">
+        <image src="/static/icons/juxing.svg" class="tool-icon" />
+      </view>
+      <view class="tool-btn" :class="{ 'active': circleMode }" @click="toggleCircleMode">
+        <image src="/static/icons/yuanxing.svg" class="tool-icon" />
+      </view>
+      <view class="tool-btn" :class="{ 'active': polylineMode }" @click="togglePolylineMode">
+        <image src="/static/icons/zhexian.svg" class="tool-icon" />
+      </view>
+      <view class="tool-btn" :class="{ 'active': polygonMode }" @click="togglePolygonMode">
+        <image src="/static/icons/duobianxing.svg" class="tool-icon" />
+      </view>
+      <view class="tool-btn" @click="clearCanvas">
+        <image src="/static/icons/qingchu.svg" class="tool-icon" />
+      </view>
     </view>
-    <view class="slider-column">
-      <slider 
-        class="thickness-slider" 
-        :value="lineWidth" 
-        @changing="updateLineWidth" 
-        vertical 
-        :min="1" 
-        :max="10" 
-        :step="1" 
-        :disabled="!paintLineMode && !rectMode && !circleMode && !polylineMode && !polygonMode"
-      />
-      <text class="slider-value">{{ lineWidth }}px</text>
-      <view class="color-column-container">
-        <view class="color-picker">
-          <view 
-            v-for="(color, index) in colors" 
-            :key="index" 
-            class="color-block" 
-            :style="{ backgroundColor: color }" 
-            :class="{
-              'active': currentColor === color && (paintLineMode || rectMode || circleMode || polylineMode || polygonMode),
-              'disabled': !paintLineMode && !rectMode && !circleMode && !polylineMode && !polygonMode
-            }" 
+
+    <view class="doodle-controls">
+      <view class="control-group">
+        <text class="control-label">线宽</text>
+        <slider
+            class="line-width-slider"
+            :value="lineWidth"
+            @changing="updateLineWidth"
+            :min="1"
+            :max="10"
+            :step="1"
+        />
+        <text class="control-value">{{lineWidth}}px</text>
+      </view>
+
+      <view class="color-palette">
+        <view
+            v-for="(color, index) in colors"
+            :key="index"
+            class="color-dot"
+            :style="{ backgroundColor: color }"
+            :class="{ 'active': currentColor === color }"
             @click="selectColor(color)"
-          />
-        </view>
+        />
       </view>
     </view>
   </view>
 
-  <!-- 地图容器 -->
-  <view class="map-container" 
-        id="map-container"
+  <!-- 图片容器  -->
+  <view class="image-container"
         :style="containerStyle"
         @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove" 
+        @touchmove="handleTouchMove"
         @touchend="handleTouchEnd">
-    <image 
-      class="map-image"
-      id="map-image"
-      :style="imageStyle"
-      :src="currentMapUrl"
-      mode="widthFix" 
-      @load="onImageLoad"
-      @error="onImageError"
-      :show-menu-by-longpress="false"
+    <image
+        class="map-image"
+        :src="currentMapUrl"
+        mode="aspectFit"
+        @load="onImageLoad"
+        @error="onImageError"
+        :show-menu-by-longpress="false"
     />
-	<canvas 
-	  v-if="isDoodling"
-	  class="doodle-canvas"
-	  canvas-id="doodleCanvas"
-	  @touchstart="handleCanvasTouchStart"
-	  @touchmove="handleCanvasTouchMove"
-	  @touchend="handleCanvasTouchEnd"
-	  :style="{
-	    width: canvasWidth + 'px',
-	    height: canvasHeight + 'px'
-	    /* transform 属性已从此处理移除 */
-	  }"
-	/>
+
+    <!-- 涂鸦画布 -->
+    <canvas
+        v-if="isDoodling"
+        class="doodle-canvas"
+        canvas-id="doodleCanvas"
+        @touchstart="handleCanvasTouchStart"
+        @touchmove="handleCanvasTouchMove"
+        @touchend="handleCanvasTouchEnd"
+    />
   </view>
 
-  <!-- 涂鸦模式提示 -->
+  <!-- 提示信息 -->
   <view v-if="showToast" class="toast">
     {{ isDoodling ? '进入涂鸦模式' : '退出涂鸦模式' }}
   </view>
@@ -142,25 +124,25 @@ export default {
       default: ''
     },
     extends: {
-      type: Array, // [xmin, ymin, xmax, ymax]
+      type: Array,
       required: false
     }
   },
+
   data() {
     return {
+      // 简化的变换参数
       scale: 1,
       translateX: 0,
       translateY: 0,
-      rotation: 0,
+
+      // 触摸控制
       touching: false,
       touchStartData: null,
-      maxScale: 10,
-      initialScale: 1,
-      lastTap: 0,
-      lastTapX: 0,
-      lastTapY: 0,
-      lastCanvasTapTime: 0, // For double-tap detection in polyline and polygon
-      lastRotateTime: 0, // For debouncing rotate button
+      maxScale: 5,
+      minScale: 0.5,
+
+      // 涂鸦功能
       isDoodling: false,
       showToast: false,
       paintLineMode: false,
@@ -168,752 +150,372 @@ export default {
       circleMode: false,
       polylineMode: false,
       polygonMode: false,
-      canvasWidth: 0,
-      canvasHeight: 0,
       canvasContext: null,
       isDrawing: false,
       currentShape: null,
       shapes: [],
-      currentColor: null,
-      clearMode: false,
+      currentColor: '#000000',
       lineWidth: 2,
       colors: [
         '#000000', '#FF0000', '#2aa515', '#17abe3', '#f4ea29',
         '#bd8cbb', '#1aaba8', '#FFA500', '#13227a', '#e89abe'
-      ],
-      arrow_img: {
-        active: "/static/icons/arrow-active.svg",
-        disabled: "/static/icons/arrow.svg"
-      }
+      ]
     }
   },
+
   computed: {
-	containerStyle() {
-	    return {
-	      // 将所有变换都统一应用到这个容器上
-	      transform: `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale}) rotate(${this.rotation}deg)`,
-	      transition: 'none'
-	    }
-	  },
-	  imageStyle() {
-	    // 图片不再需要独立的旋转了
-	    return {
-	      // transform: `rotate(${this.rotation}deg)`, // 这行现在由父容器处理，可以注释或删除
-	    }
-	  },
-	 
-    rotationStyle() {
+    containerStyle() {
       return {
-        transform: `rotate(${this.rotation}deg)`,
-        transition: 'transform 0.5s ease-in-out'
+        transform: `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`,
+        transformOrigin: 'center',
+        transition: 'none'
       }
     },
-    rotationStyle180() {
-      return {
-        transform: `rotate(${this.rotation + 180}deg)`,
-        transition: 'transform 0.5s ease-in-out'
-      }
+
+    nextArrowIcon() {
+      return this.currentMapIndex === this.allMaps.length - 1
+          ? '/static/icons/arrow.svg'
+          : '/static/icons/arrow-active.svg'
     },
+
+    prevArrowIcon() {
+      return this.currentMapIndex === 0
+          ? '/static/icons/arrow.svg'
+          : '/static/icons/arrow-active.svg'
+    }
   },
+
   methods: {
-
-    async fitToExtent(extent) {
-      if (!extent) return;
-      let [xmin, ymin, xmax, ymax] = extent;
-
-      const position = await this.getContainerImageGeometries();
-
-      // 获取图片的实际显示尺寸（已经应用了scale变换）
-      const scaledImageWidth = position.imageInfo.width;
-      const scaledImageHeight = position.imageInfo.height;
-
-      // 获取容器尺寸
-      const containerWidth = position.containerInfo.width;
-      const containerHeight = position.containerInfo.height;
-
-      // 从transform matrix中提取scale信息，获取原始显示尺寸
-      const imageTransform = position.imageInfo.transform;
-      const imageMatrixMatch = imageTransform.match(/matrix\((.*?)\)/);
-      let imageScaleX = 1, imageScaleY = 1;
-      if (imageMatrixMatch) {
-        const values = imageMatrixMatch[1].split(',').map(v => parseFloat(v.trim()));
-        imageScaleX = values[0]; // a
-        imageScaleY = values[3]; // d
-      }
-
-      // 获取图片原始显示尺寸（未应用用户缩放的尺寸）
-      const originalDisplayWidth = scaledImageWidth / imageScaleX;
-      const originalDisplayHeight = scaledImageHeight / imageScaleY;
-
-      console.log('fitToExtent 调试信息:', {
-        extent,
-        scaledImageWidth,
-        scaledImageHeight,
-        containerWidth,
-        containerHeight,
-        imageScaleX,
-        imageScaleY,
-        originalDisplayWidth,
-        originalDisplayHeight
-      });
-
-      // 将归一化 extent 转换为原始图片像素值（纠过xy）
-      const left = ymin * originalDisplayWidth;
-      const right = ymax * originalDisplayWidth;
-      const top = xmin * originalDisplayHeight;
-      const bottom = xmax * originalDisplayHeight;
-
-      const targetWidth = right - left;
-      const targetHeight = bottom - top;
-
-      console.log('目标区域像素坐标:', {
-        left, top, right, bottom,
-        targetWidth, targetHeight,
-        'ymin->left': ymin, 'ymax->right': ymax,
-        'xmin->top': xmin, 'xmax->bottom': xmax
-      });
-
-      // 计算缩放比例（保持目标区域完整显示在 container 中）
-      const scaleX = containerWidth / targetWidth;
-      const scaleY = containerHeight / targetHeight;
-      const newScale = Math.min(scaleX, scaleY);
-
-      // 缩放后目标区域大小
-      const scaledTargetWidth = targetWidth * newScale;
-      const scaledTargetHeight = targetHeight * newScale;
-
-      // 计算偏移：让目标区域居中于 container
-      const offsetX = (containerWidth - scaledTargetWidth) / 2;
-      const offsetY = (containerHeight - scaledTargetHeight) / 2;
-
-      // 设置变换
-      this.scale = newScale;
-      this.translateX = -left * newScale + offsetX;
-      this.translateY = -top * newScale + offsetY;
-
-      console.log("fitToExtent 完成:", {
-        scale: this.scale,
-        translateX: this.translateX,
-        translateY: this.translateY,
-        newScale,
-        offsetX,
-        offsetY
-      });
+    // 初始化
+    onImageLoad() {
+      console.log('图片加载成功')
+      this.initCanvas()
+      this.$emit('image-load')
     },
 
-    async onImageLoad() {
-      console.log('原图显示成功');
-      const query = uni.createSelectorQuery().in(this);
-      query.select('#map-container').boundingClientRect(data => {
-        if (data) {
-          this.canvasWidth = data.width;
-          this.canvasHeight = data.height;
-          console.log('画布尺寸初始化：', { width: this.canvasWidth, height: this.canvasHeight });
-          this.canvasContext = uni.createCanvasContext('doodleCanvas', this);
-          this.canvasContext.setLineWidth(this.lineWidth);
-          if (this.currentColor) {
-            this.canvasContext.setStrokeStyle(this.currentColor);
-          }
-          this.canvasContext.setLineCap('round');
-          this.canvasContext.setLineJoin('round');
-          this.drawAllShapes();
-        } else {
-          console.error('无法获取 map-container 尺寸');
-        }
-      }).exec();
-
-      await this.fitToExtent(this.extends); // test 年平均日照数： [0.048265918,0.277440466,0.48574635,0.655745622]
-
-      this.$emit('image-load');
-    },
     onImageError(error) {
-      console.error('原图显示失败:', error);
-      this.$emit('image-error', error);
+      console.error('图片加载失败:', error)
+      this.$emit('image-error', error)
     },
- 
-  async getCanvasCoordinates(touch) {
-    const touchX = touch.clientX;
-    const touchY = touch.clientY;
-    
-    const cx = this.canvasWidth / 2;
-    const cy = this.canvasHeight / 2;
-    
-    const pointAfterInvTranslate = {
-        x: touchX - this.translateX,
-        y: touchY - this.translateY,
-    };
-  
-    const pointAfterInvScale = {
-        x: (pointAfterInvTranslate.x - cx) / this.scale + cx,
-        y: (pointAfterInvTranslate.y - cy) / this.scale + cy,
-    };
-  
-    const angleRad = (-this.rotation * Math.PI) / 180; // 旋转的逆角度
-    const cos = Math.cos(angleRad);
-    const sin = Math.sin(angleRad);
-    
-    const pointRelativeToCenter = {
-        x: pointAfterInvScale.x - cx,
-        y: pointAfterInvScale.y - cy,
-    };
-    
-    const pointAfterInvRotate = {
-        x: pointRelativeToCenter.x * cos - pointRelativeToCenter.y * sin,
-        y: pointRelativeToCenter.x * sin + pointRelativeToCenter.y * cos,
-    };
-    
-    const finalCanvasCoord = {
-        x: pointAfterInvRotate.x + cx,
-        y: pointAfterInvRotate.y + cy,
-    };
-  
-    return finalCanvasCoord;
-  },
-    async handleCanvasTouchStart(e) {
-      if (!this.paintLineMode && !this.rectMode && !this.circleMode && !this.polylineMode && !this.polygonMode) return;
-      const touch = e.touches[0];
-      const coords = await this.getCanvasCoordinates(touch);
 
-      if ((this.polylineMode || this.polygonMode) && this.currentShape) {
-        const now = Date.now();
-        if (now - this.lastCanvasTapTime < 300 && this.currentShape.points.length > 1) {
-          if (this.polygonMode) {
-            this.currentShape.points.push(this.currentShape.points[0]);
-          }
-          this.shapes.push(this.currentShape);
-          this.currentShape = null;
-          this.drawAllShapes();
-          this.lastCanvasTapTime = 0;
-          return;
+    // 初始化画布
+    initCanvas() {
+      if (this.isDoodling) {
+        this.canvasContext = uni.createCanvasContext('doodleCanvas', this)
+        this.canvasContext.setLineWidth(this.lineWidth)
+        this.canvasContext.setStrokeStyle(this.currentColor)
+        this.canvasContext.setLineCap('round')
+        this.canvasContext.setLineJoin('round')
+      }
+    },
+
+    // 触摸事件处理
+    handleTouchStart(e) {
+      if (this.isDoodling) return
+
+      const touch = e.touches[0]
+      this.touching = true
+      this.touchStartData = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        startTranslateX: this.translateX,
+        startTranslateY: this.translateY,
+        startScale: this.scale
+      }
+    },
+
+    handleTouchMove(e) {
+      if (!this.touching || this.isDoodling) return
+
+      e.preventDefault()
+      const touch = e.touches[0]
+
+      if (e.touches.length === 1) {
+        // 单指拖拽
+        const deltaX = touch.clientX - this.touchStartData.startX
+        const deltaY = touch.clientY - this.touchStartData.startY
+        this.translateX = this.touchStartData.startTranslateX + deltaX
+        this.translateY = this.touchStartData.startTranslateY + deltaY
+      } else if (e.touches.length === 2) {
+        // 双指缩放
+        const touch1 = e.touches[0]
+        const touch2 = e.touches[1]
+        const distance = Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) +
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+        )
+
+        if (!this.touchStartData.startDistance) {
+          this.touchStartData.startDistance = distance
+        } else {
+          const scaleChange = distance / this.touchStartData.startDistance
+          this.scale = Math.max(this.minScale, Math.min(this.maxScale,
+              this.touchStartData.startScale * scaleChange))
         }
-        this.lastCanvasTapTime = now;
+      }
+    },
+
+    handleTouchEnd() {
+      this.touching = false
+      this.touchStartData = null
+    },
+
+    // 工具栏功能
+    viewDetail() {
+      if (!this.allMaps[this.currentMapIndex]) return
+
+      const currentMap = this.allMaps[this.currentMapIndex]
+      let url = `/pages/map/detail?id=${currentMap.map_id}&from=browse`
+
+      if (this.topic) {
+        url += `&topic=${encodeURIComponent(this.topic)}`
+      } else if (this.topicId) {
+        url += `&topic_id=${this.topicId}`
       }
 
-      this.isDrawing = true;
+      uni.navigateTo({ url })
+    },
+
+    resetTransform() {
+      this.scale = 1
+      this.translateX = 0
+      this.translateY = 0
+    },
+
+    switchMap(direction) {
+      this.$emit('switch-map', direction)
+    },
+
+    // 涂鸦功能
+    toggleDoodle() {
+      this.isDoodling = !this.isDoodling
+      this.showToast = true
+      setTimeout(() => {
+        this.showToast = false
+      }, 1500)
+
+      if (this.isDoodling) {
+        this.$nextTick(() => {
+          this.initCanvas()
+        })
+      }
+    },
+
+    togglePaintLineMode() {
+      this.paintLineMode = !this.paintLineMode
+      this.resetOtherModes(['rectMode', 'circleMode', 'polylineMode', 'polygonMode'])
+    },
+
+    toggleRectMode() {
+      this.rectMode = !this.rectMode
+      this.resetOtherModes(['paintLineMode', 'circleMode', 'polylineMode', 'polygonMode'])
+    },
+
+    toggleCircleMode() {
+      this.circleMode = !this.circleMode
+      this.resetOtherModes(['paintLineMode', 'rectMode', 'polylineMode', 'polygonMode'])
+    },
+
+    togglePolylineMode() {
+      this.polylineMode = !this.polylineMode
+      this.resetOtherModes(['paintLineMode', 'rectMode', 'circleMode', 'polygonMode'])
+    },
+
+    togglePolygonMode() {
+      this.polygonMode = !this.polygonMode
+      this.resetOtherModes(['paintLineMode', 'rectMode', 'circleMode', 'polylineMode'])
+    },
+
+    resetOtherModes(modes) {
+      modes.forEach(mode => {
+        this[mode] = false
+      })
+    },
+
+    updateLineWidth(e) {
+      this.lineWidth = e.detail.value
+      if (this.canvasContext) {
+        this.canvasContext.setLineWidth(this.lineWidth)
+      }
+    },
+
+    selectColor(color) {
+      this.currentColor = color
+      if (this.canvasContext) {
+        this.canvasContext.setStrokeStyle(this.currentColor)
+      }
+    },
+
+    clearCanvas() {
+      if (this.canvasContext) {
+        this.shapes = []
+        this.currentShape = null
+        this.canvasContext.clearRect(0, 0, 1000, 1000) // 临时尺寸
+        this.canvasContext.draw(true)
+      }
+    },
+
+    // 涂鸦触摸事件
+    handleCanvasTouchStart(e) {
+      if (!this.paintLineMode && !this.rectMode && !this.circleMode &&
+          !this.polylineMode && !this.polygonMode) return
+
+      const touch = e.touches[0]
+      const x = touch.x
+      const y = touch.y
+
+      this.isDrawing = true
 
       if (this.paintLineMode) {
         this.currentShape = {
           type: 'line',
-          points: [{ x: coords.x, y: coords.y }],
+          points: [{ x, y }],
           color: this.currentColor,
           lineWidth: this.lineWidth
-        };
-      } else if (this.rectMode) {
-        this.currentShape = {
-          type: 'rect',
-          startX: coords.x,
-          startY: coords.y,
-          endX: coords.x,
-          endY: coords.y,
-          color: this.currentColor,
-          lineWidth: this.lineWidth
-        };
-      } else if (this.circleMode) {
-        this.currentShape = {
-          type: 'circle',
-          centerX: coords.x,
-          centerY: coords.y,
-          radius: 0,
-          color: this.currentColor,
-          lineWidth: this.lineWidth
-        };
-      } else if (this.polylineMode) {
-        if (!this.currentShape) {
-          this.currentShape = {
-            type: 'polyline',
-            points: [{ x: coords.x, y: coords.y }],
-            color: this.currentColor,
-            lineWidth: this.lineWidth
-          };
-        } else {
-          this.currentShape.points.push({ x: coords.x, y: coords.y });
-        }
-      } else if (this.polygonMode) {
-        if (!this.currentShape) {
-          this.currentShape = {
-            type: 'polygon',
-            points: [{ x: coords.x, y: coords.y }],
-            color: this.currentColor,
-            lineWidth: this.lineWidth
-          };
-        } else {
-          this.currentShape.points.push({ x: coords.x, y: coords.y });
         }
       }
-      this.drawAllShapes();
+      // TODO: 其他绘制模式
     },
-    async handleCanvasTouchMove(e) {
-      if (!this.isDrawing || (!this.paintLineMode && !this.rectMode && !this.circleMode && !this.polylineMode && !this.polygonMode)) return;
-      e.preventDefault();
-      const touch = e.touches[0];
-      const coords = await this.getCanvasCoordinates(touch);
-      const currentX = coords.x;
-      const currentY = coords.y;
 
-      if (this.paintLineMode) {
-        this.currentShape.points.push({ x: currentX, y: currentY });
-        this.drawAllShapes();
-      } else if (this.rectMode) {
-        this.currentShape.endX = currentX;
-        this.currentShape.endY = currentY;
-        this.drawAllShapes();
-      } else if (this.circleMode) {
-        const dx = currentX - this.currentShape.centerX;
-        const dy = currentY - this.currentShape.centerY;
-        this.currentShape.radius = Math.sqrt(dx * dx + dy * dy);
-        this.drawAllShapes();
-      } else if (this.polylineMode && this.currentShape) {
-        const lastPoint = this.currentShape.points[this.currentShape.points.length - 1];
-        lastPoint.x = currentX;
-        lastPoint.y = currentY;
-        this.drawAllShapes();
-      } else if (this.polygonMode && this.currentShape) {
-        const lastPoint = this.currentShape.points[this.currentShape.points.length - 1];
-        lastPoint.x = currentX;
-        lastPoint.y = currentY;
-        this.drawAllShapes();
+    handleCanvasTouchMove(e) {
+      if (!this.isDrawing || !this.paintLineMode) return
+
+      const touch = e.touches[0]
+      const x = touch.x
+      const y = touch.y
+
+      if (this.currentShape) {
+        this.currentShape.points.push({ x, y })
+        this.drawCurrentShape()
       }
     },
+
     handleCanvasTouchEnd() {
-      if (!this.isDrawing || (!this.paintLineMode && !this.rectMode && !this.circleMode && !this.polylineMode && !this.polygonMode)) return;
-      this.isDrawing = false;
-      if (this.paintLineMode || this.rectMode || this.circleMode) {
-        this.shapes.push(this.currentShape);
-        this.currentShape = null;
-        this.drawAllShapes();
+      if (!this.isDrawing) return
+
+      this.isDrawing = false
+      if (this.currentShape) {
+        this.shapes.push(this.currentShape)
+        this.currentShape = null
       }
     },
-    drawAllShapes() {
-      if (!this.canvasContext) return;
-      this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-      this.shapes.forEach(shape => this.drawShape(shape));
-      if (this.currentShape) this.drawShape(this.currentShape);
-      this.canvasContext.draw(true);
+
+    drawCurrentShape() {
+      if (!this.canvasContext || !this.currentShape) return
+
+      this.canvasContext.clearRect(0, 0, 1000, 1000)
+
+      // 绘制已有图形
+      this.shapes.forEach(shape => {
+        this.drawShape(shape)
+      })
+
+      // 绘制当前图形
+      this.drawShape(this.currentShape)
+
+      this.canvasContext.draw()
     },
+
     drawShape(shape) {
-      this.canvasContext.beginPath();
-      this.canvasContext.setStrokeStyle(shape.color);
-      this.canvasContext.setLineWidth(shape.lineWidth);
-      this.canvasContext.setLineCap('round');
-      this.canvasContext.setLineJoin('round');
+      if (!shape || !this.canvasContext) return
 
-      if (shape.type === 'line') {
-        shape.points.forEach((point, index) => {
-          if (index === 0) this.canvasContext.moveTo(point.x, point.y);
-          else this.canvasContext.lineTo(point.x, point.y);
-        });
-        this.canvasContext.stroke();
-      } else if (shape.type === 'rect') {
-        this.canvasContext.rect(shape.startX, shape.startY, shape.endX - shape.startX, shape.endY - shape.startY);
-        this.canvasContext.stroke();
-      } else if (shape.type === 'circle') {
-        this.canvasContext.arc(shape.centerX, shape.centerY, shape.radius, 0, 2 * Math.PI);
-        this.canvasContext.stroke();
-      } else if (shape.type === 'polyline') {
-        shape.points.forEach((point, index) => {
-          if (index === 0) this.canvasContext.moveTo(point.x, point.y);
-          else this.canvasContext.lineTo(point.x, point.y);
-        });
-        this.canvasContext.stroke();
-      } else if (shape.type === 'polygon') {
-        shape.points.forEach((point, index) => {
-          if (index === 0) this.canvasContext.moveTo(point.x, point.y);
-          else this.canvasContext.lineTo(point.x, point.y);
-        });
-        this.canvasContext.closePath();
-        this.canvasContext.stroke();
-      }
-    },
-    handleTouchStart(e) {
-      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
-      this.touching = true;
-      const touches = e.touches;
-      const x = touches[0].clientX;
-      const y = touches[0].clientY;
+      this.canvasContext.setStrokeStyle(shape.color)
+      this.canvasContext.setLineWidth(shape.lineWidth)
 
-      this.touchStartData = {
-        startX: x,
-        startY: y,
-        type: touches.length === 2 ? 'zoom' : 'pan',
-        moved: false // 标记是否移动过
-      };
-
-      // PAN
-      if (touches.length === 1) {
-        this.touchStartData = {
-          ...this.touchStartData,
-          startTranslateX: this.translateX,
-          startTranslateY: this.translateY
-        };
-      } else
-        // ZOOM
-        if (touches.length === 2) {
-        const touch1 = touches[0];
-        const touch2 = touches[1];
-        const distance = this.getDistance(touch1, touch2);
-        const center = this.getCenter(touch1, touch2);
-
-        this.touchStartData = {
-          ...this.touchStartData,
-          startDistance: distance,
-          startScale: this.scale,
-          centerX: center.x,
-          centerY: center.y,
-          startTranslateX: this.translateX,
-          startTranslateY: this.translateY
-        };
-      }
-
-      // Double Click
-      const now = Date.now();
-      const isDoubleTap = now - this.lastTap < 300 && Math.abs(x - this.lastTapX) < 10 && Math.abs(y - this.lastTapY) < 10;
-      if (isDoubleTap) {
-        clearTimeout(this.singleClickTimeout); // 阻止之前延迟触发的单击
-        if (this.scale * 2 <= this.maxScale) {
-          this.scale = this.scale * 2;
+      if (shape.type === 'line' && shape.points.length > 1) {
+        this.canvasContext.beginPath()
+        this.canvasContext.moveTo(shape.points[0].x, shape.points[0].y)
+        for (let i = 1; i < shape.points.length; i++) {
+          this.canvasContext.lineTo(shape.points[i].x, shape.points[i].y)
         }
-        this.lastTap = 0;
-        this.lastTapX = 0;
-        this.lastTapY = 0;
-      } else {
-        // 设置单击延迟触发逻辑
-        this.singleClickTimeout = setTimeout(() => {
-          if (!this.touchStartData?.moved) {
-            this.handleSingleClick(x,y);
-          }
-        }, 300);
-        this.lastTap = now;
-        this.lastTapX = x;
-        this.lastTapY = y;
-      }
-    },
-   handleTouchMove(e) {
-     if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
-     if (!this.touching || !this.touchStartData) return;
-   
-     e.preventDefault();
-     const touches = e.touches;
-     this.touchStartData.moved = true;
-   
-     if (this.touchStartData.type === 'pan' && touches.length === 1) {
-       const deltaX = touches[0].clientX - this.touchStartData.startX;
-       const deltaY = touches[0].clientY - this.touchStartData.startY;
-       this.translateX = this.touchStartData.startTranslateX + deltaX;
-       this.translateY = this.touchStartData.startTranslateY + deltaY;
-   
-     } else if (this.touchStartData.type === 'zoom' && touches.length === 2) {
-       // --- 双指缩放逻辑 (已修正) ---
-       const touch1 = touches[0];
-       const touch2 = touches[1];
-       const newDistance = this.getDistance(touch1, touch2);
-       const newScale = this.touchStartData.startScale * (newDistance / this.touchStartData.startDistance);
-       
-       const finalScale = Math.max(1, Math.min(this.maxScale, newScale));
-   
-       const center = this.getCenter(touch1, touch2);
-       
-       const oldScale = this.touchStartData.startScale;
-       const oldTranslateX = this.touchStartData.startTranslateX;
-       const oldTranslateY = this.touchStartData.startTranslateY;
-       
-       this.translateX = center.x - (center.x - oldTranslateX) * finalScale / oldScale;
-       this.translateY = center.y - (center.y - oldTranslateY) * finalScale / oldScale;
-       this.scale = finalScale;
-     }
-   },
-    handleTouchEnd() {
-      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) return;
-      this.touching = false;
-      this.touchStartData = null;
-    },
-    handleSingleClick(x,y) {
-      console.log("singleClick",x,y)
-      console.log('handleSingleClick',this.getImageNormCoordinates(x,y));
-      // TODO
-    },
-
-    async getImageNormCoordinates(x, y) {
-      const position = await this.getContainerImageGeometries();
-
-      console.log('image info:', position.imageInfo);
-      console.log('container info:', position.containerInfo);
-
-      // 获取图片的实际显示尺寸（已经应用了scale变换）
-      const scaledImageWidth = position.imageInfo.width;
-      const scaledImageHeight = position.imageInfo.height;
-
-      // 获取容器尺寸
-      const containerWidth = position.containerInfo.width;
-      const containerHeight = position.containerInfo.height;
-
-      // 从transform matrix中提取scale信息
-      // matrix(a, b, c, d, e, f) 其中 a=scaleX, d=scaleY
-      const imageTransform = position.imageInfo.transform;
-      const imageMatrixMatch = imageTransform.match(/matrix\((.*?)\)/);
-      let imageScaleX = 1, imageScaleY = 1;
-      if (imageMatrixMatch) {
-        const values = imageMatrixMatch[1].split(',').map(v => parseFloat(v.trim()));
-        imageScaleX = values[0]; // a
-        imageScaleY = values[3]; // d
-      }
-
-      const originalDisplayWidth = scaledImageWidth / imageScaleX;
-      const originalDisplayHeight = scaledImageHeight / imageScaleY;
-      let relativeX = x - this.translateX;
-      let relativeY = y - this.translateY;
-
-      const imageCenterInContainerX = containerWidth / 2;
-      const imageCenterInContainerY = containerHeight / 2;
-
-      let imageRelativeX = relativeX - imageCenterInContainerX;
-      let imageRelativeY = relativeY - imageCenterInContainerY;
-
-      const rotationRad = (-this.rotation * Math.PI) / 180;
-      const cos = Math.cos(rotationRad);
-      const sin = Math.sin(rotationRad);
-
-      const rotatedX = imageRelativeX * cos - imageRelativeY * sin;
-      const rotatedY = imageRelativeX * sin + imageRelativeY * cos;
-
-      const unscaledX = rotatedX / this.scale;
-      const unscaledY = rotatedY / this.scale;
-
-      const imagePixelX = unscaledX + originalDisplayWidth / 2;
-      const imagePixelY = unscaledY + originalDisplayHeight / 2;
-
-      //计算归一化坐标
-      const normalizedX = imagePixelX / originalDisplayWidth;
-      const normalizedY = imagePixelY / originalDisplayHeight;
-
-      console.log('坐标转换详细步骤:', {
-        '输入坐标': { x, y },
-        '减去位移': { relativeX, relativeY },
-        '相对图片中心': { imageRelativeX, imageRelativeY },
-        '旋转后': { rotatedX, rotatedY },
-        '逆缩放': { unscaledX, unscaledY },
-        '图片像素坐标': { imagePixelX, imagePixelY },
-        '归一化坐标': { normalizedX, normalizedY }
-      });
-
-      return {
-        pixelX: imagePixelX,
-        pixelY: imagePixelY,
-        normalizedX: normalizedX,
-        normalizedY: normalizedY,
-        isWithinImage: (
-            imagePixelX >= 0 &&
-            imagePixelX <= originalDisplayWidth &&
-            imagePixelY >= 0 &&
-            imagePixelY <= originalDisplayHeight
-        )
-      };
-    },
-
-    async getContainerImageGeometries() {
-      const query1 = uni.createSelectorQuery().in(this);
-      const query2 = uni.createSelectorQuery().in(this);
-      const imageInfo = new Promise(resolve => {
-        query1.select('#map-image').fields({size:true, computedStyle:['transform']},resolve).exec();
-      });
-      const containerInfo = new Promise(resolve => {
-        query2.select('#map-container').fields({size:true, computedStyle:['transform']},resolve).exec();
-      });
-
-      const [image, container] = await Promise.all([imageInfo, containerInfo]);
-      return {
-        imageInfo: image,
-        containerInfo: container
-      }
-    },
-
-    getDistance(touch1, touch2) {
-      const dx = touch1.clientX - touch2.clientX;
-      const dy = touch1.clientY - touch2.clientY;
-      return Math.sqrt(dx * dx + dy * dy);
-    },
-    getCenter(touch1, touch2) {
-      return {
-        x: (touch1.clientX + touch2.clientX) / 2,
-        y: (touch1.clientY + touch2.clientY) / 2
-      };
-    },
-    resetTransform() {
-      this.scale = 1;
-      this.translateX = 0;
-      this.translateY = 0;
-      this.rotation = 0;
-      if (this.canvasContext) {
-        this.drawAllShapes();
-      }
-    },
-    rotate() {
-      const now = Date.now();
-      if (now - this.lastRotateTime < 300) return; // 防抖
-      this.lastRotateTime = now;
-      this.rotation = (this.rotation + 90) % 360;
-      console.log('Map rotated to:', this.rotation, 'degrees (clockwise)');
-      if (this.canvasContext) {
-        this.drawAllShapes();
-      }
-    },
-    switchMap(direction) {
-      this.$emit('switch-map', direction);
-      if (this.canvasContext) {
-        this.drawAllShapes();
-      }
-    },
-    viewDetail() {
-      if (!this.allMaps[this.currentMapIndex]) return;
-      let url = `/pages/map/detail?id=${this.allMaps[this.currentMapIndex].map_id}&from=browse`;
-      if (this.topic) {
-        url += `&topic=${this.topic}`;
-      } else if (this.topicId) {
-        url += `&topic_id=${this.topicId}`;
-      }
-      uni.navigateTo({ url });
-    },
-    toggleDoodle() {
-      this.isDoodling = !this.isDoodling;
-      this.showToast = true;
-      setTimeout(() => {
-        this.showToast = false;
-      }, 1500);
-      if (!this.isDoodling) {
-        this.paintLineMode = false;
-        this.rectMode = false;
-        this.circleMode = false;
-        this.polylineMode = false;
-        this.polygonMode = false;
-        this.clearMode = false;
-      }
-    },
-    togglePaintLineMode() {
-      this.paintLineMode = !this.paintLineMode;
-      this.rectMode = false;
-      this.circleMode = false;
-      this.polylineMode = false;
-      this.polygonMode = false;
-      this.clearMode = false;
-      if (this.paintLineMode && this.canvasContext) {
-        this.currentColor = this.currentColor || '#000000';
-        this.canvasContext.setLineWidth(this.lineWidth);
-        this.canvasContext.setStrokeStyle(this.currentColor);
-        this.canvasContext.setLineCap('round');
-        this.canvasContext.setLineJoin('round');
-      }
-    },
-    toggleRectMode() {
-      this.rectMode = !this.rectMode;
-      this.paintLineMode = false;
-      this.circleMode = false;
-      this.polylineMode = false;
-      this.polygonMode = false;
-      this.clearMode = false;
-      if (this.rectMode && this.canvasContext) {
-        this.currentColor = this.currentColor || '#000000';
-        this.canvasContext.setLineWidth(this.lineWidth);
-        this.canvasContext.setStrokeStyle(this.currentColor);
-        this.canvasContext.setLineCap('round');
-        this.canvasContext.setLineJoin('round');
-      }
-    },
-    toggleCircleMode() {
-      this.circleMode = !this.circleMode;
-      this.paintLineMode = false;
-      this.rectMode = false;
-      this.polylineMode = false;
-      this.polygonMode = false;
-      this.clearMode = false;
-      if (this.circleMode && this.canvasContext) {
-        this.currentColor = this.currentColor || '#000000';
-        this.canvasContext.setLineWidth(this.lineWidth);
-        this.canvasContext.setStrokeStyle(this.currentColor);
-        this.canvasContext.setLineCap('round');
-        this.canvasContext.setLineJoin('round');
-      }
-    },
-    togglePolylineMode() {
-      this.polylineMode = !this.polylineMode;
-      this.paintLineMode = false;
-      this.rectMode = false;
-      this.circleMode = false;
-      this.polygonMode = false;
-      this.clearMode = false;
-      if (this.polylineMode && this.canvasContext) {
-        this.currentColor = this.currentColor || '#000000';
-        this.canvasContext.setLineWidth(this.lineWidth);
-        this.canvasContext.setStrokeStyle(this.currentColor);
-        this.canvasContext.setLineCap('round');
-        this.canvasContext.setLineJoin('round');
-      }
-    },
-    togglePolygonMode() {
-      this.polygonMode = !this.polygonMode;
-      this.paintLineMode = false;
-      this.rectMode = false;
-      this.circleMode = false;
-      this.polylineMode = false;
-      this.clearMode = false;
-      if (this.polygonMode && this.canvasContext) {
-        this.currentColor = this.currentColor || '#000000';
-        this.canvasContext.setLineWidth(this.lineWidth);
-        this.canvasContext.setStrokeStyle(this.currentColor);
-        this.canvasContext.setLineCap('round');
-        this.canvasContext.setLineJoin('round');
-      }
-    },
-    selectColor(color) {
-      if (this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) {
-        this.currentColor = color;
-        this.clearMode = false;
-        if (this.canvasContext) {
-          this.canvasContext.setStrokeStyle(this.currentColor);
-          this.drawAllShapes();
-        }
-      }
-    },
-    updateLineWidth(e) {
-      if ((this.paintLineMode || this.rectMode || this.circleMode || this.polylineMode || this.polygonMode) && this.canvasContext) {
-        this.lineWidth = e.detail.value;
-        this.canvasContext.setLineWidth(this.lineWidth);
-        this.drawAllShapes();
-      }
-    },
-    clearCanvas() {
-      if (this.canvasContext) {
-        this.shapes = [];
-        this.currentShape = null;
-        this.canvasContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-        this.canvasContext.draw(true);
-        this.paintLineMode = false;
-        this.rectMode = false;
-        this.circleMode = false;
-        this.polylineMode = false;
-        this.polygonMode = false;
-        this.clearMode = true;
+        this.canvasContext.stroke()
       }
     }
-  },
+  }
 }
 </script>
 
 <style scoped>
-.map-container {
+
+.floating-toolbar {
+  position: fixed;
+  top: 20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15rpx;
+  padding: 10rpx 15rpx;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.doodle-toolbar {
+  position: fixed;
+  top: 80rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+  padding: 15rpx;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 15rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.doodle-tools {
+  display: flex;
+  gap: 10rpx;
+}
+
+.tool-btn {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  border-radius: 12rpx;
+  transition: all 0.2s;
+}
+
+.tool-btn.active {
+  background-color: #7aa26f;
+}
+
+.tool-btn.active .tool-icon {
+  filter: brightness(0) invert(1);
+}
+
+.tool-icon {
+  width: 36rpx;
+  height: 36rpx;
+  transform: rotate(90deg);
+  transform-origin: center;
+}
+
+.arrow-prev {
+  transform: rotate(180deg);
+}
+
+.image-container {
   width: 100%;
   height: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
-  transform-origin: center;
+  justify-content: center;
   position: relative;
+  overflow: hidden;
 }
 
 .map-image {
   width: 100%;
-  height: auto;
-  object-fit: contain;
-  display: block;
-  z-index: 1;
+  height: 100%;
+  transform: rotate(90deg);
+  transform-origin: center;
 }
 
 .doodle-canvas {
@@ -923,138 +525,55 @@ export default {
   width: 100%;
   height: 100%;
   z-index: 10;
-  background: transparent;
-  transform-origin: center;
 }
 
-.floating-toolbar {
-  position: fixed;
-  top: 20rpx;
-  left: 20rpx;
-  background-color: #f6f7f7;
-  border-radius: 12rpx;
-  padding: 10rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
+.doodle-controls {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  z-index: 1000;
-}
-
-.control-btn {
-  width: 50rpx;
-  height: 50rpx;
-  margin: 10rpx 0;
-  object-fit: contain;
-}
-
-.doodle-btn {
-  background-color: #f6f7f7;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.doodle-toolbar {
-  position: fixed;
-  top: 20rpx;
-  left: 100rpx;
-  background-color: #f6f7f7;
-  border-radius: 12rpx;
-  padding: 10rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  z-index: 1000;
-}
-
-.tool-column {
-  display: flex;
-  flex-direction: column;
-  margin-right: 20rpx;
-}
-
-.doodle-tool-btn {
-  width: 50rpx;
-  height: 50rpx;
-  margin: 5rpx 0;
-  object-fit: contain;
-  background-color: #f6f7f7;
-  border-radius: 8rpx;
-  padding: 5rpx;
-}
-
-.doodle-tool-btn.active {
-  background-color: #e6f3ff;
-}
-
-.clear-btn {
-  width: 50rpx;
-  height: 50rpx;
-  margin: 10rpx 0;
-  object-fit: contain;
-  background-color: #f6f7f7;
-  border-radius: 8rpx;
-  padding: 5rpx;
-}
-
-.clear-btn.active {
-  background-color: #e6f3ff;
-}
-
-.slider-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.thickness-slider {
-  width: 100rpx;
-  height: 20rpx;
-  background-color: #ddd;
-  border-radius: 10rpx;
-}
-
-.slider-value {
-  font-size: 20rpx;
-  color: #333;
-  margin-top: 5rpx;
-  margin-bottom: 10rpx;
-}
-
-.color-column-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.color-picker {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-auto-flow: row;
   gap: 10rpx;
 }
 
-.color-block {
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.control-label {
+  font-size: 24rpx;
+  color: #666;
+  min-width: 60rpx;
+}
+
+.line-width-slider {
+  flex: 1;
+  height: 40rpx;
+}
+
+.control-value {
+  font-size: 22rpx;
+  color: #999;
+  min-width: 60rpx;
+  text-align: center;
+}
+
+.color-palette {
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.color-dot {
   width: 40rpx;
   height: 40rpx;
-  margin: 5rpx;
-  border: 2rpx solid #ccc;
-  border-radius: 4rpx;
-  cursor: pointer;
+  border-radius: 50%;
+  border: 3rpx solid transparent;
+  transition: all 0.2s;
 }
 
-.color-block.active {
-  border: 5rpx solid #dbdbdb;
-  box-shadow: 0 0 15rpx #e6e6e6;
-}
-
-.color-block.disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-  pointer-events: none;
+.color-dot.active {
+  border-color: #333;
+  transform: scale(1.1);
 }
 
 .toast {
@@ -1062,10 +581,10 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   color: #ffffff;
-  padding: 20rpx 30rpx;
-  border-radius: 10rpx;
+  padding: 20rpx 40rpx;
+  border-radius: 25rpx;
   font-size: 28rpx;
   z-index: 2000;
 }
