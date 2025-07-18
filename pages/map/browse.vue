@@ -1,87 +1,112 @@
 <template>
-  <view class="container">
-    <!-- 加载指示器 -->
-    <view class="loading-overlay" v-if="isLoading">
-      <view class="loading-content">
-        <view class="loading-spinner"></view>
-        <view class="loading-text">{{ loadingText }}</view>
+  <view class="browse-page">
+    <view class="top-area">
+      <!-- 预留工具栏位置，由MapImage组件内部渲染 -->
+    </view>
+
+    <view class="map-container-wrapper">
+      <view class="map-container" id="map-container">
+        <MapImage
+            :currentMapUrl="currentMapUrl"
+            :allMaps="allMaps"
+            :currentMapIndex="currentMapIndex"
+            :topic="topic"
+            :topicId="topicId"
+            :extends="extendsData"
+            @switch-map="handleSwitchMap"
+            @image-load="handleImageLoad"
+            @image-error="handleImageError"
+        />
       </view>
     </view>
-    
-    <!-- 地图显示区域 -->
-    <view class="map-display-area">
-      <MapImage
-        :current-map-url="currentMapUrl"
-        :all-maps="allMaps"
-        :current-map-index="currentMapIndex"
-        :topic="topic"
-        :topic-id="topicId"
-        :extends="mapExtends"
-        @switch-map="switchMap"
-        @image-load="onImageLoad"
-        @image-error="onImageError"
-      />
+    <view class="bottom-area">
+      <!-- 预留底部区域 -->
     </view>
   </view>
 </template>
 
 <script>
-import { API } from '@/common/config.js'
 import MapImage from '../../component/MapImage.vue'
+import { API } from '@/common/config.js'
 
 export default {
   components: {
     MapImage
   },
+
   data() {
     return {
-      topicId: '',
-      topic: '',
-      mapId: '',
-      currentMapIndex: 0,
+      // 地图数据
       allMaps: [],
-      currentMap: null,
-      currentMapUrl: '',
-      isLoading: true,
-      loadingText: '加载中...',
-      subitemName: '',
-      subitemBounds: null
-    }
-  },
-  computed: {
-    mapExtends() {
-      return this.subitemBounds;
-    }
-  },
-  onLoad(options) {
-    this.topicId = options.topic_id || '';
-    this.topic = options.topic ? decodeURIComponent(options.topic) : '';
-    this.mapId = options.id || '';
-    this.currentMapIndex = parseInt(options.index || '0');
-    this.subitemName = options.subitem_name ? decodeURIComponent(options.subitem_name) : '';  
+      currentMapIndex: 0,
 
-    console.log('地图浏览页加载参数:', {
-      topicId: this.topicId,
-      topic: this.topic,
-      mapId: this.mapId,
-      mapIndex: this.currentMapIndex,
-      subitemName: this.subitemName 
-    });
-    
-    if (this.topic || this.topicId) {
-      this.loadMapsData();
-    } else {
-      this.showError('缺少专题参数');
+      // 路由参数
+      mapId: '',
+      topic: '',
+      topicId: '',
+      extendsData: null,
+
+      // 内部状态
+      currentMapUrlCache: ''
     }
   },
-  methods: {
-    async loadMapsData() {
+
+  computed: {
+    currentMapUrl() {
+      if (this.allMaps.length === 0 || this.currentMapIndex < 0) {
+        return ''
+      }
+      const currentMap = this.allMaps[this.currentMapIndex]
+      if (!currentMap) {
+        return ''
+      }
+
+      // 生成原图URL
+      return API.ORIGIN_MAP + currentMap.title + ".jpg"
+    }
+  },
+
+  onLoad(options) {
+    console.log('browse页面加载参数:', options)
+
+    // 解析路由参数
+    if (options.topic) {
+      this.topic = decodeURIComponent(options.topic)
+    }
+    if (options.topicId) {
+      this.topicId = options.topicId
+    }
+    if (options.id) {
+      this.mapId = options.id
+    }
+    if (options.index) {
+      this.currentMapIndex = parseInt(options.index)
+    }
+    if (options.extends) {
       try {
-        this.isLoading = true;
-        this.loadingText = '获取地图数据...';
-        
-        const res = await this.requestMapsData();
-        
+        this.extendsData = JSON.parse(decodeURIComponent(options.extends))
+      } catch (e) {
+        console.error('解析extends参数失败:', e)
+        this.extendsData = null
+      }
+    }
+
+    // 加载地图数据
+    this.loadMapData()
+  },
+
+  methods: {
+    // 加载地图数据
+    async loadMapData() {
+      try {
+        console.log('开始加载地图数据...')
+
+        if (!this.topic && !this.topicId) {
+          throw new Error('缺少专题参数')
+        }
+
+        const res = await this.requestMapsData()
+
         if (res.statusCode === 200 && res.data.code === 200) {
           this.allMaps = (res.data.data || []).map(item => ({
             map_id: item.map_id,
@@ -89,219 +114,148 @@ export default {
             description: item.description,
             type: item.type,
             create_time: item.create_time
-          }));
-          
-          console.log('获取到地图数据:', this.allMaps.length, '个地图');
-          
+          }))
+
+          console.log('获取到地图数据:', this.allMaps.length, '个地图')
+
+          // 如果有指定的mapId，找到对应的索引
           if (this.mapId) {
-            const foundIndex = this.allMaps.findIndex(map => map.map_id === this.mapId);
+            const foundIndex = this.allMaps.findIndex(map => map.map_id === this.mapId)
             if (foundIndex !== -1) {
-              this.currentMapIndex = foundIndex;
+              this.currentMapIndex = foundIndex
             }
           }
-          
+
+          // 确保索引有效
           if (this.currentMapIndex >= this.allMaps.length) {
-            this.currentMapIndex = 0;
+            this.currentMapIndex = 0
           }
-          
-          this.loadCurrentMap();
+
+          this.loadCurrentMap()
         } else {
-          this.showError('获取地图数据失败');
+          throw new Error('API返回错误')
         }
       } catch (error) {
-        console.error('加载地图数据失败:', error);
-        this.showError('网络错误，请稍后重试');
+        console.error('加载地图数据失败:', error)
+        uni.showToast({
+          title: '地图加载失败',
+          icon: 'none'
+        })
       }
     },
+
+    // 请求地图数据
     requestMapsData() {
       return new Promise((resolve, reject) => {
-        let requestData = {};
-        
+        let requestData = {}
+
         if (this.topic) {
-          requestData.group = this.topic;
-          console.log('使用专题名称请求:', this.topic);
+          requestData.group = this.topic
+          console.log('使用专题名称请求:', this.topic)
         } else if (this.topicId) {
-          requestData.groupid = this.topicId;
-          console.log('使用专题ID请求:', this.topicId);
+          requestData.groupid = this.topicId
+          console.log('使用专题ID请求:', this.topicId)
         } else {
-          reject(new Error('缺少专题参数'));
-          return;
+          reject(new Error('缺少专题参数'))
+          return
         }
-        
+
         uni.request({
           url: API.MAPS_BY_GROUP,
           method: 'GET',
           data: requestData,
           success: resolve,
           fail: reject
-        });
-      });
+        })
+      })
     },
+
+    // 加载当前地图
     loadCurrentMap() {
       if (!this.allMaps.length) {
-        this.showError('没有可显示的地图');
-        return;
+        console.error('没有可显示的地图')
+        return
       }
-      
-      this.currentMap = this.allMaps[this.currentMapIndex];
-      if (!this.currentMap) {
-        this.showError('地图数据错误');
-        return;
+
+      const currentMap = this.allMaps[this.currentMapIndex]
+      if (!currentMap) {
+        console.error('地图数据错误')
+        return
       }
-      
-      console.log('=== 开始加载原图 ===');
-      console.log('当前地图标题:', this.currentMap.title);
-      
-      const originalImageUrl = API.ORIGIN_MAP + this.currentMap.title + ".jpg";
-      console.log('生成的原图URL:', originalImageUrl);
-      
-      this.currentMapUrl = originalImageUrl;
-      
-      this.isLoading = false;
-      if (this.subitemName) {
-        this.fetchSubitemBounds(this.subitemName);
-      }
+
+      console.log('=== 当前地图信息 ===')
+      console.log('地图标题:', currentMap.title)
+      console.log('地图ID:', currentMap.map_id)
+      console.log('当前索引:', this.currentMapIndex)
     },
-    async fetchSubitemBounds(subitemName) {
-      if (!subitemName) {
-        console.log('子图名称为空，跳过区域获取');
-        return;
-      }
-      
-      console.log('开始获取子图区域信息:', subitemName);
-      
-      try {
-        const res = await new Promise((resolve, reject) => {
-          uni.request({
-            url: API.SUBITEM_BOUNDS + encodeURIComponent(subitemName),
-            method: 'GET',
-            success: resolve,
-            fail: reject
-          });
-        });
-        
-        if (res.statusCode === 200 && res.data.code === 200) {
-          const boundsData = res.data.data;
-          this.subitemBounds = [
-            boundsData.xmin,
-            boundsData.ymin, 
-            boundsData.xmax,
-            boundsData.ymax
-          ];
-          console.log('子图区域信息获取成功:', this.subitemBounds);
-        } else {
-          console.warn('获取子图区域信息失败:', res.data);
-        }
-      } catch (error) {
-        console.error('获取子图区域信息请求失败:', error);
-      }
-    },
-    switchMap(direction) {
-      let newIndex = this.currentMapIndex;
-      
+
+    // 地图切换事件处理
+    handleSwitchMap(direction) {
       if (direction === 'next' && this.currentMapIndex < this.allMaps.length - 1) {
-        newIndex = this.currentMapIndex + 1;
+        this.currentMapIndex++
       } else if (direction === 'prev' && this.currentMapIndex > 0) {
-        newIndex = this.currentMapIndex - 1;
-      } else {
-        return;
+        this.currentMapIndex--
       }
-      
-      this.currentMapIndex = newIndex;
-      this.loadCurrentMap();
     },
-    onImageLoad() {
-      console.log('原图显示成功');
-      this.isLoading = false;
+
+    // 图片加载完成
+    handleImageLoad() {
+      console.log('图片加载完成')
     },
-    onImageError(error) {
-      console.error('原图显示失败:', error);
-      this.showError('图片显示失败，请检查网络连接');
-    },
-    showError(message) {
-      this.isLoading = false;
-      this.loadingText = message;
-      
+
+    // 图片加载失败
+    handleImageError(error) {
+      console.error('图片加载失败:', error)
       uni.showToast({
-        title: message,
-        icon: 'none',
-        duration: 3000
-      });
-      
-      setTimeout(() => {
-        if (this.loadingText === message) {
-          this.loadingText = '';
-        }
-      }, 3000);
+        title: '图片加载失败',
+        icon: 'none'
+      })
     }
   }
 }
 </script>
 
-<style>
-.container {
-  width: 100%;
+<style scoped>
+.browse-page {
+  width: 100vw;
   height: 100vh;
-  background-color: #f8f8f8;
   display: flex;
   flex-direction: column;
+  background-color: #7aa26f;
 }
 
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.loading-content {
-  text-align: center;
-  padding: 40rpx;
-  border-radius: 16rpx;
-  background-color: #fff;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
-}
-
-.loading-spinner {
-  width: 60rpx;
-  height: 60rpx;
-  margin: 0 auto 20rpx;
-  border: 4rpx solid #e8e8e8;
-  border-top: 4rpx solid #7aa26f;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.loading-text {
-  font-size: 28rpx;
-  color: #666;
-  font-weight: 500;
-}
-
-.map-display-area {
+.top-area {
   flex: 1;
-  background-color: #ffffff;
-  margin: 20rpx;
-  border-radius: 12rpx;
-  overflow: hidden;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx;
   position: relative;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.map-container-wrapper {
+  flex: 0 0 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx;
 }
 
-@media screen and (max-width: 480px) {
-  .map-display-area {
-    margin: 15rpx;
-  }
+.map-container {
+  width: 90%;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 15rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  position: relative;
+}
+
+.bottom-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 </style>
