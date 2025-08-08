@@ -249,6 +249,7 @@ export default {
   display: flex;
   flex-direction: column;
   background-color: #007c52;
+  position: fixed;
 }
 
 .top-area {
@@ -284,4 +285,5 @@ export default {
   justify-content: center;
   position: relative;
 }
+
 </style>
