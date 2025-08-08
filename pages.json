@@ -29,7 +29,7 @@
 		{
 			"path": "pages/map/browse",
 			"style": {
-				"navigationBarTitleText": "图幅浏览",
+				"navigationBarTitleText": "",
 				"disableScroll": true
 			}
 		},
