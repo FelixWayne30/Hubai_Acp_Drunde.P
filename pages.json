@@ -86,19 +86,19 @@
 	"globalStyle": {
 		"navigationBarTextStyle": "white",
 		"navigationBarTitleText": "湖北省自然资源地图集",
-		"navigationBarBackgroundColor": "#7aa26f",
-		"backgroundColor": "#F8F8F8"
+		"navigationBarBackgroundColor": "#007c52",
+		"backgroundColor": "#007c52"
 	},
 	"tabBar": {
-		"color": "#dbdbdb",
+		"color": "#007c52",
 		"selectedColor": "#ffffff",
 		"borderStyle": "white",
-		"backgroundColor": "#7aa26f",
+		"backgroundColor": "#007c52",
 		"list": [
 			{
 				"pagePath": "pages/index/index",
 				"iconPath": "static/icons/home.png",
-				"selectedIconPath": "static/icons/home-active.png"
+				"selectedIconPath": "static/icons/home-active.png",
 			},
 			{
 				"pagePath": "pages/map/catalog",

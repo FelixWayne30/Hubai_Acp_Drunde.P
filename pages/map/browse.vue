@@ -1,5 +1,10 @@
 <template>
   <view class="browse-page">
+    <!-- 添加纸质图集封面图 -->
+    <view class="cover-image-section">
+      <image class="cover-image" mode="aspectFit"  src="/static/background/cover.png"></image>
+    </view>
+
     <view class="top-area">
       <!-- 预留工具栏位置，由MapImage组件内部渲染 -->
     </view>
@@ -216,12 +221,34 @@ export default {
 </script>
 
 <style scoped>
+
+.cover-image-section {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  margin-top: 50rpx;
+}
+
+.cover-image {
+
+  background-size: contain;
+  background-position: center;
+  width: 390%;
+  height: 390%;
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+
 .browse-page {
   width: 100vw;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #7aa26f;
+  background-color: #007c52;
 }
 
 .top-area {
@@ -238,15 +265,14 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20rpx;
+  padding: 20rpx 20rpx 200rpx;
 }
 
 .map-container {
-  width: 90%;
-  height: 100%;
-  background-color: #ffffff;
+  width: 100%;
+  height: 76%;
+  background-color: #e5e5e5;
   border-radius: 15rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
   overflow: hidden;
   position: relative;
 }
