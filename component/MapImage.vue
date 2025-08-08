@@ -625,6 +625,7 @@ export default {
 </script>
 
 <style scoped>
+
 .map-image-wrapper {
   width: 100%;
   height: 100%;
@@ -634,7 +635,7 @@ export default {
 
 .floating-toolbar {
   position: fixed;
-  top: 20rpx;
+  bottom: 80rpx;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
