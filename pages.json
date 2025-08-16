@@ -70,6 +70,12 @@
 			}
 		},
 		{
+			"path": "pages/user/feedback",
+			"style": {
+				"navigationBarTitleText": "意见反馈"
+			}
+		},
+		{
 		  "path": "pages/map/search",
 		  "style": {
 		    "navigationBarTitleText": "搜索地图",
@@ -98,7 +104,7 @@
 			{
 				"pagePath": "pages/index/index",
 				"iconPath": "static/icons/home.png",
-				"selectedIconPath": "static/icons/home-active.png",
+				"selectedIconPath": "static/icons/home-active.png"
 			},
 			{
 				"pagePath": "pages/map/catalog",

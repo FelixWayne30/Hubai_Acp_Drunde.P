@@ -25,13 +25,16 @@
 			<view class="function-card" @click="navigateWithLogin('/pages/user/collection')">
 				<view class="function-title">我的收藏</view>
 			</view>
-			
+			<!--
 			<view class="function-card" @click="navigateWithLogin('/pages/user/custom-lists')">
 				<view class="function-title">自定义列表</view>
 			</view>
-			
+			-->
 			<view class="function-card" @click="navigateWithLogin('/pages/user/downloads')">
 				<view class="function-title">下载记录</view>
+			</view>
+			<view class="function-card" @click="navigateWithLogin('/pages/user/feedback')">
+				<view class="function-title">意见反馈</view>
 			</view>
 
       <view class="function-card" @click="manageCache">
