@@ -158,22 +158,20 @@ export default {
 
       // 涂鸦功能
       isDoodling: false,
-      showToast: false,
-      paintLineMode: false,
-      rectMode: false,
-      circleMode: false,
-      polylineMode: false,
-      polygonMode: false,
       canvasContext: null,
       isDrawing: false,
-      currentShape: null,
-      shapes: [],
-      currentColor: '#000000',
-      lineWidth: 2,
+      drawingPath: [],  // 当前绘制路径
+      allPaths: [],     // 所有路径
+      currentColor: '#FF0000',
+      lineWidth: 3,
       colors: [
         '#000000', '#FF0000', '#2aa515', '#17abe3', '#f4ea29',
         '#bd8cbb', '#1aaba8', '#FFA500', '#13227a', '#e89abe'
-      ]
+      ],
+      // 画布实际尺寸（考虑旋转）
+      canvasActualWidth: 0,
+      canvasActualHeight: 0,
+
     }
   },
 
@@ -181,7 +179,7 @@ export default {
     containerStyle() {
       return {
         transform: `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`,
-        transformOrigin: '0 0' //设置为左上角
+        transformOrigin: 'center center'  // 改为中心点，与图片保持一致
       }
     },
 
@@ -232,43 +230,61 @@ export default {
 
     // 初始化画布
     initCanvas() {
+      // 获取画布上下文
       this.canvasContext = uni.createCanvasContext('doodleCanvas', this)
+      // 旋转90度
+      this.canvasActualWidth = this.containerInfo.height
+      this.canvasActualHeight = this.containerInfo.width
+      // 设置画笔属性
       this.canvasContext.setLineWidth(this.lineWidth)
       this.canvasContext.setStrokeStyle(this.currentColor)
       this.canvasContext.setLineCap('round')
       this.canvasContext.setLineJoin('round')
+      // 清空画布
+      this.clearCanvas()
     },
 
-    // 屏幕坐标转画布坐标
+
     screenToCanvas(screenX, screenY) {
-      // 获取相对于容器的坐标，先减去平移量，再除以缩放比例
-      const x = (screenX - this.containerInfo.left - this.translateX) / this.scale;
-      const y = (screenY - this.containerInfo.top - this.translateY) / this.scale;
+      // 容器中心
+      const containerCenterX = this.containerInfo.width / 2
+      const containerCenterY = this.containerInfo.height / 2
 
-      const centerX = this.containerInfo.height / 2; // 高度作为宽度
-      const centerY = this.containerInfo.width / 2;  // 宽度作为高度
+      // 触摸点相对于容器的坐标
+      const touchX = screenX - this.containerInfo.left
+      const touchY = screenY - this.containerInfo.top
 
-      // 转换到中心坐标系（考虑旋转后的尺寸）
-      const relX = x - centerY; // centerY，因为x轴现在对应原来的y轴
-      const relY = y - centerX; // centerX，因为y轴现在对应原来的-x轴
+      // 转换到中心坐标系
+      const centeredX = touchX - containerCenterX
+      const centeredY = touchY - containerCenterY
 
-      // 旋转-90度（因为图片旋转了90度），旋转后不需要再次考虑缩放因素
-      const rotatedX = relY;
-      const rotatedY = -relX;
+      // 减去平移
+      const translatedX = centeredX - this.translateX
+      const translatedY = centeredY - this.translateY
 
-      // 最后转回画布坐标系（左上角为原点），注意这里的centerX和centerY已经考虑了旋转
+      // 除以缩放
+      const scaledX = translatedX / this.scale
+      const scaledY = translatedY / this.scale
+
+      // 逆时针旋转90度
+      const rotatedX = scaledY
+      const rotatedY = -scaledX
+
+      // 转换到画布坐标（考虑旋转后尺寸互换）
       return {
-        x: rotatedX + centerX,
-        y: rotatedY + centerY
-      };
+        x: rotatedX + this.containerInfo.height / 2,
+        y: rotatedY + this.containerInfo.width / 2
+      }
     },
 
     // 触摸事件处理 - 缩放和拖拽
     handleTouchStart(e) {
-      if (this.isDoodling) return
-
       const touches = e.touches
       this.touching = true
+
+      if (this.isDoodling && touches.length === 1) {
+        return  // 单指留给涂鸦使用
+      }
 
       if (touches.length === 1) {
         // 单指拖拽
@@ -306,12 +322,14 @@ export default {
     },
 
     handleTouchMove(e) {
-      if (!this.touching || this.isDoodling) return
+      if (!this.touching) return
       e.preventDefault()
 
       const touches = e.touches
 
-      if (this.touchStartData.mode === 'drag' && touches.length === 1) {
+      if (this.isDoodling && touches.length === 1) return
+
+      if (this.touchStartData.mode === 'drag' && touches.length === 1 && !this.isDoodling) {
         // 单指拖拽
         const touch = touches[0]
         const deltaX = touch.clientX - this.touchStartData.startX
@@ -321,32 +339,32 @@ export default {
         this.translateY = this.touchStartData.startTranslateY + deltaY
 
       } else if (touches.length === 2) {
-        // 双指缩放
+        // 双指缩放 - 基于中心点变换
         const touch1 = touches[0]
         const touch2 = touches[1]
 
-        // 计算当前两指距离
-        const dx = touch2.clientX - touch1.clientX
-        const dy = touch2.clientY - touch1.clientY
-        const currentDistance = Math.sqrt(dx * dx + dy * dy)
+        // 当前两指距离
+        const currentDistance = Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) +
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+        )
 
-        // 计算缩放比例
-        const scaleRatio = currentDistance / this.pinchStartDistance
+        // 新的缩放比例
         const newScale = Math.max(this.minScale,
-            Math.min(this.maxScale, this.touchStartData.startScale * scaleRatio))
+            Math.min(this.maxScale,
+                this.touchStartData.startScale * (currentDistance / this.pinchStartDistance)))
 
-        // 计算当前两指中心
-        const currentCenter = {
-          x: (touch1.clientX + touch2.clientX) / 2 - this.containerInfo.left,
-          y: (touch1.clientY + touch2.clientY) / 2 - this.containerInfo.top
-        }
+        // 双指中心（相对于容器中心）
+        const pinchCenterX = (touch1.clientX + touch2.clientX) / 2 -
+            this.containerInfo.left - this.containerInfo.width / 2
+        const pinchCenterY = (touch1.clientY + touch2.clientY) / 2 -
+            this.containerInfo.top - this.containerInfo.height / 2
 
-        // 调整translate使中心点在缩放前后保持在相同位置
-        const scaleDiff = newScale / this.touchStartData.startScale
-
+        // 缩放前后的偏移调整
+        const scaleRatio = newScale / this.scale
+        this.translateX = pinchCenterX + (this.translateX - pinchCenterX) * scaleRatio
+        this.translateY = pinchCenterY + (this.translateY - pinchCenterY) * scaleRatio
         this.scale = newScale
-        this.translateX = currentCenter.x - (this.pinchCenter.x - this.touchStartData.startTranslateX) * scaleDiff
-        this.translateY = currentCenter.y - (this.pinchCenter.y - this.touchStartData.startTranslateY) * scaleDiff
       }
     },
 
@@ -359,163 +377,91 @@ export default {
 
     // 涂鸦触摸事件
     handleCanvasTouchStart(e) {
-      if (!this.paintLineMode && !this.rectMode && !this.circleMode &&
-          !this.polylineMode && !this.polygonMode) return
+      if (!this.isDoodling) return
 
       const touch = e.touches[0]
-      const canvasPos = this.screenToCanvas(touch.clientX, touch.clientY)
+      const point = this.screenToCanvas(touch.clientX, touch.clientY)
 
       this.isDrawing = true
+      this.drawingPath = [point]
 
-      if (this.paintLineMode) {
-        this.currentShape = {
-          type: 'line',
-          points: [canvasPos],
-          color: this.currentColor,
-          lineWidth: this.lineWidth
-        }
-      } else if (this.rectMode) {
-        this.currentShape = {
-          type: 'rect',
-          startPoint: canvasPos,
-          endPoint: canvasPos,
-          color: this.currentColor,
-          lineWidth: this.lineWidth
-        }
-      } else if (this.circleMode) {
-        this.currentShape = {
-          type: 'circle',
-          center: canvasPos,
-          radius: 0,
-          color: this.currentColor,
-          lineWidth: this.lineWidth
-        }
-      } else if (this.polylineMode || this.polygonMode) {
-        this.currentShape = {
-          type: this.polylineMode ? 'polyline' : 'polygon',
-          points: [canvasPos],
-          color: this.currentColor,
-          lineWidth: this.lineWidth
-        }
-      }
+      // 开始绘制
+      this.canvasContext.beginPath()
+      this.canvasContext.moveTo(point.x, point.y)
     },
 
     handleCanvasTouchMove(e) {
-      if (!this.isDrawing || !this.currentShape) return
+      if (!this.isDrawing || !this.isDoodling) return
 
       const touch = e.touches[0]
-      const canvasPos = this.screenToCanvas(touch.clientX, touch.clientY)
+      const point = this.screenToCanvas(touch.clientX, touch.clientY)
 
-      if (this.currentShape.type === 'line') {
-        this.currentShape.points.push(canvasPos)
-      } else if (this.currentShape.type === 'rect') {
-        this.currentShape.endPoint = canvasPos
-      } else if (this.currentShape.type === 'circle') {
-        const dx = canvasPos.x - this.currentShape.center.x
-        const dy = canvasPos.y - this.currentShape.center.y
-        this.currentShape.radius = Math.sqrt(dx * dx + dy * dy)
+      this.drawingPath.push(point)
+      if (this.drawingPath.length > 1) {
+        const lastPoint = this.drawingPath[this.drawingPath.length - 2]
+
+        this.canvasContext.setStrokeStyle(this.currentColor)
+        this.canvasContext.setLineWidth(this.lineWidth)
+        this.canvasContext.setLineCap('round')
+        this.canvasContext.setLineJoin('round')
+        this.canvasContext.beginPath()
+        this.canvasContext.moveTo(lastPoint.x, lastPoint.y)
+        this.canvasContext.lineTo(point.x, point.y)
+        this.canvasContext.stroke()
+        this.canvasContext.draw(true)
       }
-
-      this.drawCurrentShape()
     },
 
     handleCanvasTouchEnd() {
       if (!this.isDrawing) return
 
       this.isDrawing = false
-      if (this.currentShape) {
-        this.shapes.push(this.currentShape)
-        this.currentShape = null
+
+      // 保存这条路径
+      if (this.drawingPath.length > 0) {
+        this.allPaths.push({
+          points: [...this.drawingPath],
+          color: this.currentColor,
+          lineWidth: this.lineWidth
+        })
       }
+
+      this.drawingPath = []
+
+      // 重绘所有路径（确保一致性）
+      this.redrawAllPaths()
     },
 
-    // 绘制当前图形
-    drawCurrentShape() {
+    redrawAllPaths() {
       if (!this.canvasContext) return
 
       // 清空画布
-      const width = this.containerInfo.width
-      const height = this.containerInfo.height
-      this.canvasContext.clearRect(0, 0, width, height)
+      this.canvasContext.clearRect(0, 0, this.containerInfo.width, this.containerInfo.height)
 
-      // 保存当前状态
-      this.canvasContext.save()
+      // 直接绘制 坐标在screenToCanvas中处理
+      this.allPaths.forEach(path => {
+        if (path.points.length < 2) return
 
-      // 应用90度旋转变换
-      this.canvasContext.translate(width / 2, height / 2)
-      this.canvasContext.rotate(Math.PI / 2)
-      this.canvasContext.translate(-height / 2, -width / 2)
+        this.canvasContext.setStrokeStyle(path.color)
+        this.canvasContext.setLineWidth(path.lineWidth)
+        this.canvasContext.setLineCap('round')
+        this.canvasContext.setLineJoin('round')
+        this.canvasContext.beginPath()
 
-      // 绘制所有已保存的图形
-      this.shapes.forEach(shape => {
-        this.drawShape(shape)
+        // 绘制路径
+        this.canvasContext.moveTo(path.points[0].x, path.points[0].y)
+        for (let i = 1; i < path.points.length; i++) {
+          this.canvasContext.lineTo(path.points[i].x, path.points[i].y)
+        }
+
+        this.canvasContext.stroke()
       })
-
-      // 绘制当前图形
-      if (this.currentShape) {
-        this.drawShape(this.currentShape)
-      }
-
-      // 恢复状态
-      this.canvasContext.restore()
 
       // 绘制到画布
       this.canvasContext.draw()
     },
 
-    // 绘制单个图形
-    drawShape(shape) {
-      if (!shape || !this.canvasContext) return
 
-      this.canvasContext.setStrokeStyle(shape.color)
-      this.canvasContext.setLineWidth(shape.lineWidth)
-
-      switch (shape.type) {
-        case 'line':
-          if (shape.points && shape.points.length > 1) {
-            this.canvasContext.beginPath()
-            this.canvasContext.moveTo(shape.points[0].x, shape.points[0].y)
-            for (let i = 1; i < shape.points.length; i++) {
-              this.canvasContext.lineTo(shape.points[i].x, shape.points[i].y)
-            }
-            this.canvasContext.stroke()
-          }
-          break
-
-        case 'rect':
-          if (shape.startPoint && shape.endPoint) {
-            const x = Math.min(shape.startPoint.x, shape.endPoint.x)
-            const y = Math.min(shape.startPoint.y, shape.endPoint.y)
-            const width = Math.abs(shape.endPoint.x - shape.startPoint.x)
-            const height = Math.abs(shape.endPoint.y - shape.startPoint.y)
-            this.canvasContext.strokeRect(x, y, width, height)
-          }
-          break
-
-        case 'circle':
-          if (shape.center && shape.radius > 0) {
-            this.canvasContext.beginPath()
-            this.canvasContext.arc(shape.center.x, shape.center.y, shape.radius, 0, 2 * Math.PI)
-            this.canvasContext.stroke()
-          }
-          break
-
-        case 'polyline':
-        case 'polygon':
-          if (shape.points && shape.points.length > 1) {
-            this.canvasContext.beginPath()
-            this.canvasContext.moveTo(shape.points[0].x, shape.points[0].y)
-            for (let i = 1; i < shape.points.length; i++) {
-              this.canvasContext.lineTo(shape.points[i].x, shape.points[i].y)
-            }
-            if (shape.type === 'polygon' && shape.points.length > 2) {
-              this.canvasContext.closePath()
-            }
-            this.canvasContext.stroke()
-          }
-          break
-      }
-    },
 
     // 工具栏功能
     viewDetail() {
@@ -604,14 +550,14 @@ export default {
     },
 
     clearCanvas() {
-      if (this.canvasContext) {
-        this.shapes = []
-        this.currentShape = null
-        const width = this.containerInfo.width
-        const height = this.containerInfo.height
-        this.canvasContext.clearRect(0, 0, width, height)
-        this.canvasContext.draw()
-      }
+      if (!this.canvasContext) return
+
+      this.allPaths = []
+      this.drawingPath = []
+
+      // 清空整个画布
+      this.canvasContext.clearRect(0, 0, this.containerInfo.width, this.containerInfo.height)
+      this.canvasContext.draw()
     }
   },
 
@@ -722,6 +668,8 @@ export default {
   height: 100%;
   z-index: 10;
   pointer-events: auto;
+  transform: rotate(90deg);
+  transform-origin: center;
 }
 
 .doodle-controls {
