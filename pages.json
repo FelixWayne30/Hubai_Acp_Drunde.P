@@ -23,7 +23,19 @@
 		{
 			"path": "pages/map/topic-explore",
 			"style": {
+				"navigationBarTitleText": "探索模块"
+			}
+		},
+		{
+			"path": "pages/map/topic-custom",
+			"style": {
 				"navigationBarTitleText": "自定义图组"
+			}
+		},
+		{
+			"path": "pages/map/styletransfer",
+			"style": {
+				"navigationBarTitleText": "风格迁移"
 			}
 		},
 		{
@@ -110,6 +122,11 @@
 				"pagePath": "pages/map/catalog",
 				"iconPath": "/static/icons/catalog.png",
 				"selectedIconPath": "static/icons/catalog-active.png"
+			},
+			{
+				"pagePath": "pages/map/topic-explore",
+				"iconPath": "/static/icons/explore.png",
+				"selectedIconPath": "/static/icons/explore-active.png"
 			},
 			{
 				"pagePath": "pages/user/center",
