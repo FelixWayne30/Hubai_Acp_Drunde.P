@@ -99,6 +99,18 @@ export default {
     // 加载地图数据
     this.loadMapData()
   },
+    // 添加分享功能
+    onShareAppMessage() {
+      const currentMap = this.allMaps[this.currentMapIndex] || {}
+      const shareTitle = this.topic ? `${this.topic} - ${currentMap.title || '地图'}` : '湖北省自然资源地图集'
+      const sharePath = `/pages/map/browse?topic=${encodeURIComponent(this.topic)}&topicId=${this.topicId}&id=${currentMap.map_id || ''}&index=${this.currentMapIndex}`
+  
+      return {
+        title: shareTitle, 
+        path: sharePath,
+        imageUrl: this.currentMapUrl || '/static/background/cover.png' 
+      }
+    },
 
   methods: {
     // 加载地图数据
