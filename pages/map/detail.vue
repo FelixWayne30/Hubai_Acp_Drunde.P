@@ -194,14 +194,59 @@ export default {
       }
     }
   },
-  
-  onShareAppMessage() {
-    return {
-      title: this.mapInfo.title,
-      path: `/pages/map/detail?id=${this.mapId}`
-    }
-  },
-  
+  onShareAppMessage(res) {
+
+     const { title, image } = this.mapInfo;
+     const shareTitle = title || '图幅详情';
+     const shareImage = image || '/static/images/default-share.jpg'; 
+     const sharePath = `/pages/map/detail?id=${this.mapId}${this.topicId ? `&topic_id=${this.topicId}` : ''}${this.subitemName ? `&subitem_name=${encodeURIComponent(this.subitemName)}` : ''}${this.topic ? `&topic=${encodeURIComponent(this.topic)}` : ''}`;
+ 
+     return {
+       title: shareTitle,
+       path: sharePath,
+       imageUrl: shareImage,
+       success: () => {
+         uni.showToast({
+           title: '分享成功',
+           icon: 'success'
+         });
+       },
+       fail: (err) => {
+         console.error('分享失败:', err);
+         uni.showToast({
+           title: '分享失败',
+           icon: 'none'
+         });
+       }
+     };
+   },
+ 
+   // 分享到朋友圈
+   onShareTimeline() {
+     const { title, image } = this.mapInfo;
+     const shareTitle = title || '图幅详情';
+     const shareImage = image || '/static/images/default-share.jpg';
+     const query = `id=${this.mapId}${this.topicId ? `&topic_id=${this.topicId}` : ''}${this.subitemName ? `&subitem_name=${encodeURIComponent(this.subitemName)}` : ''}${this.topic ? `&topic=${encodeURIComponent(this.topic)}` : ''}`;
+ 
+     return {
+       title: shareTitle, 
+       query: query,
+       imageUrl: shareImage,
+       success: () => {
+         uni.showToast({
+           title: '分享到朋友圈成功',
+           icon: 'success'
+         });
+       },
+       fail: (err) => {
+         console.error('分享到朋友圈失败:', err);
+         uni.showToast({
+           title: '分享失败',
+           icon: 'none'
+         });
+       }
+     };
+   },
   methods: {
       
 	  getTopicInfo() {

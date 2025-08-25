@@ -93,7 +93,22 @@ export default {
         url: '/pages/map/topic-static?topic=' + topic
       });
     }
-  }
+  },
+  // 添加分享逻辑
+    onShareAppMessage() {
+      return {
+        title: '湖北省自然资源地图集 - 探索荆楚大地·记录自然之美',
+        path: '/pages/index/index',
+        imageUrl: '/static/background/app_cover.png'
+      }
+    },
+	onShareTimeline() {
+	  return {
+	    title: '湖北省自然资源地图集 - 探索荆楚大地·记录自然之美',
+	    query: '',  // 无需参数，直接进入首页
+	    imageUrl: '/static/background/app_cover.png'
+	  }
+	}
 }
 </script>
 

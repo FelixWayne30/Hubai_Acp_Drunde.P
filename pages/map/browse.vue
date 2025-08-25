@@ -111,6 +111,17 @@ export default {
         imageUrl: this.currentMapUrl || '/static/background/cover.png' 
       }
     },
+	onShareTimeline() {
+	    const currentMap = this.allMaps[this.currentMapIndex] || {}
+	    const shareTitle = this.topic ? `${this.topic} - ${currentMap.title || '地图'}` : '湖北省自然资源地图集'
+	    const shareQuery = `topic=${encodeURIComponent(this.topic)}&topicId=${this.topicId}&id=${currentMap.map_id || ''}&index=${this.currentMapIndex}`
+	
+	    return {
+	      title: shareTitle,
+	      query: shareQuery,
+	      imageUrl: this.currentMapUrl || '/static/background/cover.png'
+	    }
+	  },
 
   methods: {
     // 加载地图数据
