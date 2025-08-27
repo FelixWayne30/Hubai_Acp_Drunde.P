@@ -10,14 +10,31 @@
       <!-- 原图上传区域 -->
       <view class="section">
         <view class="section-title">原图</view>
-        <!-- 上传区域，点击触发selectImage方法 -->
-        <view class="upload-area" @click="selectImage">
-          <!-- 显示已上传的图片或上传提示 -->
-          <image v-if="originalImage" :src="originalImage" class="preview-image" mode="aspectFit"></image>
-          <view v-else class="upload-placeholder">
-            <text class="upload-icon">+</text>
-            <text class="upload-text">点击上传原图</text>
-          </view>
+        <view class="input-container" style="position: relative;">
+          <view class="search-inputbox">
+            <input
+                class="search-input"
+                placeholder="选择或输入地图"
+                placeholder-class="search-placeholder"
+                @input="onInput"
+                v-model="keyword"
+            />
+            <image @click="toggleDropdown"
+                   class="search-icon" src="/static/icons/add.png" mode="aspectFit"/>
+            <view v-if="showDropdown" class="dropdown-list">
+              <view
+                  v-for="(map, index) in filteredMaps"
+                  :key="index"
+                  class="dropdown-item"
+                  @click="selectMap(map.title)"
+              >
+                {{ map.title }}
+              </view>
+              <view v-if="filteredMaps.length === 0" class="dropdown-empty">
+                无结果
+              </view>
+            </view>
+        </view>
         </view>
       </view>
       
@@ -60,8 +77,13 @@
       <view class="section">
         <!-- 这里把原来的普通文字改成了 section-title 样式 -->
         <view class="section-title">生成地图</view>
-      
-        <view class="input-container">
+
+        <!-- 生成按钮，点击触发generateStyleTransfer方法 -->
+        <button class="generate-button" :disabled="!styleQuery || generating" @click="generateStyleTransfer">
+          {{ generating ? '生成中...' : '开始风格迁移' }}
+        </button>
+
+        <view class="input-container" v-if="isTransformed">
           <view class="search-inputbox">
             <input
                 class="search-input"
@@ -72,15 +94,11 @@
             />
           </view>
         </view>
-      
-        <!-- 生成按钮，点击触发generateStyleTransfer方法 -->
-        <button class="generate-button" :disabled="!originalImage || !styleQuery || generating" @click="generateStyleTransfer">
-          {{ generating ? '生成中...' : '开始风格迁移' }}
-        </button>
+
       </view>
       
       <!-- 地图预览区域（仅在生成结果后显示） -->
-      <view class="section preview-section" v-if="resultImage">
+      <view class="section preview-section" v-if="isTransformed">
         <view class="preview-title">地图预览</view>
         <!-- 显示风格迁移后的结果图片 -->
         <image :src="resultImage" class="result-image" mode="aspectFit"></image>
@@ -104,11 +122,11 @@
 </template>
 
 <script>
+import {API} from "../../common/config";
+
 export default {
   data() {
     return {
-      originalImage: '',        // 原图URL
-      originalImageFile: null,  // 原图文件对象
       styleQuery: '',           // 风格描述文本
       selectedStyle: '',        // 选中的风格标签
       generatedLink: '',        // 生成的地图链接
@@ -116,26 +134,43 @@ export default {
       generating: false,        // 是否正在生成中
       // 预设风格标签列表
       styleTags: [
-        '水墨画', '油画', '水彩'
-      ]
+        '春季', '夏季', '秋季', '冬季'
+      ],
+      isTransformed: false,
+      maps: [],
+      showDropdown: false,
+      keyword: ""
     }
+  },
+
+  computed: {
+    filteredMaps() {
+      if (!this.keyword) {
+        return this.maps; // 未输入时显示全部
+      }
+      return this.maps.filter(m => m.title.includes(this.keyword));
+    }
+  },
+  mounted() {
+    // 从 storage 中取出 maps
+    this.maps = uni.getStorageSync("maps") || [];
   },
   
   methods: {
-    /**
-     * 选择图片方法 - 调用uni-app选择图片API
-     */
-    selectImage() {
-      uni.chooseImage({
-        count: 1, // 只允许选择一张图片
-        sizeType: ['compressed'], // 压缩图片
-        sourceType: ['album', 'camera'], // 可从相册或相机选择
-        success: (res) => {
-          // 获取临时文件路径和文件对象
-          const tempFilePath = res.tempFilePaths[0];
-          this.originalImage = tempFilePath;
-          this.originalImageFile = res.tempFiles[0];
-        }
+    onInput() {
+      if(this.keyword!=="")
+        this.showDropdown = true;
+    },
+    toggleDropdown() {
+      this.showDropdown = !this.showDropdown;
+    },
+    selectMap(title) {
+      this.keyword = title;
+      this.showDropdown = false;
+      // 这里可以发事件或者做跳转
+      uni.showToast({
+        title: `选择了：${title}`,
+        icon: "none"
       });
     },
     
@@ -163,15 +198,15 @@ export default {
      * 3. 处理响应结果
      */
     async generateStyleTransfer() {
-      // 验证原图是否上传
-      if (!this.originalImage) {
+      // 验证地圖是否正確
+      if (!this.maps.some(m => m.title === this.keyword)) {
         uni.showToast({
-          title: '请先上传原图',
+          title: '请選擇正確的地圖',
           icon: 'none'
         });
         return;
       }
-      
+
       // 验证风格描述是否输入
       if (!this.styleQuery) {
         uni.showToast({
@@ -183,58 +218,39 @@ export default {
       
       // 设置生成中状态，显示加载动画
       this.generating = true;
-      
-      try {
-        // 调用后端风格迁移API
-        const response = await uni.uploadFile({
-          url: 'https://your-api-domain.com/api/style-transfer', // 后端API地址
-          filePath: this.originalImage, // 上传的图片文件路径
-          name: 'image', // 文件字段名
-          formData: {
-            style_text: this.styleQuery // 风格描述文本
-          },
-          header: {
-            'Content-Type': 'multipart/form-data' // 设置请求头
-          }
-        });
-        
-        // 处理成功响应
-        if (response.statusCode === 200) {
-          const result = JSON.parse(response.data);
+      // 调用后端风格迁移API
+      uni.request({
+        url: API.STYLETRANSFORM,
+        method: 'POST',
+        data: {
+          imageFileName: this.keyword,
+          styleText: this.styleQuery
+        },
+        header: {
+          'content-type': 'application/json'
+        },
+        success: async (res) => {
+          this.resultImage = res;
           // 设置生成的地图链接和结果图片
-          this.generatedLink = result.download_url || 'https://map.style/transfer/' + Date.now();
-          this.resultImage = result.image_url || 'https://via.placeholder.com/400x300?text=风格迁移结果';
-          
+          this.isTransformed = true
+
           // 显示成功提示
           uni.showToast({
             title: '风格迁移完成',
             icon: 'success'
           });
-        } else {
-          // 处理服务器错误
-          throw new Error('服务器处理失败');
-        }
-      } catch (error) {
-        // 处理请求异常
-        console.error('风格迁移失败:', error);
-        uni.showToast({
-          title: '生成失败，请重试',
-          icon: 'none'
-        });
-        
-        // 开发环境下模拟成功结果
-        setTimeout(() => {
-          this.generatedLink = 'https://map.style/transfer/' + Date.now();
-          this.resultImage = 'https://via.placeholder.com/400x300?text=风格迁移结果';
+        },
+        fail:(err)=>{
+          console.error('风格迁移失败:', err);
           uni.showToast({
-            title: '风格迁移完成(模拟)',
-            icon: 'success'
+            title: '生成失败，请重试',
+            icon: 'none'
           });
-        }, 2000);
-      } finally {
-        // 无论成功失败，都取消生成中状态
-        this.generating = false;
-      }
+        },
+        complete: ()=>{
+          this.generating = false
+        }
+      })
     },
     
     /**
@@ -261,6 +277,29 @@ export default {
 </script>
 
 <style>
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  background: #fff;
+  z-index: 100;
+}
+.dropdown-item {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+.dropdown-item:hover {
+  background: #f0f0f0;
+}
+.dropdown-empty {
+  padding: 8px;
+  color: #999;
+  text-align: center;
+}
 /* 容器样式 */
 .container {
   position: relative;

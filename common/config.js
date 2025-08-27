@@ -41,7 +41,10 @@ export const API = {
 
   // 地图图片API
   ORIGIN_MAP: `${envConfig.API_BASE_URL}/image/`,
-  THUMBNAIL_MAP: `${envConfig.API_BASE_URL}/subimage/`
+  THUMBNAIL_MAP: `${envConfig.API_BASE_URL}/subimage/`,
+
+  // 风格迁移API
+  STYLETRANSFORM: `${envConfig.API_BASE_URL}/styletransfer/transform`
 };
 
 // 应用配置
