@@ -25,10 +25,15 @@
 				<text class="count">收藏</text>
 			</view>
 					
-			<view class="action-btn" @click="showListsModal">
+			<!--view class="action-btn" @click="showListsModal">
 				<image class="action-icon" src="/static/icons/add.png"></image>
 				<text class="count">添加至</text>
-			</view>
+			</view-->
+			
+			<view class="action-btn" @click="downloadMap">
+			    <image class="action-icon" src="/static/icons/download.png"></image>
+			    <text class="count">下载</text>
+			  </view>
 		</view>
 		
 		<!-- 图幅描述区域 -->
@@ -70,9 +75,39 @@
 			/>
 			<button class="send-btn primary-bg" @click="submitComment">发送</button>
 		</view>
-		
+		<!-- 下载申请模态框 -->
+		    <view class="download-modal" v-if="showDownloadModal">
+		      <view class="modal-content">
+		        <view class="modal-title">下载申请</view>
+		        <view class="form-item">
+		          <text class="label">地图名称：</text>
+		          <text class="value">{{ mapInfo.title }}</text>
+		        </view>
+		        <view class="form-item">
+		          <text class="label">申请理由：</text>
+		          <input
+		            class="input"
+		            v-model="reason"
+		            placeholder="请输入申请理由"
+		          />
+		        </view>
+		        <view class="form-item">
+		          <text class="label">Email地址：</text>
+		          <input
+		            class="input"
+		            v-model="email"
+		            placeholder="请输入Email地址"
+		            type="email"
+		          />
+		        </view>
+		        <view class="modal-btns">
+		          <button class="modal-btn cancel-btn" @click="hideDownloadModal">取消</button>
+		          <button class="modal-btn confirm-btn primary-bg" @click="submitDownload">提交</button>
+		        </view>
+		      </view>
+		    </view>
 		<!-- Custom Lists Modal -->
-		<view class="lists-modal" v-if="showListsSelector">
+		<!--view class="lists-modal" v-if="showListsSelector">
 			<view class="modal-content">
 				<view class="modal-title">添加到自定义列表</view>
 				<view class="lists-container">
@@ -99,14 +134,13 @@
 					<button class="modal-btn confirm-btn primary-bg" @click="addToSelectedLists">确定</button>
 				</view>
 			</view>
-		</view>
+		</view-->
 
 	</view>
 </template>
 
-<!-- 专题详情页的关键部分更新 -->
 <script>
-import { API } from '@/common/config.js'
+import { API, debugLog, errorLog } from '@/common/config.js'
 import imageCache from '@/common/cache.js'
 
 export default {
@@ -115,10 +149,11 @@ export default {
       mapId: '',
       topicId: '',
 	  subitemName: '', //地图子图名称
-      //自定义列表有关
+      /*自定义列表有关
       showListsSelector: false,
       customLists: [],
       selectedLists: [],
+	  */
       // 地图信息
       mapInfo: {
         id: '',
@@ -144,7 +179,11 @@ export default {
       commentContent: '',
       inputFocus: false,
       // 来源页面
-      fromBrowse: false
+      fromBrowse: false,
+	   // 下载申请相关
+	  	    showDownloadModal: false,
+	  	    email: '',
+	  	    reason: ''
     }
   },
 
@@ -655,8 +694,9 @@ export default {
       });
     },
     
-    // 显示自定义列表选择器
-    showListsModal() {
+    // 以下是自定义列表相关方法，已注释掉
+    /*
+	showListsModal() {
       if (!this.userId) {
         uni.showToast({
           title: '请先登录',
@@ -862,7 +902,7 @@ export default {
         url: '/pages/user/custom-lists'
       });
     },
-    
+    */
 
    navigateToBrowsePage() {
      // 构建跳转URL
@@ -888,8 +928,99 @@ export default {
        url: url
      });
    },
-
-}}
+   //下载地图
+      downloadMap() {
+          if (!this.userId) {
+              uni.showToast({
+                  title: '请先登录',
+                  icon: 'none'
+              });
+              return;
+          }
+          // 打开下载申请模态框
+          this.showDownloadModal = true;
+      },
+      
+      hideDownloadModal() {
+          this.showDownloadModal = false;
+      },
+	  
+      submitDownload() {
+        // 1. Validate form fields
+        if (!this.reason.trim()) {
+          uni.showToast({
+            title: '请输入申请理由',
+            icon: 'none'
+          });
+          return;
+        }
+        
+        if (!this.email.trim() || !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(this.email)) {
+          uni.showToast({
+            title: '请输入有效的Email地址',
+            icon: 'none'
+          });
+          return;
+        }
+      
+        // 2. Check if user is logged in
+        if (!this.userId) {
+          uni.showToast({
+            title: '请先登录',
+            icon: 'none'
+          });
+          return;
+        }
+      
+        // Show loading state
+        uni.showLoading({
+          title: '提交中...'
+        });
+      
+        // 3. Make the API request
+        uni.request({
+          url: API.DOWNLOAD_ADD_REQUEST,
+          method: 'GET', 
+          data: {
+            map_id: this.mapId,
+            user_id: this.userId,
+            email: this.email,
+            reason: this.reason
+          },
+          header: {
+            'content-type': 'application/x-www-form-urlencoded'
+          },
+          success: (res) => {
+            uni.hideLoading();
+            if (res.statusCode === 200 && res.data.code === 200) {
+              uni.showToast({
+                title: '下载申请已提交，请留意邮件',
+                icon: 'success',
+                duration: 2000
+              });
+              // 4. Reset form and close modal on success
+              this.hideDownloadModal();
+              this.reason = '';
+              this.email = '';
+            } else {
+              uni.showToast({
+                title: '提交失败，请重试',
+                icon: 'none'
+              });
+            }
+          },
+          fail: (err) => {
+            uni.hideLoading();
+            console.error('下载申请提交失败:', err);
+            uni.showToast({
+              title: '网络错误，请稍后重试',
+              icon: 'none'
+            });
+          }
+        });
+      }
+       }
+   }
 </script>
 <style>
 	/* 全局绿色主题类 */
@@ -1064,7 +1195,8 @@ export default {
 		border-radius: 40rpx;
 	}
 	
-	/* Custom Lists Modal */
+	/* Custom Lists Modal 样式已注释 */
+	/*
 	.lists-modal {
 		position: fixed;
 		top: 0;
@@ -1151,6 +1283,7 @@ export default {
 	.confirm-btn {
 		color: #FFFFFF;
 	}
+	*/
 	
 	/* 返回浏览按钮 */
 	.back-to-browse {
@@ -1165,5 +1298,84 @@ export default {
 		font-size: 28rpx;
 		z-index: 99;
 		box-shadow: 0 4rpx 12rpx rgba(122, 162, 111, 0.2);
+	}
+	/* 下载申请模态框样式 */
+	.download-modal {
+	  position: fixed;
+	  top: 0;
+	  left: 0;
+	  right: 0;
+	  bottom: 0;
+	  background-color: rgba(0, 0, 0, 0.5);
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  z-index: 999;
+	}
+	
+	.modal-content {
+	  width: 80%;
+	  background-color: #FFFFFF;
+	  border-radius: 15rpx;
+	  padding: 40rpx 30rpx;
+	  border: 1rpx solid #D9E8D9;
+	}
+	
+	.modal-title {
+	  font-size: 36rpx;
+	  font-weight: bold;
+	  color: #7AA26F;
+	  text-align: center;
+	  margin-bottom: 40rpx;
+	}
+	
+	.form-item {
+	  display: flex;
+	  align-items: center;
+	  margin-bottom: 30rpx;
+	}
+	
+	.label {
+	  font-size: 30rpx;
+	  color: #333333;
+	  width: 200rpx;
+	}
+	
+	.value,
+	.input {
+	  font-size: 28rpx;
+	  color: #666666;
+	  flex: 1;
+	}
+	
+	.input {
+	  border: 1rpx solid #D9E8D9;
+	  border-radius: 8rpx;
+	  padding: 10rpx 20rpx;
+	}
+	
+	.modal-btns {
+	  display: flex;
+	  justify-content: space-between;
+	  margin-top: 40rpx;
+	}
+	
+	.modal-btn {
+	  width: 45%;
+	  height: 80rpx;
+	  line-height: 80rpx;
+	  text-align: center;
+	  border-radius: 8rpx;
+	  font-size: 30rpx;
+	}
+	
+	.cancel-btn {
+	  background-color: #F8FAF8;
+	  color: #666666;
+	  border: 1rpx solid #D9E8D9;
+	}
+	
+	.confirm-btn {
+	  color: #FFFFFF;
 	}
 </style>

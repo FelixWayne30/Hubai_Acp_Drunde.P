@@ -5,7 +5,8 @@ export const API = {
   USER_LOGIN: `${envConfig.API_BASE_URL}/user/wechatLogin`,
   COMMENT_ADD: `${envConfig.API_BASE_URL}/comment/addcomment`, 
   COMMENT_LIST: `${envConfig.API_BASE_URL}/comment/comments`,
-  
+  DOWNLOAD_ADD_REQUEST: `${envConfig.API_BASE_URL}/download/addRequest`,
+ 
   // 目录相关API
   CATALOGS: `${envConfig.API_BASE_URL}/catalogs`,
   

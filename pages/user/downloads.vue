@@ -1,18 +1,14 @@
 <template>
   <view class="container">
-    <!-- Background using user-download.png -->
     <view class="background">
       <image class="background-image" src="/static/background/user-download.png" mode="aspectFill"></image>
     </view>
 
-    <!-- Main content area -->
     <view class="content">
-      <!-- 标题栏 -->
       <view class="header">
         <view class="title">下载记录</view>
       </view>
       
-      <!-- 筛选栏 -->
       <view class="filter-bar">
         <view 
           class="filter-item" 
@@ -31,7 +27,6 @@
         >已完成</view>
       </view>
       
-      <!-- 下载列表 -->
       <view class="download-list">
         <block v-if="filteredDownloads.length > 0">
           <view 
@@ -39,10 +34,8 @@
             v-for="(item, index) in filteredDownloads"
             :key="index"
           >
-            <!-- 地图预览图 -->
             <image class="map-thumb placeholder-image" :src="item.image"></image>
             
-            <!-- 下载信息 -->
             <view class="download-info">
               <view class="map-title">{{item.title}}</view>
               <view class="download-time">申请时间：{{item.applyTime}}</view>
@@ -51,7 +44,6 @@
               </view>
             </view>
             
-            <!-- 操作按钮 -->
             <view class="action-btn" v-if="item.status === 'completed'">
               <button class="download-btn primary-bg" @click="downloadAgain(item)">重新下载</button>
             </view>
@@ -79,50 +71,8 @@ export default {
     return {
       // 筛选条件
       activeFilter: 'all',
-      // 下载记录（示例数据）
-      downloads: [
-        {
-          id: '1',
-          title: '湖北省地质图',
-          image: '/static/placeholder.png',
-          applyTime: '2025-04-05 10:23',
-          status: 'completed',
-          downloadUrl: '#'
-        },
-        {
-          id: '2',
-          title: '湖北省水域图',
-          image: '/static/placeholder.png',
-          applyTime: '2025-04-03 16:45',
-          status: 'pending',
-          downloadUrl: ''
-        },
-        {
-          id: '3',
-          title: '湖北省土地利用图',
-          image: '/static/placeholder.png',
-          applyTime: '2025-04-01 09:12',
-          status: 'rejected',
-          reason: '申请理由不充分',
-          downloadUrl: ''
-        },
-        {
-          id: '4',
-          title: '湖北省矿产分布图',
-          image: '/static/placeholder.png',
-          applyTime: '2025-03-28 14:37',
-          status: 'expired',
-          downloadUrl: ''
-        },
-        {
-          id: '5',
-          title: '湖北省自然保护区分布图',
-          image: '/static/placeholder.png',
-          applyTime: '2025-03-25 20:18',
-          status: 'completed',
-          downloadUrl: '#'
-        }
-      ]
+      // 下载记录
+      downloads: []
     }
   },
   computed: {
@@ -141,18 +91,21 @@ export default {
   onLoad() {
     this.getDownloadHistory();
   },
+  onShow() {
+      // 每次页面显示时刷新，确保实时更新
+      this.getDownloadHistory();
+    },
   methods: {
     // 获取下载记录
     getDownloadHistory() {
-      // 这里应该是从API获取数据
       console.log('获取下载记录');
       // 模拟API调用
-      // uni.request({
-      //   url: '/api/user/downloads',
-      //   success: (res) => {
-      //     this.downloads = res.data.downloads;
-      //   }
-      // });
+      uni.request({
+        url: '/api/user/downloads',
+        success: (res) => {
+          this.downloads = res.data.downloads;
+        }
+      });
     },
     
     // 设置筛选条件
