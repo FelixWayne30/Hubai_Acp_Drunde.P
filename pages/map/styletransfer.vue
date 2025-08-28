@@ -83,18 +83,6 @@
           {{ generating ? '生成中...' : '开始风格迁移' }}
         </button>
 
-        <view class="input-container" v-if="isTransformed">
-          <view class="search-inputbox">
-            <input
-                class="search-input"
-                placeholder="生成地图链接"
-                placeholder-class="search-placeholder"
-                v-model="generatedLink"
-                disabled
-            />
-          </view>
-        </view>
-
       </view>
       
       <!-- 地图预览区域（仅在生成结果后显示） -->
@@ -154,6 +142,11 @@ export default {
   mounted() {
     // 从 storage 中取出 maps
     this.maps = uni.getStorageSync("maps") || [];
+  },
+
+  destroyed() {
+    if(this.resultImage!==""){}
+    uni.request()
   },
   
   methods: {
@@ -230,7 +223,7 @@ export default {
           'content-type': 'application/json'
         },
         success: async (res) => {
-          this.resultImage = res;
+          this.resultImage = API.ORIGIN_MAP + res.data.data + ".jpg";
           // 设置生成的地图链接和结果图片
           this.isTransformed = true
 
