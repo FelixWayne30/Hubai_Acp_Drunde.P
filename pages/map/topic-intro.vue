@@ -51,7 +51,7 @@
 
 <script>
 import { API } from '@/common/config.js';
-import imageCache from '@/common/cache.js';
+import cacheManager from '@/common/cacheManager.js';
 import {StaticAssets} from '@/env.config.js';
 
 export default {
@@ -72,7 +72,7 @@ export default {
     console.log('设置的topicId:', this.topicId);
     
     // 设置当前专题ID，用于图片缓存
-    imageCache.setCurrentTopic(this.topicId);
+    cacheManager.setCurrentTopic(this.topicId);
     
     // 获取专题信息和地图列表
     this.getTopicInfo();
@@ -132,7 +132,7 @@ export default {
               const imageUrl = API.THUMBNAIL_MAP+item.title+".jpg";
               
               // 缓存图片URL，供其他页面使用
-              imageCache.setImage(item.title, imageUrl, item);
+              cacheManager.setThumbnail(item.title, imageUrl, item);
               
               return {
                 id: item.map_id,

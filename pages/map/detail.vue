@@ -140,8 +140,8 @@
 </template>
 
 <script>
-import { API, debugLog, errorLog } from '@/common/config.js'
-import imageCache from '@/common/cache.js'
+import { API } from '@/common/config.js'
+import cacheManager from '@/common/cacheManager.js';
 
 export default {
   data() {
@@ -312,7 +312,7 @@ export default {
 	          this.topic = topicData.title;
 	          
 	          // 设置缓存的当前专题
-	          imageCache.setCurrentTopic(this.topicId);
+	          cacheManager.setCurrentTopic(this.topicId);
 	          
 	          console.log('专题信息设置成功:', {
 	            topicId: this.topicId,
@@ -359,14 +359,14 @@ export default {
               console.log('地图标题:', mapData.title);
               
               // 基于title获取或生成图片URL
-              let imageUrl = imageCache.getImage(mapData.title);
+              let imageUrl = cacheManager.getThumbnail(mapData.title);
               
               if (imageUrl) {
                 console.log('缓存命中！使用缓存的图片:', imageUrl);
               } else {
                 console.log('缓存未命中，生成新的图片URL');
                 imageUrl = API.THUMBNAIL_MAP + mapData.title +".jpg";
-                imageCache.setImage(mapData.title, imageUrl, mapData);
+                cacheManager.setThumbnail(mapData.title, imageUrl, mapData);
                 console.log('生成的图片URL:', imageUrl);
               }
               

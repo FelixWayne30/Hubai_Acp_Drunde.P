@@ -33,7 +33,7 @@
 <script>
 import { StaticAssets } from '@/env.config.js';
 import { API } from '@/common/config.js';
-import imageCache from '@/common/cache.js';
+import cacheManager from '@/common/cacheManager.js';
 import MapItem from '@/component/map.vue';
 
 
@@ -48,7 +48,7 @@ export default {
   },
   onLoad(options) {
       this.topic = options.topic || '';
-      imageCache.setCurrentTopic(this.topic);
+      cacheManager.setCurrentTopic(this.topic);
       this.getTopicMaps();
     },
   
@@ -74,7 +74,7 @@ export default {
             if(map.origin_topic===this.topic){
               map.thumbnail = API.THUMBNAIL_MAP + map.title + ".jpg"
               map.id = map.map_id
-              imageCache.setImage(map.title, map.thumbnail, map);
+              cacheManager.setThumbnail(map.title, map.thumbnail, map);
               this.maps.push(map)
             }
           }

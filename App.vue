@@ -1,58 +1,41 @@
 <script>
-import {clearMapCache, getCatalogsCache, getMapintoCache} from "./common/uniStorage";
-	export default {
-		onLaunch: function() {
-			console.log('App Launch');
-			// 添加统一的请求头
-			uni.addInterceptor('request', {
-			        invoke(args) {
-			            args.header = args.header || {};
-			            args.header['Authorization'] = 'Telecarto@501502511';
-			            return args;
-			        }
-			    });
-			uni.addInterceptor('downloadFile', {
-			invoke(args) {
-				args.header = args.header || {};
-				args.header['Authorization'] = 'Telecarto@501502511';
-				return args;
-			}
-			});
-			// 添加路由拦截器用于调试
-			uni.addInterceptor('navigateTo', {
-				invoke(e) {
-					console.log('navigateTo:', e.url);
-					return e;
-				},
-				fail(err) {
-					console.error('路由跳转失败:', err);
-				}
-			});
+import cacheManager from './common/cacheManager';
 
-			getMapintoCache()
+export default {
+  onLaunch: function() {
+    console.log('App Launch');
 
-			getCatalogsCache()
+    // 添加统一的请求头
+    uni.addInterceptor('request', {
+      invoke(args) {
+        args.header = args.header || {};
+        args.header['Authorization'] = 'Telecarto@501502511';
+        return args;
+      }
+    });
 
-			setInterval(()=>{
-				uni.removeStorage({
-				key:"maps",
-				success:getMapintoCache
-				})
-				uni.removeStorage({
-				key:"catalogs",
-				success:getCatalogsCache
-				})
-			},1000*60*5)
-		},
+    uni.addInterceptor('downloadFile', {
+      invoke(args) {
+        args.header = args.header || {};
+        args.header['Authorization'] = 'Telecarto@501502511';
+        return args;
+      }
+    });
 
-		onShow: function() {
-			console.log('App Show');
-		},
-		onHide: function() {
-			console.log('App Hide');
-      clearMapCache()
-		}
-	}
+    // 初始化缓存管理器
+    cacheManager.initialize();
+  },
+
+  onShow: function() {
+    console.log('App Show');
+  },
+
+  onHide: function() {
+    console.log('App Hide');
+    // 应用切到后台时停止自动刷新
+    cacheManager.stopAutoRefresh();
+  }
+}
 </script>
 
 <style>

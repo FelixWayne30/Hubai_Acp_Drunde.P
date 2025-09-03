@@ -93,7 +93,7 @@
 <script>
 import { API } from '@/common/config.js';
 import authManager from '@/common/auth.js';
-import imageCache from '@/common/cache.js';
+import cacheManager from '@/common/cacheManager.js';
 import {StaticAssets} from "@/env.config";
 
 export default {
@@ -172,10 +172,10 @@ export default {
 							const maps = listData.maps || [];
 							this.mapItems = maps.map(item => {
 								// 生成缩略图URL
-								let imageUrl = imageCache.getImage(item.title);
+								let imageUrl = cacheManager.getThumbnail(item.title);
 								if (!imageUrl) {
 								    imageUrl = API.THUMBNAIL_MAP + item.title +".jpg";
-								    imageCache.setImage(item.title, imageUrl, item);
+								    cacheManager.setThumbnail(item.title, imageUrl, item);
 								}
 								
 								return {

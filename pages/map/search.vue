@@ -119,7 +119,7 @@
 <script>
 import { StaticAssets } from '@/env.config.js';
 import { API } from '@/common/config.js';
-import imageCache from '@/common/cache.js';
+import cacheManager from '@/common/cacheManager.js';
 import { generateSubimageUrl } from '@/common/utils';
 
 export default {
@@ -314,12 +314,12 @@ export default {
                 this.setImageLoadingState(item.map_id, true);
                 
                 // 检查缓存中是否有图片
-                let thumbnail = imageCache.getImage(item.title);
+                let thumbnail = cacheManager.getThumbnail(item.title);
                 
                 // 如果缓存中没有，则生成新的图片URL
                 if (!thumbnail) {
                   thumbnail = generateSubimageUrl(item.title);
-                  imageCache.setImage(item.title, thumbnail, item);
+                  CacheManager.setThumbnail(item.title, thumbnail, item);
                   console.log(`生成新图片URL: ${thumbnail}`);
                 } else {
                   console.log(`使用缓存图片URL: ${thumbnail}`);

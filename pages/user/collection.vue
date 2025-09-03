@@ -55,7 +55,7 @@
 
 <script>
 import { API } from '@/common/config.js';
-import imageCache from '@/common/cache.js';
+import cacheManager from '@/common/cacheManager.js';
 import {StaticAssets} from "@/env.config";
 
 export default {
@@ -128,14 +128,14 @@ export default {
               console.log(`处理收藏项: ${item.title}`);
               
               // 基于title生成图片URL，优先使用缓存
-              let imageUrl = imageCache.getImage(item.title);
+              let imageUrl = cacheManager.getThumbnail(item.title);
               
               if (imageUrl) {
                 console.log(`缓存命中，使用缓存图片: ${imageUrl}`);
               } else {
                 console.log('缓存未命中，生成新的图片URL');
                 imageUrl = API.THUMBNAIL_MAP + item.title +".jpg";
-                imageCache.setImage(item.title, imageUrl, item);
+                cacheManager.setThumbnail(item.title, imageUrl, item);
                 console.log(`生成新图片URL: ${imageUrl}`);
               }
               

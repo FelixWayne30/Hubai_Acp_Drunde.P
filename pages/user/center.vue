@@ -68,6 +68,7 @@
 <script>
 import authManager from '@/common/auth.js';
 import {StaticAssets} from "@/env.config";
+import cacheManager from '@/common/cacheManager';
 
 export default {
 	data() {
@@ -246,29 +247,19 @@ export default {
 			});
 		},
 
-    manageCache(){
-      uni.getStorageInfo({
-        success:(res)=>{
-          uni.showModal({
-            title:'缓存管理',
-            content:`本地缓存大小为：${res.currentSize}KB/${res.limitSize}KB`,
-            confirmText:'清除',
-            success:(res)=>{
-              if (res.confirm) {
-                console.log("清除地图缓存")
-                uni.removeStorage({key:"maps"})
-              }
-            }
-          })
-        },
-        fail:()=>{
-          uni.showModal({
-            title: '缓存管理',
-            content:'获取缓存失败'
-          })
-        }
-      })
+    async manageCache() {
+      const stats = await cacheManager.getStats();
 
+      uni.showModal({
+        title: '缓存管理',
+        content: `本地缓存：${stats.storageSize}KB / ${stats.storageLimit}KB\n内存缓存：${stats.memoryItems}项`,
+        confirmText: '清理缓存',
+        success: async (res) => {
+          if (res.confirm) {
+            await cacheManager.clearAndReload();
+          }
+        }
+      });
     }
 	}
 }
