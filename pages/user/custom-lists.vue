@@ -1,13 +1,9 @@
 <template>
   <view class="container">
-    <!-- Background using user-download.png -->
     <view class="background">
-      <image class="background-image" src="/static/background/user-download.png" mode="aspectFill"></image>
+      <image class="background-image" :src=StaticAssets.BG_DOWNLOAD mode="aspectFill"></image>
     </view>
-
-    <!-- Main content area -->
     <view class="content">
-      <!-- 头部 -->
       <view class="header">
         <view class="title">我的自定义列表</view>
         <view class="add-btn" @click="showCreateForm">
@@ -89,6 +85,7 @@
 <script>
 import { API } from '@/common/config.js';
 import authManager from '@/common/auth.js';
+import {StaticAssets} from "@/env.config";
 
 export default {
   data() {
@@ -105,7 +102,8 @@ export default {
       },
       // 用户信息
       userId: '',
-      isLoading: false
+      isLoading: false,
+      StaticAssets,
     }
   },
   onLoad() {

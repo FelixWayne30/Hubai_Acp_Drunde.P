@@ -1,11 +1,9 @@
 <template>
   <view class="container">
-    <!-- Background using user-download.png -->
     <view class="background">
-      <image class="background-image" src="/static/background/user-download.png" mode="aspectFill"></image>
+      <image class="background-image" :src=StaticAssets.BG_DOWNLOAD mode="aspectFill"></image>
     </view>
 
-    <!-- Main content area -->
     <view class="content">
       <!-- 头部操作栏 -->
       <view class="header-bar" v-if="batchMode">
@@ -31,7 +29,7 @@
             </view>
             
             <!-- 缩略图 -->
-            <image class="thumbnail placeholder-image" :src="item.image || '/static/placeholder.png'"></image>
+            <image class="thumbnail placeholder-image" :src="item.image"></image>
             
             <!-- 地图信息 -->
             <view class="map-info">
@@ -58,6 +56,7 @@
 <script>
 import { API } from '@/common/config.js';
 import imageCache from '@/common/cache.js';
+import {StaticAssets} from "@/env.config";
 
 export default {
   data() {
@@ -70,7 +69,8 @@ export default {
       // 用户ID
       userId: null,
       // 加载状态
-      isLoading: false
+      isLoading: false,
+      StaticAssets,
     }
   },
   onLoad() {

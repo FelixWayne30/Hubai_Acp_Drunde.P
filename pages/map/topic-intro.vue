@@ -4,7 +4,7 @@
     <view class="background-solid"></view>
     
     <view class="background-image-container">
-      <image class="background-image-top" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <image class="background-image-top" :src= StaticAssets.BG_MAIN mode="aspectFill"></image>
       <view class="gradient-overlay"></view>
     </view>
     
@@ -52,6 +52,7 @@
 <script>
 import { API } from '@/common/config.js';
 import imageCache from '@/common/cache.js';
+import {StaticAssets} from '@/env.config.js';
 
 export default {
   data() {
@@ -61,7 +62,8 @@ export default {
         id: '',
         title: '加载中...'
       },
-      maps: []
+      maps: [],
+      StaticAssets
     };
   },
   onLoad(options) {
@@ -81,7 +83,6 @@ export default {
     // 图片加载错误处理
     handleImageError(e) {
       console.log('图片加载失败，使用默认图片');
-      e.target.src = '/static/placeholder.png';
     },
     
     // 获取专题基本信息

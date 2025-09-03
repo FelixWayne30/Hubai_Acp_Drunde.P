@@ -1,7 +1,7 @@
 <template>
   <view class="container">
     <view class="background">
-      <image class="background-image" src="/static/background/user-download.png" mode="aspectFill"></image>
+      <image class="background-image" :src=StaticAssets.BG_DOWNLOAD mode="aspectFill"></image>
     </view>
 
     <view class="content">
@@ -66,13 +66,16 @@
 </template>
 
 <script>
+import {StaticAssets} from "@/env.config";
+
 export default {
   data() {
     return {
       // 筛选条件
       activeFilter: 'all',
       // 下载记录
-      downloads: []
+      downloads: [],
+      StaticAssets
     }
   },
   computed: {

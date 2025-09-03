@@ -2,7 +2,7 @@
   <view class="container">
     <!-- 插画背景层 -->
     <view class="background-image">
-      <image class="bg-illustration" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <image class="bg-illustration" :src="StaticAssets.BG_MAIN" mode="aspectFill"></image>
     </view>
 
     <!-- 主要内容区域 -->
@@ -84,9 +84,17 @@
 </template>
 
 <script>
+import {StaticAssets as staticAssets, StaticAssets} from "@/env.config";
+
 export default {
+
+  data(){
+    return {
+      StaticAssets
+    }
+  },
+
   methods: {
-       
     navigateToTopic(topic) {
       if (!topic) return;
       uni.navigateTo({
@@ -99,14 +107,14 @@ export default {
       return {
         title: '湖北省自然资源地图集 - 探索荆楚大地·记录自然之美',
         path: '/pages/index/index',
-        imageUrl: '/static/background/app_cover.png'
+        imageUrl: StaticAssets.BG_APP_COVER,
       }
     },
 	onShareTimeline() {
 	  return {
 	    title: '湖北省自然资源地图集 - 探索荆楚大地·记录自然之美',
 	    query: '',  // 无需参数，直接进入首页
-	    imageUrl: '/static/background/app_cover.png'
+	    imageUrl: StaticAssets.BG_APP_COVER
 	  }
 	}
 }

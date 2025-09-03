@@ -1,8 +1,7 @@
 <template>
 	<view class="container">
-		<!-- Background using user-download.png -->
 		<view class="background">
-		  <image class="background-image" src="/static/background/user-download.png" mode="aspectFill"></image>
+		  <image class="background-image" :src=StaticAssets.BG_DOWNLOAD mode="aspectFill"></image>
 		</view>
 		<!-- 头部信息 -->
 		<view class="header">
@@ -95,6 +94,7 @@
 import { API } from '@/common/config.js';
 import authManager from '@/common/auth.js';
 import imageCache from '@/common/cache.js';
+import {StaticAssets} from "@/env.config";
 
 export default {
 	data() {
@@ -112,7 +112,8 @@ export default {
 			downloadReason: '',
 			// 用户信息
 			userId: '',
-			isLoading: false
+			isLoading: false,
+      StaticAssets,
 		}
 	},
 	computed: {

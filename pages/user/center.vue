@@ -1,8 +1,7 @@
 <template>
 	<view class="container">
-		<!-- Top decorative background with gradient fade -->
 		<view class="background-image-container">
-			<image class="background-image-top" src="/static/background/main-bg.png" mode="aspectFill"></image>
+			<image class="background-image-top" :src=StaticAssets.BG_MAIN mode="aspectFill"></image>
 			<view class="gradient-overlay"></view>
 		</view>
 		
@@ -68,6 +67,7 @@
 
 <script>
 import authManager from '@/common/auth.js';
+import {StaticAssets} from "@/env.config";
 
 export default {
 	data() {
@@ -81,7 +81,8 @@ export default {
 			isLoggedIn: false,
 			// 编辑昵称
 			showEditModal: false,
-			newNickname: ''
+			newNickname: '',
+      StaticAssets
 		}
 	},
 	onLoad() {

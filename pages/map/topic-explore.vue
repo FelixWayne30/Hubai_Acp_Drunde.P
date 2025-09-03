@@ -1,19 +1,19 @@
 <template>
   <view class="container">
     <view class="background">
-      <image class="background-image" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <image class="background-image" :src=StaticAssets.BG_MAIN mode="aspectFill"></image>
     </view>
     <view class="content">
       <view class="topics-container">
        <view class="topics-card" @click="navigateToTopicCustom">
-         <image class="card-background" src="../../static/background/entry-custom.png" mode="aspectFill"></image>
+         <image class="card-background" :src=StaticAssets.BG_ENTRY_CUSTOM mode="aspectFill"></image>
          <view class="card-content">
            <view class="card-title1">图组自定义</view>
            <view class="card-subtitle1">支持个性化的图组重组</view>
          </view>
        </view>
         <view class="topics-card" @click="navigateToStyleTransfer">
-          <image class="card-background" src="../../static/background/entry-transfer.png" mode="aspectFill"></image>
+          <image class="card-background" :src=StaticAssets.BG_ENTRY_TRANSFER mode="aspectFill"></image>
           <view class="card-content">
             <view class="card-title2">风格迁移</view>
             <view class="card-subtitle2">实现同一图幅不同风格的转换</view>
@@ -25,7 +25,13 @@
 </template>
 
 <script>
+import { StaticAssets } from '@/env.config.js';
 export default {
+  data(){
+    return {
+      StaticAssets
+    }
+  },
   methods: {
     navigateToTopicCustom() {
       // 跳转到图组自定义页面

@@ -1,27 +1,27 @@
 <template>
   <view class="container">
     <view class="background">
-      <image class="background-image" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <image class="background-image" :src=StaticAssets.BG_MAIN mode="aspectFill"></image>
     </view>
     <view class="content">
       <view class="topics-container">
        <view class="topics-card">
-         <image class="card-background" src="../../static/background/explore1.png" mode="aspectFill"></image>
+         <image class="card-background" :src=StaticAssets.BG_EXPLORE1 mode="aspectFill"></image>
          <view class="card-title">千湖织锦</view>
          <view class="card-subtitle">长江沿岸湿地生态矩阵</view>
        </view>
         <view class="topics-card">
-          <image class="card-background" src="../../static/background/explore2.png" mode="aspectFill"></image>
+          <image class="card-background" :src=StaticAssets.BG_EXPLORE2 mode="aspectFill"></image>
           <view class="card-title">青铜楚韵</view>
           <view class="card-subtitle">鄂东矿产资源开发史话</view>
         </view>
         <view class="topics-card">
-          <image class="card-background" src="../../static/background/explore3.png" mode="aspectFill"></image>
+          <image class="card-background" :src=StaticAssets.BG_EXPLORE3 mode="aspectFill"></image>
           <view class="card-title">鄂西地脉</view>
           <view class="card-subtitle">山地灾害风险智能预警图谱</view>
         </view>
 		<view class="topics-card">
-		  <image class="card-background" src="../../static/background/explore4.png" mode="aspectFill"></image>
+		  <image class="card-background" :src=StaticAssets.BG_EXPLORE4 mode="aspectFill"></image>
 		  <view class="card-title">荆楚田赋</view>
 		  <view class="card-subtitle">历史农业资源与现代区划</view>
 		</view>
@@ -29,6 +29,18 @@
     </view>
   </view>
 </template>
+
+<script>
+import {StaticAssets} from "@/env.config";
+
+export default {
+  data() {
+    return {
+      StaticAssets
+    }
+  }
+}
+</script>
 
 <style scoped>
 .container {

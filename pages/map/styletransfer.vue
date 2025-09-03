@@ -2,7 +2,7 @@
   <view class="container">
     <!-- 插画背景层 -->
     <view class="background-image">
-      <image class="bg-illustration" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <image class="bg-illustration" :src=StaticAssets.BG_MAIN mode="aspectFill"></image>
     </view>
     
     <!-- 主要内容区域 -->
@@ -111,6 +111,7 @@
 
 <script>
 import {API} from "../../common/config";
+import {StaticAssets} from "@/env.config";
 
 export default {
   data() {
@@ -127,7 +128,8 @@ export default {
       isTransformed: false,
       maps: [],
       showDropdown: false,
-      keyword: ""
+      keyword: "",
+      StaticAssets
     }
   },
 

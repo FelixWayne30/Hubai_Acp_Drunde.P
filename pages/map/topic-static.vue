@@ -4,7 +4,7 @@
     <view class="background-solid"></view>
     
     <view class="background-image-container">
-      <image class="background-image-top" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <image class="background-image-top" :src="StaticAssets.BG_MAIN" mode="aspectFill"></image>
       <view class="gradient-overlay"></view>
     </view>
     
@@ -31,6 +31,7 @@
 </template>
 
 <script>
+import { StaticAssets } from '@/env.config.js';
 import { API } from '@/common/config.js';
 import imageCache from '@/common/cache.js';
 import MapItem from '@/component/map.vue';
@@ -42,6 +43,7 @@ export default {
     return {
       topic: '',
       maps: [],
+      StaticAssets,
     };
   },
   onLoad(options) {
@@ -53,8 +55,7 @@ export default {
   methods: {
     // 图片加载错误处理
     handleImageError(e) {
-      console.log('图片加载失败，使用默认图片');
-      e.target.src = '/static/placeholder.png';
+      console.log('图片加载失败');
     },
     
     // 获取该专题下的所有地图

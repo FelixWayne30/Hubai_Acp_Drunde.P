@@ -4,7 +4,7 @@
     <view class="background-solid"></view>
     
     <view class="background-image-container">
-      <image class="background-image-top" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <image class="background-image-top" :src="StaticAssets.BG_MAIN" mode="aspectFill"></image>
       <view class="gradient-overlay"></view>
     </view>
     
@@ -117,6 +117,7 @@
 </template>
 
 <script>
+import { StaticAssets } from '@/env.config.js';
 import { API } from '@/common/config.js';
 import imageCache from '@/common/cache.js';
 import { generateSubimageUrl } from '@/common/utils';
@@ -134,7 +135,8 @@ export default {
       hasSearched: false,
       totalResults: 0,
       suggestionTimer: null,
-      imageLoadingStates: new Map()
+      imageLoadingStates: new Map(),
+      StaticAssets
     };
   },
   
@@ -333,10 +335,9 @@ export default {
                   title: item.title,
                   description: item.description || '暂无描述',
                   type: item.type || '未分类',
-                  thumbnail: thumbnail || '/static/placeholder.png',
+                  thumbnail: thumbnail ,
                   relevance_score: item.relevance_score || 5,
                   subitem_name: item.subitem_name || '',
-                  // 重要：保留专题信息
                   topic_id: item.topic_id,
                   topic_name: item.topic_name
                 };

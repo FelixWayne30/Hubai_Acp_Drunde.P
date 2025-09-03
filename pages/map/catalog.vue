@@ -2,7 +2,7 @@
   <view class="container">
     <!-- 插画背景层 -->
     <view class="background-image">
-      <image class="bg-illustration" src="/static/background/main-bg.png" mode="aspectFill"></image>
+      <image class="bg-illustration" :src="StaticAssets.BG_MAIN" mode="aspectFill"></image>
     </view>
     
     <!-- 主要内容区域 -->
@@ -74,13 +74,16 @@
 </template>
 
 <script>
+import {StaticAssets} from "@/env.config";
+
 export default {
   data() {
     return {
       searchQuery: '',
       dropdownStates: [],
       secondaryDropdownStates: [],
-      catalogs: [] // 存储目录数据
+      catalogs: [], // 存储目录数据
+      StaticAssets,
     }
   },
   

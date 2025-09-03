@@ -116,13 +116,13 @@
 						<button class="create-list-btn primary-bg" @click="navigateToCreateList">创建列表</button>
 					</view>
 					<view v-else class="lists-scroll">
-						<view 
+						<view
 							class="list-item"
 							v-for="(item, index) in customLists"
-							:key="item.list_id" 
+							:key="item.list_id"
 						>
-							<checkbox 
-								:checked="isMapInList(item.list_id)" 
+							<checkbox
+								:checked="isMapInList(item.list_id)"
 								@click="toggleListSelection(item.list_id)"
 							></checkbox>
 							<text class="list-name">{{item.name}}</text>
@@ -181,9 +181,9 @@ export default {
       // 来源页面
       fromBrowse: false,
 	   // 下载申请相关
-	  	    showDownloadModal: false,
-	  	    email: '',
-	  	    reason: ''
+      showDownloadModal: false,
+      email: '',
+      reason: ''
     }
   },
 

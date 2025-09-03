@@ -1,15 +1,11 @@
 <template>
   <view class="container">
-    <!-- Background using user-download.png -->
     <view class="background">
-      <image class="background-image" src="/static/background/user-download.png" mode="aspectFill"></image>
+      <image class="background-image" :src=StaticAssets.BG_DOWNLOAD mode="aspectFill"></image>
     </view>
 
-    <!-- Main content area -->
     <view class="content">
-      <!-- Feedback form -->
       <view class="feedback-form">
-        <!-- Feedback Type Selection -->
         <view class="feedback-type">
           <view class="type-label">反馈类型</view>
           <view class="type-options">
@@ -25,7 +21,6 @@
           </view>
         </view>
 
-        <!-- Feedback Content -->
         <view class="feedback-content">
           <view class="content-label">反馈内容</view>
           <textarea
@@ -36,7 +31,6 @@
           ></textarea>
         </view>
 
-        <!-- Contact Information -->
         <view class="contact-info">
           <view class="contact-label">联系方式</view>
           <input
@@ -47,7 +41,6 @@
           />
         </view>
 
-        <!-- Submit Button -->
         <button
           class="submit-btn btn-primary"
           :disabled="isSubmitting || !feedbackContent.trim() || !selectedType"
@@ -62,6 +55,7 @@
 
 <script>
 import { API } from '@/common/config.js';
+import {StaticAssets} from "@/env.config";
 
 export default {
   data() {
@@ -76,7 +70,8 @@ export default {
         { label: '功能建议', value: 'suggestion' },
         { label: '内容纠错', value: 'correction' },
         { label: '其他', value: 'other' }
-      ]
+      ],
+      StaticAssets
     }
   },
   onLoad() {

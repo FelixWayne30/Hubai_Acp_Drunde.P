@@ -2,7 +2,7 @@
   <view class="browse-page">
     <!-- 添加纸质图集封面图 -->
     <view class="cover-image-section">
-      <image class="cover-image" mode="aspectFit"  src="/static/background/cover.png"></image>
+      <image class="cover-image" mode="aspectFit"  :src="StaticAssets.BG_COVER"></image>
     </view>
 
     <view class="top-area">
@@ -31,6 +31,7 @@
 </template>
 
 <script>
+import {StaticAssets} from '@/env.config.js';
 import MapImage from '../../component/MapImage.vue'
 import { API } from '@/common/config.js'
 
@@ -50,6 +51,7 @@ export default {
       topic: '',
       topicId: '',
       extendsData: null,
+      StaticAssets,
 
       // 内部状态
       currentMapUrlCache: ''
@@ -108,7 +110,7 @@ export default {
       return {
         title: shareTitle, 
         path: sharePath,
-        imageUrl: this.currentMapUrl || '/static/background/cover.png' 
+        imageUrl: this.currentMapUrl || ShareAssets.BG_COVER,
       }
     },
 	onShareTimeline() {
@@ -119,7 +121,7 @@ export default {
 	    return {
 	      title: shareTitle,
 	      query: shareQuery,
-	      imageUrl: this.currentMapUrl || '/static/background/cover.png'
+	      imageUrl: this.currentMapUrl || ShareAssets.BG_COVER
 	    }
 	  },
 
