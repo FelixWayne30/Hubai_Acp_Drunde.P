@@ -319,7 +319,7 @@ export default {
                 // 如果缓存中没有，则生成新的图片URL
                 if (!thumbnail) {
                   thumbnail = generateSubimageUrl(item.title);
-                  CacheManager.setThumbnail(item.title, thumbnail, item);
+                  cacheManager.setThumbnail(item.title, thumbnail, item);
                   console.log(`生成新图片URL: ${thumbnail}`);
                 } else {
                   console.log(`使用缓存图片URL: ${thumbnail}`);
